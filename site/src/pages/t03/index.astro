@@ -1,0 +1,99 @@
+---
+import { t03Content, t03DirectionIds } from "../../data/t03-content";
+
+const base = import.meta.env.BASE_URL;
+const directions = [
+  {
+    id: t03DirectionIds[0],
+    label: "方向 A · 稳妥可读",
+    title: "Quiet Grid / 可读校准",
+    description: "功能主义网格、细规则线、纸白底与原生 details 交互；最适合作为移动阅读底盘。",
+  },
+  {
+    id: t03DirectionIds[1],
+    label: "方向 B · 现实标杆迁移",
+    title: "Editorial Manual / 现实迁移",
+    description: "把官方产品文档的说明秩序迁移到课程阅读流；sticky 目录、衬线标题与脚注节奏。",
+  },
+  {
+    id: t03DirectionIds[2],
+    label: "方向 C · 大胆定制",
+    title: "Evidence Console / 现场证据",
+    description: "石墨控制台、八层能力选择器与 READ/VERIFY 状态，把可核验成果变成主要叙事。",
+  },
+];
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Agent 工程入门 T03 可见方向评审索引" />
+    <title>T03 可见方向评审 · {t03Content.course.name}</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main" aria-label="跳到主要内容">跳到主要内容</a>
+    <header><a href={`${base}`} aria-label="回到课程首页">Agent 工程入门</a><span>T03 / 方向评审</span></header>
+    <main id="main">
+      <p class="eyebrow">{t03Content.hero.label}</p>
+      <h1>同一份真实课程内容，<br />三种看得见的秩序。</h1>
+      <p class="intro">{t03Content.reviewNote}</p>
+      <div class="routes">
+        {directions.map((direction) => (
+          <a class:list={["route", direction.id]} href={`${base}t03/${direction.id}/`}>
+            <span class="route-label">{direction.label}</span>
+            <h2>{direction.title}</h2>
+            <p>{direction.description}</p>
+            <span class="route-link">打开方向 →</span>
+          </a>
+        ))}
+      </div>
+      <div class="shared-content">
+        <p class="eyebrow">共同输入</p>
+        <ul>
+          <li>课程版本：<code>{t03Content.course.version}</code></li>
+          <li>核心线：{t03Content.course.coreDuration}；进阶线：{t03Content.course.advancedDuration}</li>
+          <li>能力地图：模型与 API → 工具与 MCP → 评测、安全、成本与运维</li>
+          <li>模块 0–3：前置技能补给站 → Agent/Harness → 指令工程 → 双工具安全起步</li>
+        </ul>
+      </div>
+    </main>
+    <footer><span>等待维护者视觉选择</span><a href="https://github.com/TiegenFang/agent-engineering-course/issues/4" target="_blank" rel="noreferrer">Issue #4 ↗</a></footer>
+    <style>
+      :global(*) { box-sizing: border-box; }
+      :global(body) { margin: 0; background: #f5f7f3; color: #141715; font-family: "Geist", "Noto Sans SC", "Microsoft YaHei", sans-serif; font-size: 17px; line-height: 1.7; }
+      :global(a) { color: inherit; }
+      .skip-link { position: fixed; left: 1rem; top: -5rem; background: #141715; color: #fff; padding: 0.6rem 0.8rem; }
+      .skip-link:focus { top: 1rem; }
+      header, main, footer { width: min(1180px, calc(100% - 3rem)); margin-inline: auto; }
+      header { display: flex; justify-content: space-between; padding-block: 1.3rem; border-bottom: 1px solid #cad3cd; font-size: 0.85rem; }
+      header a { font-weight: 700; text-decoration: none; }
+      header span { color: #52615b; font-family: "Geist Mono", monospace; font-size: 0.75rem; }
+      main { padding-block: clamp(4rem, 10vw, 8rem); }
+      .eyebrow, .route-label { color: #087f68; font-family: "Geist Mono", monospace; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
+      h1, h2 { font-family: "Newsreader", Georgia, "Noto Serif SC", serif; font-weight: 500; letter-spacing: -0.05em; line-height: 1.05; }
+      h1 { max-width: 12ch; margin: 1rem 0 1.5rem; font-size: clamp(3rem, 8vw, 7rem); }
+      .intro { max-width: 43em; color: #52615b; }
+      .routes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 4rem; }
+      .route { min-height: 20rem; display: flex; flex-direction: column; align-items: flex-start; border: 1px solid #c9d2cd; padding: 1.4rem; text-decoration: none; }
+      .route:hover, .route:focus-visible { border-color: #087f68; background: #e7eee9; }
+      .route h2 { margin: 2rem 0 0.8rem; font-size: clamp(1.8rem, 3vw, 2.8rem); }
+      .route p { margin: 0; color: #52615b; font-size: 0.9rem; }
+      .route-link { margin-top: auto; padding-top: 2rem; color: #087f68; font-size: 0.85rem; }
+      .shared-content { margin-top: 4rem; border-top: 1px solid #141715; padding-top: 1.5rem; }
+      .shared-content ul { margin: 0; padding: 0; list-style: none; color: #52615b; }
+      .shared-content li { padding-block: 0.6rem; border-bottom: 1px solid #c9d2cd; }
+      footer { display: flex; justify-content: space-between; gap: 1rem; padding-block: 1.5rem 3rem; border-top: 1px solid #c9d2cd; color: #52615b; font-size: 0.78rem; }
+      footer a { color: #141715; }
+      :global(:focus-visible) { outline: 3px solid #e2a51a; outline-offset: 3px; }
+      @media (max-width: 760px) {
+        header, main, footer { width: min(100% - 2rem, 1180px); }
+        .routes { grid-template-columns: 1fr; margin-top: 3rem; }
+        .route { min-height: 15rem; }
+        footer { display: block; }
+        footer a { display: inline-block; margin-top: 0.7rem; }
+      }
+    </style>
+  </body>
+</html>

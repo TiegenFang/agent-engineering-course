@@ -1,0 +1,302 @@
+---
+import { t03Content, t03Products } from "../../data/t03-content";
+
+const base = import.meta.env.BASE_URL;
+const claudeLogo = `${base}${t03Products[1].logoPath}`;
+const openAiProduct = t03Products[0];
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Agent 工程入门 T03 可见方向评审：Quiet Grid" />
+    <title>Quiet Grid · {t03Content.course.name}</title>
+  </head>
+  <body class="quiet-page">
+    <a class="skip-link" href="#main" aria-label="跳到主要内容">跳到主要内容</a>
+    <header class="site-header" aria-label="课程导航">
+      <a class="wordmark" href={`${base}t03/`} aria-label="回到 T03 方向索引">
+        <span class="wordmark-symbol" aria-hidden="true">◌</span>
+        <span>Agent 工程入门</span>
+      </a>
+      <nav class="header-nav" aria-label="方向与课程链接">
+        <a href="#map">能力地图</a>
+        <a href="#lessons">模块 0–3</a>
+        <a href={`${base}t03/`}>三版索引</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero quiet-hero" aria-labelledby="quiet-title">
+        <div class="hero-copy">
+          <p class="eyebrow">{t03Content.hero.label}</p>
+          <h1 id="quiet-title">{t03Content.hero.title}</h1>
+          <p class="lede">{t03Content.hero.summary}</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#map">{t03Content.hero.cta}</a>
+            <a class="button button-quiet" href="#direction-note">{t03Content.hero.secondaryCta}</a>
+          </div>
+        </div>
+
+        <aside class="contract-slip" aria-labelledby="contract-title">
+          <p class="slip-label">课程合同 · 当前版本</p>
+          <h2 id="contract-title">{t03Content.course.version}</h2>
+          <p>{t03Content.course.positioning}</p>
+          <dl class="contract-facts">
+            <div>
+              <dt>核心线</dt>
+              <dd>{t03Content.course.coreDuration}</dd>
+            </div>
+            <div>
+              <dt>进阶线</dt>
+              <dd>{t03Content.course.advancedDuration}</dd>
+            </div>
+          </dl>
+          <p class="slip-label">同一版本锁定</p>
+          <ul class="boundary-list">
+            {t03Content.boundaries.map(([label, path]) => <li><code>{path}</code><span>{label}</span></li>)}
+          </ul>
+        </aside>
+      </section>
+
+      <section class="section map-section" id="map" aria-labelledby="map-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">01 / 稳定知识层</p>
+            <h2 id="map-title">一张地图，八个需要分清的边界。</h2>
+          </div>
+          <div class="map-controls">
+            <p>先读问题，再看证据；展开任一层查看它留下的成果。</p>
+            <button class="text-button" type="button" id="expand-map" aria-pressed="false">全部展开</button>
+          </div>
+        </div>
+        <div class="map-list">
+          {t03Content.capabilityLayers.map((layer) => (
+            <details class="layer-row">
+              <summary>
+                <span class="layer-index">{layer.index}</span>
+                <span class="layer-title">{layer.title}</span>
+                <span class="summary-cue" aria-hidden="true">+</span>
+              </summary>
+              <div class="layer-detail">
+                <p>{layer.description}</p>
+                <p class="evidence-line"><strong>可核验成果</strong>{layer.evidence}</p>
+              </div>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      <section class="section lesson-section" id="lessons" aria-labelledby="lesson-title">
+        <div class="section-heading lesson-heading">
+          <div>
+            <p class="eyebrow">02 / Alpha 纵向切片</p>
+            <h2 id="lesson-title">从安全基线走到一次迁移挑战。</h2>
+          </div>
+          <p>同一公共练习仓库逐步增强；每个模块都留下文件、配置、测试输出或提交记录。</p>
+        </div>
+        <ol class="lesson-list">
+          {t03Content.lessons.map((lesson) => (
+            <li>
+              <span class="lesson-id">{lesson.id}</span>
+              <div class="lesson-body">
+                <h3>{lesson.title}</h3>
+                <p>{lesson.question}</p>
+                <p class="lesson-artifact"><strong>产物</strong>{lesson.artifact}</p>
+              </div>
+              <span class="lesson-platform">{lesson.platform}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section class="section tools-section" aria-labelledby="tools-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">03 / 工具适配层</p>
+            <h2 id="tools-title">共同能力，不抹平产品差异。</h2>
+          </div>
+          <p>Codex 与 Claude Code 交替主讲：一个工具完成主实验，另一个用变化输入验证迁移。</p>
+        </div>
+        <div class="tool-line">
+          <a class="product-mark product-codex" href={openAiProduct.officialUrl} target="_blank" rel="noreferrer">
+            <span class="product-company">{openAiProduct.company}</span>
+            <span class="product-name">{openAiProduct.name}</span>
+            <span class="product-note">官方产品页 ↗</span>
+          </a>
+          <span class="tool-relation" aria-label="迁移挑战">↔</span>
+          <a class="product-mark product-claude" href={t03Products[1].officialUrl} target="_blank" rel="noreferrer">
+            <img src={claudeLogo} alt="Claude Code 官方 logo" />
+            <span class="product-note">官方文档 ↗</span>
+          </a>
+        </div>
+        <p class="asset-boundary">
+          <strong>资产边界</strong> 本方向不嵌入官方 UI 截图；没有明确再发布许可的界面只保留真实产品名称、官方链接和诚实文字说明。
+        </p>
+      </section>
+
+      <section class="section evidence-section" aria-labelledby="evidence-title">
+        <div class="evidence-intro">
+          <p class="eyebrow">04 / 证据先行</p>
+          <h2 id="evidence-title">完成不是“看过”，而是能拿出证据。</h2>
+        </div>
+        <ul class="proof-list">
+          {t03Content.proofPoints.map((point, index) => <li><span>{String(index + 1).padStart(2, "0")}</span><p>{point}</p></li>)}
+        </ul>
+      </section>
+
+      <section class="direction-note" id="direction-note" aria-labelledby="direction-note-title">
+        <p class="eyebrow">方向 A · 稳妥可读</p>
+        <h2 id="direction-note-title">Quiet Grid / 可读校准</h2>
+        <p>功能主义网格、纸白底、细规则线和原生 details 交互，把注意力留给课程边界和证据。它是三版里最适合作为移动阅读底盘的一版，但视觉惊喜最克制。</p>
+        <a href={`${base}t03/`}>回到三版索引 →</a>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>{t03Content.reviewNote}</span>
+      <a href="https://github.com/TiegenFang/agent-engineering-course/issues/4" target="_blank" rel="noreferrer">Issue #4 ↗</a>
+    </footer>
+
+    <script is:inline>
+      const mapToggle = document.querySelector("#expand-map");
+      const mapRows = [...document.querySelectorAll(".map-list details")];
+      mapToggle?.addEventListener("click", () => {
+        const shouldOpen = mapToggle.getAttribute("aria-pressed") !== "true";
+        mapRows.forEach((row) => { row.open = shouldOpen; });
+        mapToggle.setAttribute("aria-pressed", String(shouldOpen));
+        mapToggle.textContent = shouldOpen ? "全部收起" : "全部展开";
+      });
+    </script>
+
+    <style>
+      :global(*) { box-sizing: border-box; }
+      :global(html) { scroll-behavior: smooth; }
+      :global(body) {
+        margin: 0;
+        background: #f5f7f3;
+        color: #141715;
+        font-family: "Geist", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+        font-size: 17px;
+        line-height: 1.75;
+        font-synthesis: none;
+        line-break: strict;
+      }
+      :global(a) { color: inherit; }
+      :global(h1), :global(h2), :global(h3), :global(p) { text-wrap: pretty; }
+      :global(h1), :global(h2), :global(h3) { text-wrap: balance; }
+      .quiet-page { --ink: #141715; --muted: #52615b; --line: #c9d2cd; --accent: #087f68; --paper: #f5f7f3; }
+      .skip-link { position: fixed; left: 1rem; top: -5rem; z-index: 20; background: var(--ink); color: #fff; padding: 0.65rem 0.9rem; text-decoration: none; }
+      .skip-link:focus { top: 1rem; }
+      .site-header, .hero, .section, .direction-note, .site-footer { width: min(1240px, calc(100% - 3rem)); margin-inline: auto; }
+      .site-header { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding-block: 1.25rem; border-bottom: 1px solid var(--line); }
+      .wordmark { display: inline-flex; align-items: center; gap: 0.55rem; font-weight: 700; letter-spacing: -0.02em; text-decoration: none; }
+      .wordmark-symbol { display: grid; width: 1.75rem; height: 1.75rem; place-items: center; border: 1px solid var(--ink); border-radius: 50%; font-family: Georgia, serif; font-size: 1.45rem; line-height: 1; }
+      .header-nav { display: flex; gap: 1.25rem; font-size: 0.85rem; }
+      .header-nav a { text-decoration-thickness: 1px; text-underline-offset: 0.3em; }
+      .header-nav a:hover, .header-nav a:focus-visible { color: var(--accent); }
+      .hero { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr); gap: clamp(2rem, 7vw, 7rem); padding-block: clamp(4.5rem, 12vw, 9rem) clamp(4rem, 8vw, 7rem); }
+      .eyebrow, .slip-label { margin: 0 0 0.8rem; color: var(--accent); font-size: 0.75rem; font-weight: 750; letter-spacing: 0.1em; text-transform: uppercase; }
+      h1, h2, h3 { color: var(--ink); }
+      h1 { max-width: 10ch; margin: 0; white-space: pre-line; font-family: "Newsreader", Georgia, "Noto Serif SC", serif; font-size: clamp(3rem, 8vw, 7.4rem); font-weight: 500; letter-spacing: -0.05em; line-height: 0.98; }
+      h2 { margin: 0; font-family: "Newsreader", Georgia, "Noto Serif SC", serif; font-size: clamp(2rem, 4vw, 3.6rem); font-weight: 500; letter-spacing: -0.035em; line-height: 1.08; }
+      h3 { margin: 0; font-size: 1.2rem; line-height: 1.35; }
+      .lede { max-width: 37em; margin: 2rem 0 0; color: var(--muted); font-size: clamp(1rem, 1.2vw, 1.16rem); }
+      .hero-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 2.2rem; }
+      .button, .text-button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--ink); padding: 0.65rem 1rem; font: inherit; font-size: 0.88rem; text-decoration: none; cursor: pointer; }
+      .button-primary { background: var(--ink); color: #fff; }
+      .button-primary:hover, .button-primary:focus-visible { background: var(--accent); border-color: var(--accent); }
+      .button-quiet { border-color: var(--line); }
+      .button-quiet:hover, .button-quiet:focus-visible, .text-button:hover, .text-button:focus-visible { color: var(--accent); border-color: var(--accent); }
+      .contract-slip { align-self: end; border-block: 1px solid var(--ink); padding-block: 1.25rem; }
+      .contract-slip h2 { font-family: "Geist Mono", "Cascadia Mono", monospace; font-size: 1.2rem; letter-spacing: 0; }
+      .contract-slip p:not(.slip-label) { color: var(--muted); font-size: 0.9rem; }
+      .contract-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.4rem 0; }
+      .contract-facts dt, .contract-facts dd { margin: 0; }
+      .contract-facts dt { color: var(--muted); font-size: 0.78rem; }
+      .contract-facts dd { font-weight: 700; }
+      .boundary-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem 1rem; padding: 0; list-style: none; }
+      .boundary-list li { display: flex; justify-content: space-between; gap: 0.5rem; border-bottom: 1px solid var(--line); font-size: 0.8rem; }
+      .boundary-list span { color: var(--muted); }
+      code, .lesson-id { font-family: "Geist Mono", "Cascadia Mono", monospace; }
+      .section { padding-block: clamp(3.5rem, 8vw, 7rem); border-top: 1px solid var(--line); }
+      .section-heading { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 0.48fr); gap: 2rem; align-items: end; margin-bottom: 2.5rem; }
+      .section-heading > p, .map-controls p { margin: 0; color: var(--muted); font-size: 0.93rem; }
+      .map-controls { display: grid; gap: 1rem; justify-items: start; }
+      .text-button { background: transparent; padding-inline: 0.8rem; }
+      .map-list { border-top: 1px solid var(--ink); }
+      .layer-row { border-bottom: 1px solid var(--line); }
+      .layer-row summary { display: grid; grid-template-columns: 3.8rem 1fr auto; gap: 1rem; align-items: center; min-height: 4.4rem; cursor: pointer; list-style: none; }
+      .layer-row summary::-webkit-details-marker { display: none; }
+      .layer-row summary:hover .layer-title, .layer-row summary:focus-visible .layer-title { color: var(--accent); }
+      .layer-index { color: var(--accent); font-family: "Geist Mono", monospace; font-size: 0.8rem; }
+      .layer-title { font-size: clamp(1.15rem, 2.4vw, 1.75rem); font-weight: 650; }
+      .summary-cue { font-family: Georgia, serif; font-size: 1.5rem; font-weight: 400; }
+      .layer-row[open] .summary-cue { transform: rotate(45deg); }
+      .layer-detail { display: grid; grid-template-columns: 1fr minmax(240px, 0.8fr); gap: 2rem; padding: 0 0 1.5rem 3.8rem; color: var(--muted); }
+      .layer-detail p { margin: 0; }
+      .evidence-line { border-inline-start: 2px solid var(--accent); padding-inline-start: 1rem; }
+      .evidence-line strong, .lesson-artifact strong { display: block; color: var(--ink); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
+      .lesson-heading { align-items: start; }
+      .lesson-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--ink); }
+      .lesson-list li { display: grid; grid-template-columns: 3.8rem minmax(0, 1fr) 7rem; gap: 1rem; padding-block: 1.3rem; border-bottom: 1px solid var(--line); }
+      .lesson-id { color: var(--accent); font-size: 0.82rem; }
+      .lesson-body p { margin: 0.45rem 0 0; color: var(--muted); }
+      .lesson-body .lesson-artifact { margin-top: 0.8rem; font-size: 0.88rem; }
+      .lesson-platform { justify-self: end; color: var(--muted); font-size: 0.78rem; text-align: right; }
+      .tools-section { padding-bottom: 3.5rem; }
+      .tool-line { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1.5rem; align-items: stretch; border-block: 1px solid var(--ink); }
+      .product-mark { min-height: 11rem; display: flex; flex-direction: column; justify-content: center; gap: 0.25rem; padding: 1.4rem; text-decoration: none; }
+      .product-mark:hover, .product-mark:focus-visible { background: #e7eee9; }
+      .product-company, .product-note { color: var(--muted); font-size: 0.78rem; }
+      .product-name { font-family: "Newsreader", Georgia, serif; font-size: 2.3rem; }
+      .product-claude img { width: min(100%, 300px); height: auto; }
+      .tool-relation { align-self: center; color: var(--accent); font-size: 2rem; }
+      .asset-boundary { margin: 1rem 0 0; color: var(--muted); font-size: 0.82rem; }
+      .evidence-section { display: grid; grid-template-columns: 0.75fr 1.25fr; gap: 4rem; }
+      .proof-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--ink); }
+      .proof-list li { display: grid; grid-template-columns: 2.5rem 1fr; gap: 1rem; padding-block: 1rem; border-bottom: 1px solid var(--line); }
+      .proof-list span { color: var(--accent); font-family: "Geist Mono", monospace; font-size: 0.8rem; }
+      .proof-list p { margin: 0; }
+      .direction-note { margin-top: 2rem; padding: clamp(2rem, 5vw, 4.5rem); background: #e7eee9; }
+      .direction-note h2 { max-width: 12ch; }
+      .direction-note p:not(.eyebrow) { max-width: 60ch; color: var(--muted); }
+      .direction-note a { font-weight: 700; text-underline-offset: 0.3em; }
+      .site-footer { display: flex; justify-content: space-between; gap: 1rem; padding-block: 2rem 3rem; color: var(--muted); font-size: 0.78rem; }
+      .site-footer a { color: var(--ink); }
+      :global(:focus-visible) { outline: 3px solid #e2a51a; outline-offset: 3px; }
+      @media (max-width: 760px) {
+        :global(body) { font-size: 16px; }
+        .site-header, .hero, .section, .direction-note, .site-footer { width: min(100% - 2rem, 1240px); }
+        .site-header { align-items: flex-start; }
+        .header-nav { gap: 0.75rem; font-size: 0.78rem; }
+        .header-nav a:nth-child(2) { display: none; }
+        .hero { display: block; padding-block: 3.5rem 3rem; }
+        h1 { max-width: 9ch; font-size: clamp(3.3rem, 16vw, 5.2rem); }
+        .contract-slip { margin-top: 3.5rem; }
+        .section { padding-block: 3.5rem; }
+        .section-heading, .evidence-section { display: block; }
+        .section-heading > p, .map-controls p { margin-top: 1rem; }
+        .map-controls { margin-top: 1.2rem; }
+        .layer-row summary { grid-template-columns: 2.6rem 1fr auto; gap: 0.6rem; min-height: 4.5rem; }
+        .layer-detail { display: block; padding-left: 2.6rem; }
+        .evidence-line { margin-top: 1rem; }
+        .lesson-list li { grid-template-columns: 2.6rem minmax(0, 1fr); gap: 0.7rem; }
+        .lesson-platform { grid-column: 2; justify-self: start; text-align: left; }
+        .tool-line { grid-template-columns: 1fr; gap: 0; }
+        .tool-relation { display: none; }
+        .product-mark { min-height: 8rem; padding-inline: 0; }
+        .product-claude img { max-width: min(100%, 280px); }
+        .evidence-section .proof-list { margin-top: 2rem; }
+        .site-footer { display: block; }
+        .site-footer a { display: inline-block; margin-top: 0.75rem; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        :global(html) { scroll-behavior: auto; }
+        :global(*), :global(*::before), :global(*::after) { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+      }
+    </style>
+  </body>
+</html>

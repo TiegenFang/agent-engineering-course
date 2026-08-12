@@ -61,6 +61,46 @@
       "usage": "重点参考集的采用与排除边界",
       "license_or_terms": "project-original",
       "copied_assets": false
+    },
+    {
+      "id": "openai-codex-product-page-t03",
+      "title": "OpenAI Introducing the Codex app",
+      "url": "https://openai.com/index/introducing-the-codex-app/",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "page observed 2026-08-13; no client or model version asserted",
+      "usage": "核验 Codex 产品存在、工作表面与方向 demo 的事实边界",
+      "license_or_terms": "reference-only; OpenAI marks remain subject to OpenAI terms",
+      "copied_assets": false
+    },
+    {
+      "id": "openai-brand-guidelines-t03",
+      "title": "OpenAI Design Guidelines",
+      "url": "https://openai.com/brand/",
+      "source_role": "official-brand-asset-source",
+      "pinned_version": "page observed 2026-08-13",
+      "usage": "核验 OpenAI/Codex wordmark 使用边界与官方 CDN 资源",
+      "license_or_terms": "OpenAI marks usage terms; exact-as-provided, direct relation, no endorsement",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-code-docs-t03",
+      "title": "Claude Code overview",
+      "url": "https://code.claude.com/docs/en/overview",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "page observed 2026-08-13; current docs page, no client version asserted",
+      "usage": "核验 Claude Code 的产品名称、工作表面和方向 demo 的事实边界",
+      "license_or_terms": "reference-only; Anthropic product and trademark terms apply",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-code-logo-press-kit-t03",
+      "title": "Claude Code logo - Slate.svg",
+      "url": "https://www.anthropic.com/news",
+      "source_role": "official-brand-asset-source",
+      "pinned_version": "Anthropic press kit entry observed 2026-08-13",
+      "usage": "三套 T03 方向 demo 的官方 Claude Code logo；本地路径 site/public/brands/claude-code-logo-slate.svg",
+      "license_or_terms": "Anthropic press-kit/trademark asset; no open-source relicensing claimed; retain original proportions and recheck terms before production",
+      "copied_assets": true
     }
   ]
 }

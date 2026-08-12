@@ -1,0 +1,297 @@
+---
+import { t03Content, t03Products } from "../../data/t03-content";
+
+const base = import.meta.env.BASE_URL;
+const claudeLogo = `${base}${t03Products[1].logoPath}`;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Agent 工程入门 T03 可见方向评审：Evidence Console" />
+    <title>Evidence Console · {t03Content.course.name}</title>
+  </head>
+  <body class="console-page">
+    <a class="skip-link" href="#main" aria-label="跳到主要内容">跳到主要内容</a>
+    <header class="console-header" aria-label="课程导航">
+      <a href={`${base}t03/`} class="console-brand" aria-label="回到 T03 方向索引"><span aria-hidden="true">/</span> Agent 工程入门</a>
+      <div class="console-status"><span class="status-dot" aria-hidden="true"></span><span>REVIEW MODE</span><span class="divider">/</span><span>{t03Content.course.version}</span></div>
+      <a class="header-exit" href={`${base}t03/`}>EXIT →</a>
+    </header>
+
+    <main id="main">
+      <section class="console-hero" aria-labelledby="console-title">
+        <div class="hero-code">T03 / DESIGN-DIRECTIONS / 03</div>
+        <div class="hero-grid">
+          <div>
+            <p class="console-kicker">大胆定制 · 证据先行</p>
+            <h1 id="console-title">Agent 能力<br /><span>不是菜单。</span></h1>
+            <p class="hero-copy">{t03Content.hero.summary}</p>
+            <a class="console-button" href="#capability-console">进入能力控制台 <span aria-hidden="true">↘</span></a>
+          </div>
+          <div class="hero-index" aria-label="课程合同摘要">
+            <div class="index-number">08</div>
+            <div class="index-label">能力层<br />从 API 到运维</div>
+            <div class="index-rule" aria-hidden="true"></div>
+            <p>每一层都有问题、上下文、约束与可核验成果；页面不把学习进度伪装成统计数字。</p>
+          </div>
+        </div>
+        <div class="hero-footline"><span>稳定知识层</span><span>工具适配层</span><span>风险与验证卡片</span></div>
+      </section>
+
+      <section class="console-contract" aria-labelledby="contract-title">
+        <div class="contract-heading">
+          <span class="section-code">SYS / CONTRACT</span>
+          <h2 id="contract-title">先确认运行边界。</h2>
+        </div>
+        <div class="contract-grid">
+          <div class="contract-cell"><span>COURSE</span><strong>{t03Content.course.name}</strong><p>{t03Content.course.positioning}</p></div>
+          <div class="contract-cell"><span>TIME / CORE</span><strong>{t03Content.course.coreDuration}</strong><p>真实仓库任务、上下文、Memory、Skill 与 MCP。</p></div>
+          <div class="contract-cell"><span>TIME / ADVANCED</span><strong>{t03Content.course.advancedDuration}</strong><p>Python + 官方 API/SDK 的最小 Agent loop。</p></div>
+          <div class="contract-cell"><span>WORKSPACE</span><strong>site · labs · checker · docs</strong><p>同一课程版本锁定网页、练习、检查器和来源。</p></div>
+        </div>
+      </section>
+
+      <section class="capability-console" id="capability-console" aria-labelledby="capability-title">
+        <div class="section-code">MAP / CAPABILITY-LAYERS</div>
+        <div class="capability-heading">
+          <div><h2 id="capability-title">八层能力，<br />逐层交付证据。</h2><p>选择一层，查看它解决的问题和学员留下的可核验成果。</p></div>
+          <div class="mode-switch" role="group" aria-label="控制台模式"><button type="button" class="mode-button is-active" data-mode="read" aria-pressed="true">READ</button><button type="button" class="mode-button" data-mode="verify" aria-pressed="false">VERIFY</button></div>
+        </div>
+        <div class="capability-workspace">
+          <div class="layer-tabs" role="listbox" aria-label="八层能力选择">
+            {t03Content.capabilityLayers.map((layer, index) => (
+              <button type="button" role="option" aria-selected={index === 0 ? "true" : "false"} data-layer-index={index}>
+                <span>{layer.index}</span><strong>{layer.title}</strong><i aria-hidden="true">↗</i>
+              </button>
+            ))}
+          </div>
+          <div class="layer-output" aria-live="polite">
+            {t03Content.capabilityLayers.map((layer, index) => (
+              <article class:list={["layer-output-item", index === 0 && "is-active"]} data-layer-output={index}>
+                <div class="output-label"><span data-output-mode>问题</span><span>{layer.index}</span></div>
+                <h3>{layer.title}</h3>
+                <p class="output-description" data-read-copy>{layer.description}</p>
+                <p class="output-description verify-copy" data-verify-copy><strong>证据</strong>{layer.evidence}</p>
+                <div class="output-foot"><span>COURSE / CORE</span><span>→ 可观察，不靠猜</span></div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section class="console-lessons" aria-labelledby="lessons-title">
+        <div class="section-code">TRACE / ALPHA-SLICE</div>
+        <div class="lessons-heading"><h2 id="lessons-title">M0 → M3<br /><span>从基线到迁移。</span></h2><p>一条真实练习主线逐步增强，不把每章做成互不相干的玩具。</p></div>
+        <ol class="trace-list">
+          {t03Content.lessons.map((lesson) => (
+            <li><span class="trace-id">{lesson.id}</span><div><h3>{lesson.title}</h3><p>{lesson.question}</p><span class="trace-artifact">EVIDENCE / {lesson.artifact}</span></div><span class="trace-platform">{lesson.platform}</span></li>
+          ))}
+        </ol>
+      </section>
+
+      <section class="console-tools" aria-labelledby="tools-title">
+        <div class="section-code">ADAPTER / PRODUCTS</div>
+        <div class="tools-heading"><h2 id="tools-title">Codex ↔ Claude Code</h2><p>共同能力目标，真实产品差异，变化输入的迁移挑战。</p></div>
+        <div class="product-strip">
+          <a class="product-node" href={t03Products[0].officialUrl} target="_blank" rel="noreferrer"><span class="node-index">A</span><span class="node-company">OpenAI</span><strong>Codex</strong><span class="node-link">official product page ↗</span></a>
+          <div class="node-connector" aria-label="迁移挑战">↔</div>
+          <a class="product-node claude-node" href={t03Products[1].officialUrl} target="_blank" rel="noreferrer"><span class="node-index">B</span><img src={claudeLogo} alt="Claude Code 官方 logo" /><span class="node-link">official docs ↗</span></a>
+        </div>
+        <div class="asset-alert"><span class="alert-mark">!</span><p><strong>UI ASSET BOUNDARY</strong> 官方 UI 截图待许可核准。本版不编造界面、数据、价格或性能；真实产品 mark 只用于直接相关的课程说明。</p></div>
+      </section>
+
+      <section class="console-proof" aria-labelledby="proof-title">
+        <div class="section-code">OUTPUT / EVIDENCE</div>
+        <div class="proof-grid">
+          <div><h2 id="proof-title">完成条件<br /><span>不是“我看过”。</span></h2><p>课程检查器只在学员本机运行，网页主动导入匿名 JSON；结果要能被文件、配置、测试、运行证据或提交记录证明。</p></div>
+          <ul>
+            {t03Content.proofPoints.map((point) => <li><span aria-hidden="true">→</span><p>{point}</p></li>)}
+          </ul>
+        </div>
+      </section>
+
+      <section class="console-note" aria-labelledby="note-title">
+        <div class="section-code">DIRECTION / 03</div>
+        <h2 id="note-title">Evidence Console<br /><span>现场证据。</span></h2>
+        <p>以 Pentagram 式信息设计思维定制：把能力地图、课程合同和可核验成果放在同一控制台，使用石墨、暖白与琥珀状态线建立工程现场感。它最有记忆点，也最需要维护者确认信息密度和移动阅读是否适合作为长期底盘。</p>
+        <a href={`${base}t03/`}>← 回到三版索引</a>
+      </section>
+    </main>
+
+    <footer class="console-footer"><span>{t03Content.reviewNote}</span><a href="https://github.com/TiegenFang/agent-engineering-course/issues/4" target="_blank" rel="noreferrer">ISSUE #4 ↗</a></footer>
+
+    <script is:inline>
+      const layerButtons = [...document.querySelectorAll("[data-layer-index]")];
+      const layerOutputs = [...document.querySelectorAll("[data-layer-output]")];
+      layerButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const target = button.dataset.layerIndex;
+          layerButtons.forEach((item) => item.setAttribute("aria-selected", String(item === button)));
+          layerOutputs.forEach((item) => item.classList.toggle("is-active", item.dataset.layerOutput === target));
+        });
+      });
+      const modeButtons = [...document.querySelectorAll("[data-mode]")];
+      const page = document.body;
+      modeButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const mode = button.dataset.mode;
+          modeButtons.forEach((item) => { item.setAttribute("aria-pressed", String(item === button)); item.classList.toggle("is-active", item === button); });
+          page.dataset.mode = mode;
+          document.querySelectorAll("[data-output-mode]").forEach((label) => { label.textContent = mode === "verify" ? "证据" : "问题"; });
+        });
+      });
+    </script>
+
+    <style>
+      :global(*) { box-sizing: border-box; }
+      :global(html) { scroll-behavior: smooth; }
+      :global(body) { margin: 0; background: #151716; color: #f3ede1; font-family: "Geist", "Noto Sans SC", "Microsoft YaHei", sans-serif; font-size: 16px; line-height: 1.7; font-synthesis: none; line-break: strict; }
+      :global(h1), :global(h2), :global(h3), :global(p) { text-wrap: pretty; }
+      :global(h1), :global(h2), :global(h3) { text-wrap: balance; }
+      :global(a) { color: inherit; }
+      .console-page { --bg: #151716; --panel: #1d211e; --panel-light: #252a26; --ink: #f3ede1; --muted: #abb0a7; --line: #3c433d; --amber: #f3c75f; --coral: #e47c60; --mono: "Geist Mono", "Cascadia Mono", monospace; }
+      .skip-link { position: fixed; left: 1rem; top: -5rem; z-index: 30; background: var(--amber); color: #151716; padding: 0.65rem 0.9rem; text-decoration: none; }
+      .skip-link:focus { top: 1rem; }
+      .console-header, .console-hero, .console-contract, .capability-console, .console-lessons, .console-tools, .console-proof, .console-note, .console-footer { width: min(1280px, calc(100% - 3rem)); margin-inline: auto; }
+      .console-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 1rem; min-height: 4.5rem; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 0.72rem; }
+      .console-brand, .header-exit { color: var(--ink); text-decoration: none; letter-spacing: 0.04em; }
+      .console-brand span { color: var(--amber); font-size: 1.4rem; }
+      .console-status { display: flex; align-items: center; gap: 0.65rem; color: var(--muted); }
+      .status-dot { width: 0.5rem; height: 0.5rem; background: var(--amber); border-radius: 50%; }
+      .divider { color: var(--line); }
+      .header-exit { justify-self: end; color: var(--amber); }
+      .console-hero { padding-block: clamp(4rem, 10vw, 8rem) 3rem; }
+      .hero-code, .section-code { color: var(--muted); font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; }
+      .hero-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(240px, 0.65fr); gap: clamp(2rem, 8vw, 8rem); align-items: end; margin-top: 3rem; }
+      .console-kicker { margin: 0 0 1.4rem; color: var(--amber); font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.06em; }
+      .console-hero h1 { margin: 0; color: var(--ink); font-family: "Newsreader", Georgia, "Noto Serif SC", serif; font-size: clamp(4rem, 11vw, 10rem); font-weight: 500; letter-spacing: -0.08em; line-height: 0.82; }
+      .console-hero h1 span, .lessons-heading h2 span, .console-proof h2 span, .console-note h2 span { color: var(--amber); }
+      .hero-copy { max-width: 39em; margin: 2rem 0; color: var(--muted); }
+      .console-button { min-height: 44px; display: inline-flex; align-items: center; gap: 1rem; border: 1px solid var(--amber); padding: 0.7rem 1rem; color: var(--amber); font-family: var(--mono); font-size: 0.76rem; text-decoration: none; }
+      .console-button:hover, .console-button:focus-visible { background: var(--amber); color: var(--bg); }
+      .hero-index { border-top: 1px solid var(--line); padding-top: 1rem; }
+      .index-number { color: var(--amber); font-family: var(--mono); font-size: clamp(4rem, 8vw, 7.5rem); letter-spacing: -0.1em; line-height: 0.9; }
+      .index-label { margin-top: 0.8rem; color: var(--ink); font-family: var(--mono); font-size: 0.78rem; line-height: 1.4; }
+      .index-rule { height: 1px; margin-block: 1.2rem; background: var(--coral); }
+      .hero-index p { margin: 0; color: var(--muted); font-size: 0.82rem; }
+      .hero-footline { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 5rem; padding-top: 0.8rem; border-top: 1px solid var(--line); color: var(--muted); font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; }
+      .hero-footline span:nth-child(2) { text-align: center; color: var(--coral); }
+      .hero-footline span:last-child { text-align: right; color: var(--amber); }
+      .console-contract, .capability-console, .console-lessons, .console-tools, .console-proof { padding-block: 4.5rem; border-top: 1px solid var(--line); }
+      .contract-heading, .capability-heading, .lessons-heading, .tools-heading { display: flex; justify-content: space-between; gap: 2rem; align-items: end; }
+      .console-contract h2, .capability-console h2, .console-lessons h2, .console-tools h2, .console-proof h2, .console-note h2 { margin: 0; color: var(--ink); font-family: "Newsreader", Georgia, "Noto Serif SC", serif; font-size: clamp(2.5rem, 6vw, 5.5rem); font-weight: 500; letter-spacing: -0.07em; line-height: 0.96; }
+      .contract-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin-top: 2.5rem; border: 1px solid var(--line); background: var(--line); }
+      .contract-cell { min-height: 11rem; padding: 1.1rem; background: var(--panel); }
+      .contract-cell > span, .node-index, .node-company, .trace-platform, .trace-artifact { color: var(--muted); font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.06em; text-transform: uppercase; }
+      .contract-cell strong { display: block; margin-top: 1.6rem; color: var(--amber); font-family: var(--mono); font-size: 1rem; font-weight: 500; }
+      .contract-cell p { margin: 0.7rem 0 0; color: var(--muted); font-size: 0.82rem; }
+      .capability-heading { margin-top: 2.5rem; align-items: end; }
+      .capability-heading p, .lessons-heading p, .tools-heading p { max-width: 23em; margin: 0; color: var(--muted); font-size: 0.86rem; }
+      .mode-switch { display: flex; border: 1px solid var(--line); }
+      .mode-button { min-height: 44px; min-width: 5.5rem; border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--muted); font-family: var(--mono); font-size: 0.68rem; cursor: pointer; }
+      .mode-button:last-child { border-right: 0; }
+      .mode-button.is-active { background: var(--amber); color: var(--bg); }
+      .capability-workspace { display: grid; grid-template-columns: minmax(250px, 0.7fr) minmax(0, 1.3fr); gap: 1px; margin-top: 3rem; border: 1px solid var(--line); background: var(--line); }
+      .layer-tabs { background: var(--panel); }
+      .layer-tabs button { width: 100%; min-height: 4rem; display: grid; grid-template-columns: 2rem 1fr auto; gap: 0.7rem; align-items: center; border: 0; border-bottom: 1px solid var(--line); padding: 0.8rem 1rem; background: transparent; color: var(--muted); font: inherit; text-align: left; cursor: pointer; }
+      .layer-tabs button:last-child { border-bottom: 0; }
+      .layer-tabs button:hover, .layer-tabs button:focus-visible, .layer-tabs button[aria-selected="true"] { background: var(--panel-light); color: var(--ink); }
+      .layer-tabs button[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--amber); }
+      .layer-tabs span { color: var(--amber); font-family: var(--mono); font-size: 0.68rem; }
+      .layer-tabs strong { font-size: 0.86rem; font-weight: 600; }
+      .layer-tabs i { color: var(--coral); font-style: normal; }
+      .layer-output { min-height: 32rem; position: relative; background: var(--panel-light); }
+      .layer-output-item { display: none; min-height: 32rem; padding: clamp(1.5rem, 4vw, 3rem); }
+      .layer-output-item.is-active { display: block; }
+      .output-label, .output-foot { display: flex; justify-content: space-between; gap: 1rem; color: var(--muted); font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; }
+      .output-label span:first-child { color: var(--coral); }
+      .layer-output h3 { max-width: 10ch; margin: 4rem 0 1rem; color: var(--ink); font-family: "Newsreader", Georgia, serif; font-size: clamp(2.4rem, 5vw, 5rem); font-weight: 500; letter-spacing: -0.06em; line-height: 0.95; }
+      .output-description { max-width: 38em; margin: 0; color: var(--muted); font-size: 1rem; }
+      .verify-copy { display: none; border-inline-start: 2px solid var(--amber); padding-inline-start: 1rem; }
+      .verify-copy strong { display: block; margin-bottom: 0.45rem; color: var(--amber); font-family: var(--mono); font-size: 0.7rem; text-transform: uppercase; }
+      .console-page[data-mode="verify"] .output-description[data-read-copy] { display: none; }
+      .console-page[data-mode="verify"] .verify-copy { display: block; }
+      .output-foot { margin-top: 5rem; padding-top: 0.8rem; border-top: 1px solid var(--line); }
+      .output-foot span:last-child { color: var(--amber); }
+      .trace-list { margin: 3rem 0 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+      .trace-list li { display: grid; grid-template-columns: 3rem minmax(0, 1fr) 8rem; gap: 1rem; padding-block: 1.3rem; border-bottom: 1px solid var(--line); }
+      .trace-id { color: var(--amber); font-family: var(--mono); font-size: 0.75rem; }
+      .trace-list h3 { margin: 0; color: var(--ink); font-size: 1.15rem; }
+      .trace-list p { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.86rem; }
+      .trace-artifact { display: inline-block; margin-top: 0.65rem; color: var(--coral); font-size: 0.64rem; text-transform: none; }
+      .trace-platform { justify-self: end; text-align: right; }
+      .product-strip { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: stretch; margin-top: 3rem; }
+      .product-node { min-height: 13rem; display: flex; flex-direction: column; justify-content: center; gap: 0.4rem; border: 1px solid var(--line); padding: 1.2rem; background: var(--panel); text-decoration: none; }
+      .product-node:hover, .product-node:focus-visible { border-color: var(--amber); background: var(--panel-light); }
+      .product-node.claude-node { background: #faf9f5; color: #151716; }
+      .product-node.claude-node:hover, .product-node.claude-node:focus-visible { background: #ffffff; }
+      .product-node.claude-node .node-index { color: #51534d; }
+      .product-node.claude-node .node-link { color: #8f3b24; }
+      .product-node strong { color: var(--ink); font-family: "Newsreader", Georgia, serif; font-size: 2.4rem; font-weight: 500; }
+      .node-link { color: var(--amber); font-family: var(--mono); font-size: 0.65rem; }
+      .node-connector { align-self: center; color: var(--coral); font-size: 1.7rem; }
+      .claude-node img { width: min(100%, 300px); height: auto; }
+      .asset-alert { display: flex; gap: 1rem; margin-top: 1.5rem; border: 1px dashed var(--coral); padding: 1rem; }
+      .alert-mark { flex: 0 0 auto; display: grid; width: 1.5rem; height: 1.5rem; place-items: center; background: var(--coral); color: var(--bg); font-family: var(--mono); font-weight: 700; }
+      .asset-alert p { margin: 0; color: var(--muted); font-size: 0.8rem; }
+      .asset-alert strong { display: block; color: var(--coral); font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.06em; }
+      .console-proof { padding-bottom: 5.5rem; }
+      .proof-grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 4rem; margin-top: 2.5rem; }
+      .proof-grid > div p { max-width: 30em; color: var(--muted); font-size: 0.9rem; }
+      .proof-grid ul { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+      .proof-grid li { display: grid; grid-template-columns: 1.5rem 1fr; gap: 0.7rem; padding-block: 1rem; border-bottom: 1px solid var(--line); }
+      .proof-grid li > span { color: var(--amber); font-family: var(--mono); }
+      .proof-grid li p { margin: 0; color: var(--muted); font-size: 0.88rem; }
+      .console-note { padding-block: 5rem 6rem; }
+      .console-note h2 { margin-top: 2rem; font-size: clamp(3rem, 8vw, 7rem); }
+      .console-note p { max-width: 40em; margin-block: 2rem; color: var(--muted); }
+      .console-note a { color: var(--amber); font-family: var(--mono); font-size: 0.72rem; text-decoration: none; }
+      .console-footer { display: flex; justify-content: space-between; gap: 1rem; padding-block: 1.5rem 3rem; border-top: 1px solid var(--line); color: var(--muted); font-family: var(--mono); font-size: 0.62rem; }
+      .console-footer a { color: var(--amber); text-decoration: none; }
+      :global(:focus-visible) { outline: 3px solid var(--amber); outline-offset: 3px; }
+      @media (max-width: 800px) {
+        :global(body) { font-size: 16px; }
+        .console-header, .console-hero, .console-contract, .capability-console, .console-lessons, .console-tools, .console-proof, .console-note, .console-footer { width: min(100% - 2rem, 1280px); }
+        .console-header { grid-template-columns: 1fr auto; }
+        .console-status { display: none; }
+        .console-hero { padding-block: 3.5rem 2.5rem; }
+        .hero-grid, .proof-grid { display: block; }
+        .console-hero h1 { font-size: clamp(4rem, 19vw, 7rem); }
+        .hero-index { margin-top: 4rem; }
+        .hero-footline { display: block; margin-top: 3.5rem; }
+        .hero-footline span { display: inline-block; margin-right: 1rem; margin-bottom: 0.4rem; }
+        .hero-footline span:nth-child(2), .hero-footline span:last-child { text-align: left; }
+        .contract-heading, .capability-heading, .lessons-heading, .tools-heading { display: block; }
+        .contract-grid { grid-template-columns: 1fr 1fr; }
+        .contract-cell { min-height: 10rem; }
+        .capability-heading p, .lessons-heading p, .tools-heading p { margin-top: 1.2rem; }
+        .mode-switch { margin-top: 1.4rem; }
+        .capability-workspace { display: block; }
+        .layer-tabs { display: flex; overflow-x: auto; }
+        .layer-tabs button { min-width: 8rem; min-height: 5.5rem; display: block; padding: 0.75rem; border-right: 1px solid var(--line); border-bottom: 0; }
+        .layer-tabs button[aria-selected="true"] { box-shadow: inset 0 -3px 0 var(--amber); }
+        .layer-tabs button strong { display: block; margin-top: 0.45rem; font-size: 0.74rem; }
+        .layer-tabs button i { display: none; }
+        .layer-output, .layer-output-item { min-height: 24rem; }
+        .layer-output h3 { margin-top: 2.8rem; font-size: clamp(2.4rem, 14vw, 4.5rem); }
+        .output-foot { margin-top: 3rem; }
+        .trace-list li { grid-template-columns: 2.2rem minmax(0, 1fr); gap: 0.7rem; }
+        .trace-platform { grid-column: 2; justify-self: start; text-align: left; }
+        .product-strip { grid-template-columns: 1fr; gap: 0.8rem; }
+        .node-connector { display: none; }
+        .product-node { min-height: 9rem; }
+        .proof-grid { margin-top: 2rem; }
+        .proof-grid ul { margin-top: 2rem; }
+        .console-footer { display: block; }
+        .console-footer a { display: inline-block; margin-top: 0.7rem; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        :global(html) { scroll-behavior: auto; }
+        :global(*), :global(*::before), :global(*::after) { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+      }
+    </style>
+  </body>
+</html>

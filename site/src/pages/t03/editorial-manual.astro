@@ -1,0 +1,275 @@
+---
+import { t03Content, t03Products } from "../../data/t03-content";
+
+const base = import.meta.env.BASE_URL;
+const claudeLogo = `${base}${t03Products[1].logoPath}`;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Agent 工程入门 T03 可见方向评审：Editorial Manual" />
+    <title>Editorial Manual · {t03Content.course.name}</title>
+  </head>
+  <body class="editorial-page">
+    <a class="skip-link" href="#main" aria-label="跳到主要内容">跳到主要内容</a>
+    <header class="editorial-header">
+      <a class="masthead" href={`${base}t03/`} aria-label="回到 T03 方向索引">Agent 工程入门</a>
+      <div class="header-meta">
+        <span>{t03Content.course.version}</span>
+        <a href={`${base}t03/`}>三版索引</a>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="editorial-hero" aria-labelledby="editorial-title">
+        <div class="hero-kicker">
+          <span>{t03Content.hero.label}</span>
+          <span>方向 B / 现实标杆迁移</span>
+        </div>
+        <h1 id="editorial-title">读一遍，再动手。</h1>
+        <p class="hero-dek">{t03Content.hero.summary}</p>
+        <div class="hero-rule" aria-hidden="true"></div>
+        <div class="hero-footer">
+          <span>稳定知识层 × 工具适配层</span>
+          <a href="#reading-path">沿阅读路径开始 ↓</a>
+        </div>
+      </section>
+
+      <section class="reading-layout" id="reading-path">
+        <aside class="reading-rail" aria-label="页面章节导航">
+          <p class="rail-label">Contents</p>
+          <nav>
+            <a href="#contract">课程合同</a>
+            <a href="#map">能力地图</a>
+            <a href="#lessons">模块 0–3</a>
+            <a href="#tools">工具适配</a>
+            <a href="#proof">可核验成果</a>
+          </nav>
+          <p class="rail-note">现实参照：官方产品文档的说明秩序与出版物的阅读节奏。本版不复制任何第三方页面。</p>
+        </aside>
+
+        <article class="reading-column">
+          <section class="article-section contract-section" id="contract" aria-labelledby="contract-title">
+            <p class="article-label">01 · 先确认边界</p>
+            <h2 id="contract-title">这不是功能说明书，<br />也不是 Prompt 清单。</h2>
+            <p>{t03Content.course.positioning}课程先建立厂商无关的 Agent 能力模型，再让 Codex 与 Claude Code 交替承担完整主实验；另一工具通过变化输入的迁移挑战出现。</p>
+            <dl class="editorial-contract">
+              <div><dt>版本</dt><dd><code>{t03Content.course.version}</code></dd></div>
+              <div><dt>核心线</dt><dd>{t03Content.course.coreDuration}</dd></div>
+              <div><dt>进阶线</dt><dd>{t03Content.course.advancedDuration}</dd></div>
+            </dl>
+            <p class="article-aside">四个边界由同一 release tag 锁定：<code>site</code>、<code>labs</code>、<code>checker</code>、<code>docs</code>。页面上的“完成”必须回到本地证据。</p>
+          </section>
+
+          <section class="article-section map-article" id="map" aria-labelledby="map-title">
+            <p class="article-label">02 · 共同地图</p>
+            <h2 id="map-title">八层能力，沿一条线逐步加深。</h2>
+            <p>用同一公共练习仓库累积上下文，而不是每章更换无关联玩具。先理解关系，再打开产品表面。</p>
+            <div class="view-switch" role="tablist" aria-label="能力地图阅读方式">
+              <button type="button" role="tab" aria-selected="true" aria-controls="layers-view" data-view-target="layers-view">八层地图</button>
+              <button type="button" role="tab" aria-selected="false" aria-controls="evidence-view" data-view-target="evidence-view">对应证据</button>
+            </div>
+            <div class="reading-view" id="layers-view" role="tabpanel">
+              <ol class="layer-list">
+                {t03Content.capabilityLayers.map((layer) => (
+                  <li>
+                    <span class="layer-number">{layer.index}</span>
+                    <div><h3>{layer.title}</h3><p>{layer.description}</p></div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <div class="reading-view" id="evidence-view" role="tabpanel" hidden>
+              <ol class="evidence-list">
+                {t03Content.capabilityLayers.map((layer) => (
+                  <li><span class="layer-number">{layer.index}</span><p><strong>{layer.title}</strong>{layer.evidence}</p></li>
+                ))}
+              </ol>
+            </div>
+          </section>
+
+          <section class="article-section" id="lessons" aria-labelledby="lessons-title">
+            <p class="article-label">03 · Alpha 纵向切片</p>
+            <h2 id="lessons-title">从基线、循环、指令，到双工具迁移。</h2>
+            <ol class="lesson-flow">
+              {t03Content.lessons.map((lesson, index) => (
+                <li>
+                  <span class="flow-index">{String(index + 1).padStart(2, "0")}</span>
+                  <div><h3>{lesson.title}</h3><p>{lesson.question}</p><p class="flow-artifact"><strong>留下</strong>{lesson.artifact}</p></div>
+                  <span class="flow-platform">{lesson.platform}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          <section class="article-section tool-article" id="tools" aria-labelledby="tools-title">
+            <p class="article-label">04 · 工具适配层</p>
+            <h2 id="tools-title">相同能力，不同产品表面。</h2>
+            <div class="tool-columns">
+              <div class="tool-entry">
+                <p class="tool-overline">OpenAI</p>
+                <h3><a href={t03Products[0].officialUrl} target="_blank" rel="noreferrer">Codex ↗</a></h3>
+                <p>课程的主要 Coding Agent 实例之一。正式课节会在当天核验客户端、模型、账号与成本。</p>
+              </div>
+              <div class="tool-entry">
+                <img src={claudeLogo} alt="Claude Code 官方 logo" />
+                <p>另一条等权重的产品实践路径，承担主实验或变化输入的迁移挑战。</p>
+                <a href={t03Products[1].officialUrl} target="_blank" rel="noreferrer">查看官方文档 ↗</a>
+              </div>
+            </div>
+            <div class="ui-boundary" role="note">
+              <span class="ui-boundary-label">Interface asset boundary</span>
+              <p>官方 UI 截图待许可核准。本版不编造界面或数据，只保留真实产品 mark、官方链接和版本/权限待核验提示。</p>
+            </div>
+          </section>
+
+          <section class="article-section proof-article" id="proof" aria-labelledby="proof-title">
+            <p class="article-label">05 · 可核验成果</p>
+            <h2 id="proof-title">课程完成的单位，是一份可复查的证据。</h2>
+            <ul class="proof-list">
+              {t03Content.proofPoints.map((point) => <li>{point}</li>)}
+            </ul>
+            <aside class="risk-note">
+              <strong>风险与验证卡片</strong>
+              <p>每课说明账号、成本、权限、副作用、成功证据、预期失败、恢复方法、版本和来源；网站不把页面“已读”当作学习成果。</p>
+            </aside>
+          </section>
+        </article>
+      </section>
+
+      <section class="direction-summary" aria-labelledby="summary-title">
+        <p class="article-label">方向 B · 现实标杆迁移</p>
+        <h2 id="summary-title">Editorial Manual / 现实迁移</h2>
+        <p>参照当前官方产品文档的导航清晰度和出版物的长文节奏：sticky 目录、单栏正文、衬线标题、短段落与明确脚注。它最适合把课程做成“可读的工程手册”，但首页第一眼的戏剧性低于 Evidence Console。</p>
+        <a href={`${base}t03/`}>回到三版索引 →</a>
+      </section>
+    </main>
+
+    <footer class="editorial-footer">
+      <span>{t03Content.reviewNote}</span>
+      <a href="https://github.com/TiegenFang/agent-engineering-course/issues/4" target="_blank" rel="noreferrer">Issue #4 ↗</a>
+    </footer>
+
+    <script is:inline>
+      const viewButtons = [...document.querySelectorAll("[data-view-target]")];
+      const views = [...document.querySelectorAll(".reading-view")];
+      viewButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const target = button.dataset.viewTarget;
+          viewButtons.forEach((item) => item.setAttribute("aria-selected", String(item === button)));
+          views.forEach((view) => { view.hidden = view.id !== target; });
+        });
+      });
+    </script>
+
+    <style>
+      :global(*) { box-sizing: border-box; }
+      :global(html) { scroll-behavior: smooth; }
+      :global(body) { margin: 0; background: #f4efe7; color: #24231f; font-family: "Geist", "Noto Sans SC", "Microsoft YaHei", sans-serif; font-size: 17px; line-height: 1.8; font-synthesis: none; line-break: strict; }
+      :global(h1), :global(h2), :global(h3), :global(p) { text-wrap: pretty; }
+      :global(h1), :global(h2), :global(h3) { text-wrap: balance; }
+      :global(a) { color: inherit; }
+      .editorial-page { --ink: #24231f; --muted: #716a60; --paper: #f4efe7; --paper-deep: #e8dfd2; --rust: #b9573b; --line: #cfc5b7; }
+      .skip-link { position: fixed; left: 1rem; top: -5rem; z-index: 20; background: var(--ink); color: #fff; padding: 0.65rem 0.9rem; text-decoration: none; }
+      .skip-link:focus { top: 1rem; }
+      .editorial-header { width: min(1320px, calc(100% - 3rem)); display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-inline: auto; padding-block: 1.4rem; border-bottom: 1px solid var(--ink); }
+      .masthead { font-family: "Newsreader", Georgia, "Noto Serif SC", serif; font-size: 1.25rem; text-decoration: none; }
+      .header-meta { display: flex; gap: 1.2rem; color: var(--muted); font-family: "Geist Mono", "Cascadia Mono", monospace; font-size: 0.72rem; }
+      .header-meta a { color: var(--ink); text-underline-offset: 0.3em; }
+      .editorial-hero { width: min(1320px, calc(100% - 3rem)); margin-inline: auto; padding-block: clamp(4.5rem, 11vw, 9rem) clamp(3rem, 8vw, 7rem); }
+      .hero-kicker, .hero-footer { display: flex; justify-content: space-between; gap: 1rem; color: var(--rust); font-family: "Geist Mono", "Cascadia Mono", monospace; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
+      .editorial-hero h1 { max-width: 9ch; margin: 2rem 0 1.3rem; font-family: "Newsreader", Georgia, "Noto Serif SC", serif; font-size: clamp(4.6rem, 14vw, 13rem); font-weight: 450; letter-spacing: -0.08em; line-height: 0.82; }
+      .hero-dek { max-width: 40rem; margin: 0; color: var(--muted); font-size: clamp(1rem, 1.3vw, 1.2rem); }
+      .hero-rule { height: 1px; margin-block: 3.5rem 1rem; background: var(--ink); }
+      .hero-footer a { color: var(--ink); text-underline-offset: 0.35em; text-transform: none; }
+      .reading-layout { width: min(1320px, calc(100% - 3rem)); display: grid; grid-template-columns: minmax(180px, 0.35fr) minmax(0, 1fr); gap: clamp(2rem, 8vw, 9rem); margin-inline: auto; padding-block: 2rem 7rem; border-top: 1px solid var(--ink); }
+      .reading-rail { position: sticky; top: 1rem; align-self: start; padding-top: 1rem; }
+      .rail-label, .article-label, .tool-overline, .ui-boundary-label { margin: 0 0 1rem; color: var(--rust); font-family: "Geist Mono", "Cascadia Mono", monospace; font-size: 0.72rem; letter-spacing: 0.07em; text-transform: uppercase; }
+      .reading-rail nav { display: grid; gap: 0.45rem; }
+      .reading-rail nav a { font-family: "Newsreader", Georgia, serif; font-size: 1.15rem; text-decoration: none; text-underline-offset: 0.25em; }
+      .reading-rail nav a:hover, .reading-rail nav a:focus-visible { color: var(--rust); text-decoration: underline; }
+      .rail-note { max-width: 16ch; margin-top: 3rem; color: var(--muted); font-size: 0.8rem; line-height: 1.7; }
+      .reading-column { max-width: 760px; }
+      .article-section { padding-block: 4rem 5.5rem; border-bottom: 1px solid var(--line); }
+      .article-section h2 { margin: 0 0 1.5rem; font-family: "Newsreader", Georgia, "Noto Serif SC", serif; font-size: clamp(2.35rem, 5vw, 4.4rem); font-weight: 500; letter-spacing: -0.055em; line-height: 1.08; }
+      .article-section > p:not(.article-label), .article-aside { max-width: 36em; color: var(--muted); }
+      .editorial-contract { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 2.2rem 0; padding-block: 1rem; border-block: 1px solid var(--ink); }
+      .editorial-contract dt { color: var(--muted); font-size: 0.78rem; }
+      .editorial-contract dd { margin: 0.25rem 0 0; font-family: "Newsreader", Georgia, serif; font-size: 1.3rem; }
+      .article-aside { margin-top: 2rem; padding-inline-start: 1rem; border-inline-start: 2px solid var(--rust); font-size: 0.9rem; }
+      code { font-family: "Geist Mono", "Cascadia Mono", monospace; font-size: 0.86em; }
+      .view-switch { display: flex; gap: 1.5rem; margin-block: 2rem 1rem; border-bottom: 1px solid var(--ink); }
+      .view-switch button { min-height: 44px; border: 0; border-bottom: 2px solid transparent; padding: 0.55rem 0; background: transparent; color: var(--muted); font: inherit; cursor: pointer; }
+      .view-switch button[aria-selected="true"] { border-color: var(--rust); color: var(--ink); font-weight: 700; }
+      .layer-list, .evidence-list, .lesson-flow, .proof-list { margin: 0; padding: 0; list-style: none; }
+      .layer-list li, .evidence-list li { display: grid; grid-template-columns: 3rem 1fr; gap: 1rem; padding-block: 1.1rem; border-bottom: 1px solid var(--line); }
+      .layer-number, .flow-index { color: var(--rust); font-family: "Geist Mono", monospace; font-size: 0.78rem; }
+      .layer-list h3 { margin: 0; font-family: "Newsreader", Georgia, serif; font-size: 1.45rem; font-weight: 600; }
+      .layer-list p, .evidence-list p { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.92rem; }
+      .evidence-list strong { display: block; color: var(--ink); font-family: "Newsreader", Georgia, serif; font-size: 1.25rem; font-weight: 600; }
+      .lesson-flow { border-top: 1px solid var(--ink); }
+      .lesson-flow li { display: grid; grid-template-columns: 3rem minmax(0, 1fr) 6rem; gap: 1rem; padding-block: 1.25rem; border-bottom: 1px solid var(--line); }
+      .lesson-flow h3 { margin: 0; font-family: "Newsreader", Georgia, serif; font-size: 1.45rem; font-weight: 600; }
+      .lesson-flow p { margin: 0.3rem 0 0; color: var(--muted); font-size: 0.92rem; }
+      .lesson-flow .flow-artifact { margin-top: 0.8rem; font-size: 0.82rem; }
+      .flow-artifact strong { margin-right: 0.4rem; color: var(--rust); font-family: "Geist Mono", monospace; font-size: 0.7rem; text-transform: uppercase; }
+      .flow-platform { justify-self: end; color: var(--muted); font-size: 0.72rem; text-align: right; }
+      .tool-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem; border-block: 1px solid var(--ink); }
+      .tool-entry { min-height: 14rem; padding-block: 1.5rem; }
+      .tool-entry + .tool-entry { padding-inline-start: 2rem; border-inline-start: 1px solid var(--line); }
+      .tool-entry h3 { margin: 0; font-family: "Newsreader", Georgia, serif; font-size: 2.1rem; }
+      .tool-entry h3 a { text-underline-offset: 0.2em; }
+      .tool-entry h3 a:hover, .tool-entry h3 a:focus-visible { color: var(--rust); }
+      .tool-entry p:not(.tool-overline) { max-width: 25em; color: var(--muted); font-size: 0.9rem; }
+      .tool-entry img { width: min(100%, 280px); height: auto; margin-block: 0.2rem 0.55rem; }
+      .tool-entry a:not(h3 a) { font-size: 0.85rem; text-underline-offset: 0.25em; }
+      .ui-boundary { margin-top: 2rem; padding: 1rem 1.2rem; border: 1px dashed var(--rust); }
+      .ui-boundary-label { margin-bottom: 0.4rem; }
+      .ui-boundary p { margin: 0; color: var(--muted); font-size: 0.82rem; }
+      .proof-list { border-top: 1px solid var(--ink); }
+      .proof-list li { padding-block: 1rem; border-bottom: 1px solid var(--line); }
+      .risk-note { margin-top: 2rem; padding: 1.2rem; background: var(--paper-deep); }
+      .risk-note strong { color: var(--rust); font-family: "Geist Mono", monospace; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
+      .risk-note p { margin: 0.55rem 0 0; color: var(--muted); font-size: 0.88rem; }
+      .direction-summary { width: min(980px, calc(100% - 3rem)); margin-inline: auto; padding-block: 5rem 6rem; }
+      .direction-summary h2 { max-width: 12ch; margin: 0; font-family: "Newsreader", Georgia, serif; font-size: clamp(2.6rem, 6vw, 5rem); font-weight: 500; letter-spacing: -0.06em; line-height: 1; }
+      .direction-summary p:not(.article-label) { max-width: 42em; color: var(--muted); }
+      .direction-summary a { text-underline-offset: 0.3em; }
+      .editorial-footer { width: min(1320px, calc(100% - 3rem)); display: flex; justify-content: space-between; gap: 1rem; margin-inline: auto; padding-block: 1.5rem 3rem; border-top: 1px solid var(--ink); color: var(--muted); font-size: 0.76rem; }
+      .editorial-footer a { color: var(--ink); }
+      :global(:focus-visible) { outline: 3px solid #db971c; outline-offset: 3px; }
+      @media (max-width: 800px) {
+        :global(body) { font-size: 16px; }
+        .editorial-header, .editorial-hero, .reading-layout, .editorial-footer { width: min(100% - 2rem, 1320px); }
+        .header-meta { gap: 0.6rem; font-size: 0.66rem; }
+        .editorial-hero { padding-block: 4rem 3.5rem; }
+        .hero-kicker, .hero-footer { display: block; font-size: 0.65rem; }
+        .hero-kicker span, .hero-footer span, .hero-footer a { display: block; margin-bottom: 0.35rem; }
+        .editorial-hero h1 { font-size: clamp(4rem, 20vw, 7rem); }
+        .reading-layout { display: block; padding-top: 0; }
+        .reading-rail { position: static; padding-block: 1.2rem 0.5rem; border-bottom: 1px solid var(--line); }
+        .reading-rail nav { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 0.8rem; }
+        .reading-rail nav a { flex: 0 0 auto; font-size: 1rem; }
+        .rail-note { display: none; }
+        .article-section { padding-block: 3.5rem 4rem; }
+        .article-section h2 { font-size: clamp(2.25rem, 10vw, 3.6rem); }
+        .editorial-contract { grid-template-columns: 1fr; gap: 0.7rem; }
+        .lesson-flow li { grid-template-columns: 2.2rem minmax(0, 1fr); gap: 0.7rem; }
+        .flow-platform { grid-column: 2; justify-self: start; text-align: left; }
+        .tool-columns { display: block; }
+        .tool-entry { min-height: auto; padding-block: 1.2rem; }
+        .tool-entry + .tool-entry { padding-inline-start: 0; border-inline-start: 0; border-top: 1px solid var(--line); }
+        .direction-summary, .editorial-footer { width: min(100% - 2rem, 980px); }
+        .editorial-footer { display: block; }
+        .editorial-footer a { display: inline-block; margin-top: 0.7rem; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        :global(html) { scroll-behavior: auto; }
+        :global(*), :global(*::before), :global(*::after) { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+      }
+    </style>
+  </body>
+</html>
