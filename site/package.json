@@ -1,6 +1,5 @@
 {
   "name": "@agent-engineering-course/site",
-  "version": "0.1.0-foundation",
   "private": true,
   "type": "module",
   "scripts": {

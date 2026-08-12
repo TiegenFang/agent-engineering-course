@@ -13,6 +13,46 @@
       "copied_assets": false
     },
     {
+      "id": "astro-package",
+      "title": "Astro",
+      "url": "https://www.npmjs.com/package/astro",
+      "source_role": "build-dependency",
+      "pinned_version": "7.2.1",
+      "usage": "课程网站的静态站点构建与内容路由",
+      "license_or_terms": "MIT",
+      "copied_assets": false
+    },
+    {
+      "id": "starlight-package",
+      "title": "@astrojs/starlight",
+      "url": "https://www.npmjs.com/package/@astrojs/starlight",
+      "source_role": "build-dependency",
+      "pinned_version": "0.41.7",
+      "usage": "课程文档站主题、导航与页面布局",
+      "license_or_terms": "MIT",
+      "copied_assets": false
+    },
+    {
+      "id": "astro-check-package",
+      "title": "@astrojs/check",
+      "url": "https://www.npmjs.com/package/@astrojs/check",
+      "source_role": "development-dependency",
+      "pinned_version": "0.9.10",
+      "usage": "课程网站的 Astro 与 TypeScript 静态检查",
+      "license_or_terms": "MIT",
+      "copied_assets": false
+    },
+    {
+      "id": "typescript-package",
+      "title": "TypeScript",
+      "url": "https://www.npmjs.com/package/typescript",
+      "source_role": "development-dependency",
+      "pinned_version": "6.0.3",
+      "usage": "课程网站配置与组件的类型检查",
+      "license_or_terms": "Apache-2.0",
+      "copied_assets": false
+    },
+    {
       "id": "course-source-landscape",
       "title": "AI Agent 网页课程资料源版图",
       "url": "docs/research/agent-course-source-landscape.md",
@@ -24,4 +64,3 @@
     }
   ]
 }
-
