@@ -4,7 +4,7 @@
 
 ## Current state
 
-- 当前处于规划完成、实现尚未开始的阶段。
+- 当前处于 Foundation 实施阶段；每次只推进依赖前沿中已经解除阻塞的 ticket。
 - v1 总规格是 GitHub [Issue #1](https://github.com/TiegenFang/agent-engineering-course/issues/1)，状态为 `ready-for-agent`。
 - 实施顺序固定为 Foundation、Alpha 纵向切片、Core Beta、v1。没有更小的已确认 ticket 时，从 Foundation 开始，不直接批量制作全部 13 个模块。
 - 当前工作区可能尚未连接 Git remote；GitHub 操作在此之前显式使用 `--repo TiegenFang/agent-engineering-course`。

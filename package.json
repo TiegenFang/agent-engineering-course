@@ -1,0 +1,18 @@
+{
+  "name": "agent-engineering-course",
+  "version": "0.1.0-foundation",
+  "private": true,
+  "workspaces": [
+    "site"
+  ],
+  "scripts": {
+    "check": "npm run check --workspace @agent-engineering-course/site",
+    "build": "npm run build --workspace @agent-engineering-course/site",
+    "test:site": "npm run test --workspace @agent-engineering-course/site",
+    "test:python": "python -m unittest discover -s checker/tests -v",
+    "verify": "npm run test:python && npm run check && npm run build && npm run test:site"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  }
+}

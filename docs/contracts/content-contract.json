@@ -1,0 +1,51 @@
+{
+  "contract_version": "1",
+  "lessons": [
+    {
+      "id": "t01-foundation",
+      "title": "版本化课程基础",
+      "stage": "foundation",
+      "duration_minutes": 10,
+      "prerequisites": [],
+      "outcomes": [
+        "识别课程工作区的四个产品边界",
+        "确认网站、练习、检查器和内容属于同一课程版本"
+      ],
+      "artifacts": [
+        "可构建课程首页",
+        "Foundation 合同验证结果"
+      ],
+      "primary_tool": "none",
+      "migration_tool": "none",
+      "platforms": {
+        "primary": "Windows 11 + PowerShell 7",
+        "secondary": []
+      },
+      "versions": {
+        "client": "not-applicable",
+        "sdk": "not-applicable",
+        "model": "not-applicable",
+        "protocol": "not-applicable"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free",
+        "network": "安装网站依赖时需要"
+      },
+      "risk": {
+        "permissions": "只读课程内容；本地构建会创建依赖和构建缓存",
+        "side_effects": "不会调用模型、API 或外部 Agent",
+        "staleness": "网站依赖版本会变化，发布时必须重新核验"
+      },
+      "sources": [
+        "starlight-manual-setup"
+      ],
+      "licenses": [
+        "CC-BY-4.0",
+        "MIT"
+      ]
+    }
+  ]
+}
+

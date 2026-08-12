@@ -1,0 +1,42 @@
+---
+title: Agent 工程入门
+description: 从 Codex 与 Claude Code，到 Memory、Skills、MCP 与 API 实战
+template: splash
+hero:
+  tagline: 用真实仓库、可恢复故障和验证证据，建立可以迁移的 Agent 工程能力。
+  actions:
+    - text: 阅读课程规划
+      link: https://github.com/TiegenFang/agent-engineering-course/blob/main/docs/course-plan.md
+      icon: right-arrow
+    - text: 查看 v1 规格
+      link: https://github.com/TiegenFang/agent-engineering-course/issues/1
+      variant: minimal
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import ContractSummary from '../../components/ContractSummary.astro';
+
+<ContractSummary />
+
+## 课程首先解决什么
+
+<CardGrid>
+  <Card title="理解 Agent，而不是背功能" icon="open-book">
+    从模型、指令、上下文和工具开始，逐步理解 Memory、Skill、Plugin、MCP 与最小 API Agent loop。
+  </Card>
+  <Card title="Codex 与 Claude Code 交替主讲" icon="seti:shell">
+    一个工具完成主实验，另一个工具承担变化输入的迁移挑战；共同能力和产品差异分别说明。
+  </Card>
+  <Card title="每课留下验证证据" icon="approve-check-circle">
+    学习成果由文件、配置、测试、运行记录或提交证明，而不是只记录“页面已读”。
+  </Card>
+  <Card title="Windows 主路径" icon="laptop">
+    正式实验以 Windows 11 与 PowerShell 7 为主，macOS 与 Linux 差异单独标注和复核。
+  </Card>
+</CardGrid>
+
+## 当前 Foundation 边界
+
+这一版本只建立课程站、工作区契约、来源账本、许可和自动验证。设备遥测练习、匿名学习记录以及各模块正文会沿已批准 tickets 逐个进入后续版本。
+

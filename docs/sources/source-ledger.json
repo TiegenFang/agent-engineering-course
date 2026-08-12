@@ -1,0 +1,27 @@
+{
+  "ledger_version": "1",
+  "verified_on": "2026-08-13",
+  "entries": [
+    {
+      "id": "starlight-manual-setup",
+      "title": "Starlight Manual Setup",
+      "url": "https://starlight.astro.build/manual-setup/",
+      "source_role": "fact-source",
+      "pinned_version": "astro@7.2.1; @astrojs/starlight@0.41.7",
+      "usage": "Foundation 静态课程站结构与内容集合配置",
+      "license_or_terms": "reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "course-source-landscape",
+      "title": "AI Agent 网页课程资料源版图",
+      "url": "docs/research/agent-course-source-landscape.md",
+      "source_role": "teaching-source-audit",
+      "pinned_version": "workspace baseline eca3a77",
+      "usage": "重点参考集的采用与排除边界",
+      "license_or_terms": "project-original",
+      "copied_assets": false
+    }
+  ]
+}
+

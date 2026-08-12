@@ -1,0 +1,23 @@
+{
+  "course_version": "0.1.0-foundation",
+  "released_on": "2026-08-13",
+  "course": {
+    "name": "Agent 工程入门",
+    "subtitle": "从 Codex 与 Claude Code，到 Memory、Skills、MCP 与 API 实战",
+    "positioning": "面向科研与企业团队中技术型初学者的中文 Agent 工程课程",
+    "core_duration": "20–24 小时",
+    "advanced_duration": "8–12 小时"
+  },
+  "boundaries": {
+    "site": "site",
+    "labs": "labs",
+    "checker": "checker",
+    "docs": "docs"
+  },
+  "contracts": {
+    "content": "docs/contracts/content-contract.json",
+    "lesson_schema": "docs/contracts/lesson.schema.json",
+    "sources": "docs/sources/source-ledger.json"
+  }
+}
+

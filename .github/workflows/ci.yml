@@ -1,0 +1,36 @@
+name: Course CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ASTRO_TELEMETRY_DISABLED: '1'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install site dependencies
+        run: npm ci
+      - name: Validate course contracts
+        run: npm run test:python
+      - name: Typecheck site
+        run: npm run check
+      - name: Build site
+        run: npm run build
+      - name: Verify public homepage contract
+        run: npm run test:site

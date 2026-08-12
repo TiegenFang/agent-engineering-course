@@ -1,0 +1,29 @@
+---
+import courseVersion from "../../../course-version.json";
+
+const boundaries = Object.entries(courseVersion.boundaries);
+---
+
+<section class="contract-summary" aria-labelledby="foundation-contract-title">
+  <p class="eyebrow">当前课程版本</p>
+  <h2 id="foundation-contract-title">{courseVersion.course.name}</h2>
+  <p>{courseVersion.course.positioning}</p>
+  <p class="version"><code>{courseVersion.course_version}</code></p>
+
+  <dl class="duration-grid">
+    <div>
+      <dt>核心课程</dt>
+      <dd>{courseVersion.course.core_duration}</dd>
+    </div>
+    <div>
+      <dt>进阶实战</dt>
+      <dd>{courseVersion.course.advanced_duration}</dd>
+    </div>
+  </dl>
+
+  <h3>同一版本锁定的工作区</h3>
+  <ul class="boundary-list">
+    {boundaries.map(([name, path]) => <li><code>{path}</code><span>{name}</span></li>)}
+  </ul>
+</section>
+
