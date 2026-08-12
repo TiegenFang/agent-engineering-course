@@ -9,6 +9,8 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+from .evidence import EvidenceError, build_evidence_document
+
 
 EXPECTED_BOUNDARIES = {
     "site": "site",
@@ -276,11 +278,82 @@ def validate_foundation(root: Path) -> str:
     return version
 
 
+def load_evidence_checks(
+    evidence_file: Path, *, expected_lesson_id: str
+) -> list[dict[str, Any]]:
+    """Read only public check states from a local evidence fixture.
+
+    Fixture details are intentionally discarded.  This lets a learner check a
+    local implementation while ensuring that the generated browser document
+    cannot accidentally contain a path, source excerpt, or raw data value.
+    """
+
+    try:
+        value = json.loads(evidence_file.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise EvidenceError(f"Evidence fixture not found: {evidence_file.name}") from exc
+    except json.JSONDecodeError as exc:
+        raise EvidenceError(f"Invalid evidence fixture JSON: {exc.msg}") from exc
+    if not isinstance(value, dict):
+        raise EvidenceError("Evidence fixture must be a JSON object")
+    fixture_lesson_id = value.get("lesson_id", expected_lesson_id)
+    if fixture_lesson_id != expected_lesson_id:
+        raise EvidenceError("Evidence fixture lesson_id does not match the requested lesson")
+    checks = value.get("checks")
+    if not isinstance(checks, list):
+        raise EvidenceError("Evidence fixture checks must be a list")
+    return checks
+
+
+def check_lesson(
+    root: Path,
+    lesson_id: str,
+    *,
+    evidence_file: Path | None = None,
+) -> dict[str, Any]:
+    """Run the first public lesson check and build its anonymous result."""
+
+    if lesson_id != "t01-foundation":
+        raise ContractError(f"Unsupported evidence lesson: {lesson_id}")
+    course_version = validate_foundation(root)
+    checks: list[dict[str, Any]] = [
+        {"id": "course-version-lock", "result": "passed"},
+        {"id": "foundation-contract", "result": "passed"},
+    ]
+    if evidence_file is not None:
+        checks = load_evidence_checks(evidence_file, expected_lesson_id=lesson_id)
+    return build_evidence_document(
+        course_version=course_version,
+        lesson_id=lesson_id,
+        checks=checks,
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="course_check")
     subparsers = parser.add_subparsers(dest="command", required=True)
     validate = subparsers.add_parser("validate", help="validate course contracts")
     validate.add_argument("--root", type=Path, required=True)
+    check = subparsers.add_parser(
+        "check", help="check a lesson and emit an anonymous evidence document"
+    )
+    check.add_argument("lesson_id")
+    check.add_argument("--root", type=Path, required=True)
+    check.add_argument(
+        "--evidence-file",
+        type=Path,
+        help="optional local fixture containing lesson_id and check result states",
+    )
+    check.add_argument(
+        "--output",
+        type=Path,
+        help="write the anonymous evidence JSON to this path",
+    )
+    check.add_argument(
+        "--json",
+        action="store_true",
+        help="print the anonymous evidence JSON instead of only a human summary",
+    )
     return parser
 
 
@@ -294,6 +367,29 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(f"Foundation validation passed: {version}")
         return 0
+    if args.command == "check":
+        try:
+            document = check_lesson(
+                args.root.resolve(),
+                args.lesson_id,
+                evidence_file=args.evidence_file.resolve()
+                if args.evidence_file is not None
+                else None,
+            )
+            encoded = json.dumps(document, ensure_ascii=False, indent=2) + "\n"
+            if args.output is not None:
+                args.output.resolve().write_text(encoded, encoding="utf-8")
+            if args.json:
+                print(encoded, end="")
+            else:
+                print(
+                    f"Evidence check {document['result']}: "
+                    f"{document['lesson_id']} ({document['course_version']})"
+                )
+            return 0
+        except (ContractError, EvidenceError, OSError) as exc:
+            print(f"Evidence check failed: {exc}", file=sys.stderr)
+            return 1
     return 2
 
 
