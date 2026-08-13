@@ -1,0 +1,115 @@
+---
+title: 模块 12C：双轨结课集成
+description: 将公共练习仓库、核心能力证据与科研或企业交付视角连接成一份可复核的结课组合。
+sidebar:
+  order: 15
+---
+
+import CapstoneIntegrationLab from "../../components/CapstoneIntegrationLab.astro";
+import EvidenceLoop from "../../components/EvidenceLoop.astro";
+
+# 模块 12C：双轨结课集成
+
+> 结课不是把页面进度条填满，而是把已经完成的能力、选定的场景和可复核的交付放到同一份证据合同中。本课只提供离线集成接缝，不替学员执行真实 Codex、Claude Code、GitHub Issue/PR、API 或 MCP 操作。
+
+## 真实问题：能力怎样变成可交付结果？
+
+前面的课节分别练习了 Context、Memory、Skill、MCP、最小 Agent loop、API 适配和生产评测。结课时容易出现三种断裂：公共能力没有链接到最终交付；科研与企业轨道各自发明一套评价语言；成功只剩一段自然语言而没有恢复、版本和隐私证据。
+
+T25 用同一份公共练习主题和共同评分维度连接两条双场景轨道：
+
+| 选择 | 交付视角 | 必须留下的本地证据 |
+| --- | --- | --- |
+| 科研结课轨道 | 可复现研究工作流 | 数据检查、分析、图表、实验记录、报告与迁移说明 |
+| 企业结课轨道 | Issue-to-PR 工程工作流 | Issue 澄清、计划、实现、测试、评审与交付说明 |
+
+轨道不同，但问题定义、上下文质量、操作安全、验证证据、可复现性、迁移能力和交付清晰度保持一致。
+
+## 心智模型：集成是证据映射
+
+```text
+公共能力证据（Context / Memory / Skill / MCP / API）
+                    │
+                    ▼
+             共同 rubric 与版本锁定
+                │             │
+                ▼             ▼
+       科研结课轨道       企业结课轨道
+      可复现研究交付      Issue-to-PR 交付
+                \             /
+                 ▼           ▼
+              匿名 evidence + 人工交付审阅
+```
+
+集成不意味着把两条轨道强行做成同一份答案，也不意味着检查器替代人工评审。检查器验证公开状态和证据关联；脚本、报告、Issue、PR、图表和实验记录仍留在学员本地，并由人审阅。
+
+## 操作前预测
+
+1. 如果前置核心 evidence 缺失，结课集成应该继续显示通过，还是保留 `partial`？为什么？
+2. 如果 MCP/工具的副作用尚未确认，企业轨道中的“实现完成”能否抵消安全失败？
+3. 科研报告和企业交付说明的文件不同，为什么仍可以共享同一套评价维度？
+4. 为什么“本地夹具通过”不能证明真实 Codex/Claude Code 或 GitHub Issue/PR 已执行？
+
+## 主工具演示：离线组合检查
+
+<CapstoneIntegrationLab />
+
+<EvidenceLoop lessonId="t25-capstone-integration" />
+
+实验中的四种状态用于练习证据判断：安全默认 `none`、前置证据缺失 `missing-core`、副作用边界未确认 `unsafe-side-effect`、交付不完整 `incomplete-delivery`。任何故障都应先保留失败证据，再恢复后重跑；不要手改 JSON 顶层 `result`。
+
+## 本地实验：在 Windows 11 + PowerShell 7 中导出组合
+
+```powershell
+$out = Join-Path ([System.IO.Path]::GetTempPath()) 't25-capstone-integration'
+& .\labs\capstone-integration\run-integration.ps1 `
+  -OutputPath $out `
+  -Track enterprise
+Get-ChildItem -LiteralPath $out
+python -m course_check check t25-capstone-integration --root . `
+  --evidence-file (Join-Path $out 't25-capstone-integration-evidence.json') --json
+```
+
+再用 `-Track research` 运行一次变化输入。用 `-Fault unsafe-side-effect` 或 `-Fault incomplete-delivery` 观察 `partial`，然后为恢复输出选择一个新的临时目录。脚本只写入显式指定的新目录，使用标准库和合成状态。
+
+## 故障注入与恢复
+
+- `missing-core`：回到先修课节，补齐 Context/Memory 与核心 evidence，再重新建立组合；
+- `unsafe-side-effect`：停止写出，记录人工确认点和最小权限，确认边界后再重跑；
+- `incomplete-delivery`：补齐所选轨道的交付材料、验证记录和迁移说明，不以页面状态替代文件证据。
+
+恢复的结束条件是 checker 从实验字段重新推导出所有 check 为 `passed`，而不是自然语言声称“已经完成”。
+
+## 迁移挑战：换轨道，不换能力目标
+
+先完成一个轨道，再把同一问题、共同 rubric、版本和隐私边界迁移到另一轨道：
+
+1. 保持问题范围、非目标、停止条件和 Context 不变；
+2. 说明哪些 Memory 条目可复用、owner/lifetime 是否需要更新；
+3. 说明 Skill 和 MCP 的权限边界如何随交付视角变化；
+4. 以另一轨道的文件/提交/测试/报告形式留下可核验证据；
+5. 如果使用 Codex 或 Claude Code，另行记录客户端、日期、权限、成本和未执行路径，不把离线夹具结果冒充真实调用。
+
+## 可核验成果
+
+- `t25-capstone-integration-evidence.json` 匿名 evidence；
+- `integration-checklist.json`、`integration-record.json`、`portfolio.md` 和迁移记录；
+- 选择科研或企业轨道的理由及共同 rubric 对照；
+- 至少一次故障、恢复和变化轨道记录；
+- 真实客户端/API/MCP/Issue-to-PR 若未执行，明确写 `not-verified` 并说明替代证据能证明什么、不能证明什么。
+
+检查器只接受固定枚举、布尔状态和版本，不接收源码、路径、Issue 正文、prompt、工具 payload、密钥、token、原始设备数据或隐藏推理：
+
+```powershell
+python -m course_check check t25-capstone-integration --root . `
+  --evidence-file (Join-Path $out 't25-capstone-integration-evidence.json') --json
+```
+
+## 风险、版本与来源卡片
+
+- **账号与成本**：页面、离线 runner 和 checker 免费；可选 Codex/Claude Code、GitHub、OpenAI/Anthropic 或真实 MCP 验证按各自账号、权限和预算单独批准。
+- **权限与副作用**：离线实验不联网、不读取凭据、不运行工具；真实 Issue/PR、写文件、发布和通知必须人工确认并保留恢复办法。
+- **隐私**：只提交匿名聚合状态；不要把真实研究数据、企业文本、个人信息、API key、绝对路径或原始 prompt 写入 evidence。
+- **版本**：`telemetry-capstone-integration-v1`、evidence v1、课程版本 `0.1.0-alpha`；真实工具适配层需在执行当天复核。
+- **验证边界**：本课验证页面夹具、Python runner、checker 和 Node 测试；不声称真实 Coding Agent、API、远端 MCP、GitHub Issue/PR 或生产现场已通过。
+- **来源**：本页和 lab 为课程原创；T23 科研轨道、T24 企业轨道（如已完成）与 T29 生产评测提供能力/评价边界，第三方资产不直接复制。来源账本记录课程事实与许可证。

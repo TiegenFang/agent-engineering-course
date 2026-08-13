@@ -1,0 +1,66 @@
+---
+title: 模块 12C：科研进阶 API 结课
+description: 用一个受预算约束的 API Agent 步骤完成合成遥测摘要，并留下可验证的离线与现场边界证据。
+sidebar:
+  order: 15
+---
+
+import ResearchApiCapstoneLab from '../../components/ResearchApiCapstoneLab.astro';
+
+# 模块 12C：科研进阶 API 结课
+
+> 这条进阶轨道只接管一个边界明确的研究步骤：把合成设备遥测快照整理为结构化状态摘要。它不是让 API 代替研究者，也不是把整份报告交给模型。
+
+## 真实问题：如何让一次 API Agent 步骤可回退、可评测、可停止？
+
+前面的 T23 已经建立了可复现的科研工作流；本课只把其中一个小步骤接到 API 控制流上。学员要能观察请求、工具调用、结果回填、结构化输出、工具失败恢复和预算停止，并明确哪些事情仍由应用 harness 所有。
+
+## 心智模型与操作前预测
+
+```text
+合成输入 → 一次有界请求 → 可选工具调用 → 状态回填 → 结构化摘要
+                 └──────────── 应用拥有 loop、预算和停止条件
+```
+
+操作前先回答：
+
+1. 工具返回失败时，应用应重试到什么边界，什么时候转为安全默认？
+2. 为什么“模型返回了 JSON”仍然不等于研究步骤通过？
+3. 达到请求或费用预算时，为什么必须停止而不是修改 evidence？
+4. live path 需要哪些人工确认，才能避免把真实研究数据上传出去？
+
+<ResearchApiCapstoneLab />
+
+## 本地实验：离线夹具先于 API
+
+```powershell
+$out = Join-Path ([System.IO.Path]::GetTempPath()) 't30-research-api-capstone'
+python .\labs\research-api-capstone\run_fixture.py --output $out --variant pressure-night
+python -m course_check check t30-research-api-capstone --root . --evidence-file (Join-Path $out 't30-research-api-evidence.json') --json
+```
+
+夹具固定包含三种观察：`offline-success`、`tool-failure-recovered` 和 `budget-stop`。运行 `temperature-daily` 可回看基线输入，但不改变步骤的验收目标。checker 会从实验字段重新推导证据，拒绝手写的 live 通过状态。
+
+## 受预算现场路径：只是一条待批准 seam
+
+`t30-live-smoke-plan.json` 记录了现场路径的上限：最多 2 次请求、96 output tokens、教学预算 `$0.01`，且必须在请求前人工确认 provider、SDK、模型、凭据来源和合成输入。当前课程版本的夹具标记为 `not-run`；没有真实 API 调用就不能宣称现场通过。
+
+如果维护者批准现场 smoke，另存匿名元数据：客户端/SDK、模型、日期、实际费用、请求数、失败类别和限制。不要记录 key、prompt、content blocks、tool payload、原始遥测、个人信息或绝对路径。超预算、未批准或出现敏感数据时立即停止并恢复到离线路径。
+
+## 故障注入、恢复与迁移挑战
+
+- 工具失败：保留失败原因枚举，使用安全默认，重新验证结构化摘要；不要吞掉错误。
+- 预算停止：检查 `budget-stop` 证据，确保 loop 没有隐式追加请求。
+- 迁移：把 `pressure-night` 换回 `temperature-daily`，保持步骤和 rubric 不变，只改变输入契约。
+- Codex / Claude Code：可以审阅计划、字段和恢复记录；它们不是本实验的 API 调用证据。
+
+## 可核验成果与边界
+
+成果是离线 evidence、三类 case 的状态摘要、live smoke 计划和一份不含敏感数据的边界记录。页面阅读状态不算完成；真实 API、真实研究数据和生产部署均未由本课验证。
+
+## 风险、版本与来源卡片
+
+- **账号与成本**：离线路径免费；现场路径需要经批准的 provider 账号/额度，预算上限为教学计划，不等同于供应商报价。
+- **权限与副作用**：默认不读 key、不联网、不执行工具；任何现场调用需人工确认且仅使用合成输入。
+- **版本**：`t30-research-api-capstone` fixture v1、evidence v1、`status-summary-v1`，核验日期 2026-08-13。
+- **来源**：本课 adapter、夹具、页面、组件、checker 和测试为课程原创；T23/T26/T27/T28/T29 只提供前置能力边界，官方 API 文档只作当天事实核验。

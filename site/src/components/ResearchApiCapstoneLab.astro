@@ -1,0 +1,88 @@
+---
+import courseVersion from "../../../course-version.json";
+---
+
+<section class="research-api-lab" data-research-api-lab data-course-version={courseVersion.course_version} aria-labelledby="research-api-title">
+  <div class="research-api-lab__heading">
+    <div>
+      <p class="eyebrow">离线 API seam / 现场需批准</p>
+      <h2 id="research-api-title">科研步骤 API 实验台</h2>
+    </div>
+    <span class="research-api-lab__badge">10 checks</span>
+  </div>
+  <p>只练一个合成遥测摘要步骤：观察成功、工具失败恢复和预算停止。浏览器不会调用模型、读取 key 或上传数据。</p>
+  <div class="research-api-lab__controls">
+    <label>变化输入
+      <select data-research-api-input>
+        <option value="pressure-night">夜班压力（迁移）</option>
+        <option value="temperature-daily">日间温度（基线）</option>
+      </select>
+    </label>
+    <button type="button" data-research-api-run>运行离线步骤</button>
+    <button type="button" data-research-api-export disabled>导出匿名证据</button>
+  </div>
+  <p data-research-api-status role="status" aria-live="polite">尚未运行；live API 未调用。</p>
+  <div data-research-api-output hidden>
+    <dl class="research-api-lab__metrics">
+      <div><dt>证据</dt><dd data-research-api-summary>—</dd></div>
+      <div><dt>研究步骤</dt><dd>一个摘要步骤</dd></div>
+      <div><dt>请求上限</dt><dd>2 次</dd></div>
+      <div><dt>live</dt><dd>not-run</dd></div>
+    </dl>
+    <ul data-research-api-checks class="research-api-lab__checks"></ul>
+  </div>
+  <noscript><p>未启用 JavaScript 时，请运行本页 PowerShell 命令；浏览器状态不等于结课证据。</p></noscript>
+</section>
+
+<script>
+  import { buildResearchApiEvidence, buildResearchApiRun, summarizeResearchApiRun } from "../lib/research-api-capstone.mjs";
+
+  const root = document.querySelector("[data-research-api-lab]");
+  if (root instanceof HTMLElement) {
+    const input = root.querySelector("[data-research-api-input]");
+    const runButton = root.querySelector("[data-research-api-run]");
+    const exportButton = root.querySelector("[data-research-api-export]");
+    const output = root.querySelector("[data-research-api-output]");
+    const status = root.querySelector("[data-research-api-status]");
+    let evidence;
+    runButton?.addEventListener("click", () => {
+      const variant = input instanceof HTMLSelectElement ? input.value : "pressure-night";
+      const run = buildResearchApiRun(variant);
+      evidence = buildResearchApiEvidence(run, root.dataset.courseVersion ?? "");
+      const summary = summarizeResearchApiRun(run);
+      const summaryNode = root.querySelector("[data-research-api-summary]");
+      const checksNode = root.querySelector("[data-research-api-checks]");
+      if (summaryNode) summaryNode.textContent = summary.label;
+      if (checksNode) checksNode.innerHTML = run.checks.map((check) => `<li><code>${check.id}</code>：${check.result}</li>`).join("");
+      if (output instanceof HTMLElement) output.hidden = false;
+      if (exportButton instanceof HTMLButtonElement) exportButton.disabled = false;
+      if (status) status.textContent = `已完成 ${summary.result} 离线步骤；live API 未调用。`;
+      window.dispatchEvent(new CustomEvent("research-api:evidence", { detail: evidence }));
+    });
+    exportButton?.addEventListener("click", () => {
+      if (!evidence) return;
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(new Blob([JSON.stringify(evidence, null, 2)], { type: "application/json" }));
+      link.download = "t30-research-api-evidence.json";
+      link.click();
+      if (status) status.textContent = "已导出匿名证据；请继续用本地 course_check 验证。";
+    });
+  }
+</script>
+
+<style>
+  .research-api-lab { border: 1px solid var(--sl-color-gray-5, #b6c0c9); border-radius: 1rem; padding: 1.25rem; margin: 2rem 0; background: color-mix(in srgb, var(--sl-color-gray-7, #172027) 88%, #7fe7c4); }
+  .research-api-lab__heading, .research-api-lab__controls { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .research-api-lab__controls label { display: grid; gap: .35rem; }
+  .research-api-lab select, .research-api-lab button { min-height: 2.5rem; padding: .45rem .7rem; font: inherit; border-radius: .5rem; }
+  .research-api-lab button { cursor: pointer; background: var(--sl-color-accent, #7fe7c4); color: #0d1b1e; border: 0; font-weight: 700; }
+  .research-api-lab button:disabled { cursor: not-allowed; opacity: .55; }
+  .research-api-lab__badge { border: 1px solid currentColor; border-radius: 999px; padding: .25rem .6rem; font-size: .8rem; }
+  .research-api-lab__metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .75rem; margin: 1.25rem 0; }
+  .research-api-lab__metrics div { padding: .7rem; border-radius: .6rem; background: color-mix(in srgb, currentColor 8%, transparent); }
+  .research-api-lab__metrics dt { font-size: .8rem; opacity: .75; }
+  .research-api-lab__metrics dd { margin: .2rem 0 0; font-weight: 700; }
+  .research-api-lab__checks { columns: 2; column-gap: 2rem; }
+  @media (max-width: 600px) { .research-api-lab__checks { columns: 1; } }
+  @media (prefers-reduced-motion: reduce) { .research-api-lab *, .research-api-lab *::before, .research-api-lab *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>

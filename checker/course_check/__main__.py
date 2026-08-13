@@ -43,6 +43,23 @@ from .production import (
     validate_production_evidence_checks,
     validate_production_fixture,
 )
+from .research_api_capstone import (
+    RESEARCH_API_LESSON_ID,
+    load_research_api_checks,
+    package_result as research_api_package_result,
+)
+from .enterprise_api import (
+    ENTERPRISE_API_LESSON_ID,
+    load_enterprise_api_checks,
+)
+from .capstone_integration import (
+    CAPSTONE_INTEGRATION_LESSON_ID,
+    load_capstone_integration_checks,
+)
+from .enterprise_capstone import (
+    ENTERPRISE_CAPSTONE_LESSON_ID,
+    load_enterprise_capstone_checks,
+)
 from .skill import (
     SKILL_LESSON_ID,
     skill_package_result,
@@ -3497,6 +3514,11 @@ def load_evidence_checks(
             if checks != supplied_checks:
                 raise EvidenceError("T29 evidence checks do not match the evaluation")
             return checks, experiment
+        if expected_lesson_id == RESEARCH_API_LESSON_ID:
+            return load_research_api_checks(
+                evidence_file,
+                expected_course_version=expected_course_version,
+            )
         return document["evidence"], None
     if expected_lesson_id == MCP_DISCOVERY_LESSON_ID:
         return validate_mcp_discovery(value)
@@ -3610,6 +3632,11 @@ def load_evidence_checks(
         if supplied_checks != expected_checks:
             raise EvidenceError("T29 evidence checks do not match the evaluation")
         return supplied_checks, experiment
+    if expected_lesson_id == RESEARCH_API_LESSON_ID:
+        return load_research_api_checks(
+            evidence_file,
+            expected_course_version=expected_course_version,
+        )
     return checks, None
 
 
@@ -4054,7 +4081,11 @@ def check_lesson(
         RESEARCH_CAPSTONE_LESSON_ID,
         ANTHROPIC_MESSAGES_LESSON_ID,
         MULTI_AGENT_LESSON_ID,
+        RESEARCH_API_LESSON_ID,
         PRODUCTION_LESSON_ID,
+        CAPSTONE_INTEGRATION_LESSON_ID,
+        ENTERPRISE_API_LESSON_ID,
+        ENTERPRISE_CAPSTONE_LESSON_ID,
     }:
         raise ContractError(f"Unsupported evidence lesson: {lesson_id}")
     course_version = validate_foundation(root)
@@ -4484,6 +4515,144 @@ def check_lesson(
                 expected_lesson_id=lesson_id,
                 expected_course_version=course_version,
             )
+    elif lesson_id == ENTERPRISE_CAPSTONE_LESSON_ID:
+        if evidence_file is None:
+            checks = [
+                {
+                    "id": "enterprise-capstone-page",
+                    "result": "passed"
+                    if (root / "site/src/content/docs/module-12-enterprise-capstone.mdx").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "enterprise-capstone-lab",
+                    "result": "passed"
+                    if (root / "labs/enterprise-capstone/run_lab.py").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "enterprise-capstone-checker",
+                    "result": "passed"
+                    if (root / "checker/course_check/enterprise_capstone.py").is_file()
+                    and (root / "checker/tests/test_enterprise_capstone.py").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "enterprise-capstone-contract",
+                    "result": "passed"
+                    if (root / "labs/enterprise-capstone/README.md").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "enterprise-capstone-sources",
+                    "result": "passed"
+                    if (root / "docs/sources/source-ledger.json").is_file()
+                    else "failed",
+                },
+                {"id": "enterprise-capstone-evidence", "result": "failed"},
+            ]
+        else:
+            checks, trace = load_enterprise_capstone_checks(
+                evidence_file,
+                expected_course_version=course_version,
+            )
+    elif lesson_id == ENTERPRISE_API_LESSON_ID:
+        if evidence_file is None:
+            checks = [
+                {
+                    "id": "enterprise-api-page",
+                    "result": "passed"
+                    if (root / "site/src/content/docs/module-12-enterprise-api.mdx").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "enterprise-api-runner",
+                    "result": "passed"
+                    if (root / "labs/enterprise-api/run_fixture.py").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "enterprise-api-contract",
+                    "result": "passed"
+                    if (root / "labs/enterprise-api/README.md").is_file()
+                    and (root / "labs/enterprise-api/rubric.json").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "enterprise-api-checker",
+                    "result": "passed"
+                    if (root / "checker/tests/test_enterprise_api.py").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "enterprise-api-sources",
+                    "result": "passed"
+                    if (root / "docs/sources/source-ledger.json").is_file()
+                    else "failed",
+                },
+                {"id": "enterprise-api-evidence-executed", "result": "failed"},
+            ]
+        else:
+            checks, trace = load_enterprise_api_checks(
+                evidence_file,
+                expected_course_version=course_version,
+            )
+    elif lesson_id == CAPSTONE_INTEGRATION_LESSON_ID:
+        if evidence_file is None:
+            checks = [
+                {
+                    "id": "capstone-integration-page",
+                    "result": "passed"
+                    if (root / "site/src/content/docs/module-12-capstone-integration.mdx").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "capstone-integration-lab",
+                    "result": "passed"
+                    if (root / "labs/capstone-integration/run_lab.py").is_file()
+                    and (root / "labs/capstone-integration/run-integration.ps1").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "capstone-integration-checker",
+                    "result": "passed"
+                    if (root / "checker/course_check/capstone_integration.py").is_file()
+                    and (root / "checker/tests/test_capstone_integration.py").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "capstone-integration-contract",
+                    "result": "passed"
+                    if (root / "labs/capstone-integration/README.md").is_file()
+                    and (root / "labs/capstone-integration/fixtures/baseline.json").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "capstone-integration-sources",
+                    "result": "passed"
+                    if (root / "docs/sources/source-ledger.json").is_file()
+                    else "failed",
+                },
+                {"id": "capstone-integration-evidence", "result": "failed"},
+            ]
+        else:
+            checks, trace = load_capstone_integration_checks(
+                evidence_file,
+                expected_course_version=course_version,
+            )
+    elif lesson_id == RESEARCH_API_LESSON_ID:
+        package_check = research_api_package_result(root)
+        if evidence_file is None:
+            checks = [
+                {"id": "research-api-package", "result": package_check},
+                {"id": "research-api-evidence-executed", "result": "failed"},
+                {"id": "research-api-live-not-claimed", "result": "passed"},
+            ]
+        else:
+            checks, trace = load_research_api_checks(
+                evidence_file,
+                expected_course_version=course_version,
+            )
     elif lesson_id == RESEARCH_CAPSTONE_LESSON_ID:
         if evidence_file is None:
             checks = [
@@ -4782,9 +4951,13 @@ def check_lesson(
             document["experiment"] = trace
         elif lesson_id == HOOKS_TASKS_LESSON_ID:
             document["experiment"] = trace
+        elif lesson_id == RESEARCH_API_LESSON_ID:
+            document["experiment"] = trace
         elif lesson_id == PRODUCTION_LESSON_ID:
             document["evaluation"] = trace["evaluation"]
             document["logs"] = trace["logs"]
+        elif lesson_id == ENTERPRISE_API_LESSON_ID:
+            document["experiment"] = trace
         else:
             document["experiment"] = trace
     return document

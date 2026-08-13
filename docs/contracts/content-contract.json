@@ -1141,6 +1141,174 @@
         "anthropic-messages-evaluation-t29"
       ],
       "licenses": ["CC-BY-4.0", "MIT"]
+    },
+    {
+      "id": "t24-enterprise-capstone",
+      "title": "模块 12C：企业核心结课轨道",
+      "stage": "core-beta",
+      "duration_minutes": 120,
+      "prerequisites": ["t16-memory", "t17-skill", "t20-mcp-call"],
+      "outcomes": [
+        "围绕 Issue-to-PR 任务记录上下文、Memory、Skill 和 MCP 安全边界",
+        "在变化输入与故障注入后保留变更、测试、评审和交付证据",
+        "用公共 rubric 解释企业轨道的恢复结果与未验证边界"
+      ],
+      "artifacts": [
+        "企业 Issue-to-PR 离线实验记录",
+        "t24-enterprise-capstone evidence JSON（匿名）",
+        "变化输入和故障恢复说明"
+      ],
+      "primary_tool": "Python 标准库离线企业工作流实验 + course_check",
+      "migration_tool": "Codex 或 Claude Code（概念迁移挑战；不发起 live call）",
+      "platforms": {
+        "primary": "Windows 11 + PowerShell 7; desktop browser for the lab",
+        "secondary": ["macOS/Linux：仅概念迁移，未在本轮现场验收"]
+      },
+      "versions": {
+        "client": "课程离线 enterprise-capstone runner v1",
+        "sdk": "not-applicable; Python standard library only",
+        "model": "not-applicable; no model/API call",
+        "protocol": "agent-engineering-course/evidence v1; telemetry-report-issue-v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free for offline lab and checker; optional live tooling may need account/quota",
+        "network": "offline lab and checker need no network after dependencies are installed"
+      },
+      "risk": {
+        "permissions": "只读合成 Issue 状态；不写远程仓库、不发布、不读取凭据",
+        "side_effects": "只向学员显式指定的新目录写合成产物和匿名 evidence",
+        "staleness": "企业工具、权限与仓库策略发布前需按官方资料复核"
+      },
+      "sources": ["course-enterprise-capstone-original-t24"],
+      "licenses": ["CC-BY-4.0", "MIT"]
+    },
+    {
+      "id": "t25-capstone-integration",
+      "title": "模块 12D：科研/企业双轨结课集成",
+      "stage": "core-beta",
+      "duration_minutes": 90,
+      "prerequisites": ["t23-research-capstone", "t24-enterprise-capstone"],
+      "outcomes": [
+        "用同一公共证据契约比较科研轨道与企业轨道",
+        "记录版本锁定、隐私、Skill/MCP 边界、交付评审和变化输入迁移",
+        "在离线确定性夹具中识别缺失核心、危险副作用和不完整交付"
+      ],
+      "artifacts": [
+        "双轨集成 portfolio evidence JSON（匿名）",
+        "共同 rubric 与故障恢复记录",
+        "面向真实工具的未验证迁移清单"
+      ],
+      "primary_tool": "双轨离线集成实验 + course_check",
+      "migration_tool": "Codex 或 Claude Code（概念迁移挑战；无 live call）",
+      "platforms": {
+        "primary": "Windows 11 + PowerShell 7; desktop browser for the lab",
+        "secondary": ["macOS/Linux：概念迁移，未现场验收"]
+      },
+      "versions": {
+        "client": "capstone-integration runner v1",
+        "sdk": "not-applicable",
+        "model": "not-applicable; no model/API call",
+        "protocol": "agent-engineering-course/evidence v1; telemetry-capstone-integration-v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free for offline lab and checker",
+        "network": "offline lab and checker need no network after dependencies are installed"
+      },
+      "risk": {
+        "permissions": "只读合成轨道状态；不执行远程仓库写入或发布",
+        "side_effects": "仅写入显式新目录中的合成产物与匿名 evidence",
+        "staleness": "真实客户端、仓库权限与 API 行为必须单独现场复核"
+      },
+      "sources": ["course-capstone-integration-original-t25"],
+      "licenses": ["CC-BY-4.0", "MIT"]
+    },
+    {
+      "id": "t30-research-api-capstone",
+      "title": "模块 12E：科研进阶 API 结课",
+      "stage": "advanced",
+      "duration_minutes": 90,
+      "prerequisites": ["t23-research-capstone", "t26-offline-agent-loop"],
+      "outcomes": [
+        "把一次有界科研 API Agent 步骤接入最小 Agent loop 的注入边界",
+        "观察工具回填、结构化输出、预算停止和故障恢复",
+        "明确 live API 需要凭据、人工批准和预算，离线证据不得冒充现场结果"
+      ],
+      "artifacts": [
+        "科研 API 离线 adapter 与三条固定情形",
+        "t30-research-api evidence JSON（匿名）",
+        "预算化 live seam 的 not-run 说明"
+      ],
+      "primary_tool": "provider-neutral research API offline fixture",
+      "migration_tool": "OpenAI Responses 或 Anthropic Messages（需单独批准的 live seam）",
+      "platforms": {
+        "primary": "Windows 11 + PowerShell 7; Python and desktop browser",
+        "secondary": ["macOS/Linux：概念迁移，未现场验收"]
+      },
+      "versions": {
+        "client": "research-api-capstone runner v1",
+        "sdk": "provider SDK not invoked; adapter is offline",
+        "model": "not-selected; no live model call",
+        "protocol": "agent-engineering-course/evidence v1; research-api-capstone v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free for offline lab; optional live path is budgeted and may incur cost",
+        "network": "offline fixture and checker need no network"
+      },
+      "risk": {
+        "permissions": "默认不读取凭据、不发送请求、不接触真实研究数据",
+        "side_effects": "只写入显式新路径中的合成 evidence；live 请求需人工确认",
+        "staleness": "API 字段、模型、价格和限流发布前必须重新核验"
+      },
+      "sources": ["course-research-api-capstone-original-t30"],
+      "licenses": ["CC-BY-4.0", "MIT"]
+    },
+    {
+      "id": "t31-enterprise-api",
+      "title": "模块 12F：企业进阶 API 结课",
+      "stage": "advanced",
+      "duration_minutes": 90,
+      "prerequisites": ["t24-enterprise-capstone", "t25-capstone-integration", "t30-research-api-capstone"],
+      "outcomes": [
+        "在 Issue-to-PR 流程中委派一个有界 draft-validation-plan 子步骤",
+        "用人工审批、预算门禁、结构化输出和一次有界恢复保护高影响动作",
+        "输出脱敏的企业 API 证据并拒绝 merge、push、publish 等副作用"
+      ],
+      "artifacts": [
+        "企业 API 离线 fixture 与 rubric",
+        "t31-enterprise-api evidence JSON（匿名）",
+        "高影响动作审批与 live-not-run 边界说明"
+      ],
+      "primary_tool": "企业 API offline fixture + course_check",
+      "migration_tool": "OpenAI/Anthropic provider adapter（需单独批准的 live seam）",
+      "platforms": {
+        "primary": "Windows 11 + PowerShell 7; desktop browser",
+        "secondary": ["macOS/Linux：概念迁移，未现场验收"]
+      },
+      "versions": {
+        "client": "enterprise-api-runner-v1",
+        "sdk": "provider SDK not invoked",
+        "model": "offline-model-v1; no live call",
+        "protocol": "agent-engineering-course/evidence v1; issue-to-pr-api-v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free for offline lab; optional live path requires approved account/quota",
+        "network": "offline fixture and checker need no network"
+      },
+      "risk": {
+        "permissions": "merge/push/publish 始终保留人工审批且离线夹具不执行",
+        "side_effects": "不写远程仓库、不发送消息、不读取凭据",
+        "staleness": "企业 API、模型和权限策略发布前必须重新核验"
+      },
+      "sources": ["course-enterprise-api-original-t31"],
+      "licenses": ["CC-BY-4.0", "MIT"]
     }
   ]
 }

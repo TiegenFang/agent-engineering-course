@@ -1061,6 +1061,46 @@
       "usage": "核验 Anthropic 适配层的测试与现场验证边界；T29 只比较匿名外部 rubric，不声称已完成 Messages API 验收",
       "license_or_terms": "reference-only; Anthropic documentation and product terms apply; no copied assets",
       "copied_assets": false
+    },
+    {
+      "id": "course-enterprise-capstone-original-t24",
+      "title": "模块 12C 企业核心结课轨道原创实验设计",
+      "url": "docs/research/t24-enterprise-capstone.md",
+      "source_role": "course-original",
+      "pinned_version": "T24 enterprise-capstone runner v1; verified 2026-08-13",
+      "usage": "定义 Issue-to-PR 变化输入、Context/Memory/Skill/MCP 边界、故障注入、变更测试评审交付证据和匿名 checker 契约；代码与正文为原创",
+      "license_or_terms": "project-original; code MIT and content CC-BY-4.0; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "course-capstone-integration-original-t25",
+      "title": "模块 12D 科研/企业双轨结课集成原创实验设计",
+      "url": "docs/research/t25-capstone-integration.md",
+      "source_role": "course-original",
+      "pinned_version": "T25 capstone-integration runner v1; verified 2026-08-13",
+      "usage": "定义双轨共同 rubric、版本锁定、隐私、Skill/MCP 边界、故障恢复和离线 portfolio evidence；代码与正文为原创",
+      "license_or_terms": "project-original; code MIT and content CC-BY-4.0; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "course-research-api-capstone-original-t30",
+      "title": "模块 12E 科研进阶 API 结课原创实验设计",
+      "url": "docs/research/t30-research-api-sources.md",
+      "source_role": "course-original",
+      "pinned_version": "T30 research-api-capstone fixture v1; verified 2026-08-13",
+      "usage": "定义有界科研 API Agent 步骤、离线三情形、工具回填、结构化输出、预算停止、恢复和 live-not-run 边界；代码与正文为原创",
+      "license_or_terms": "project-original; code MIT and content CC-BY-4.0; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "course-enterprise-api-original-t31",
+      "title": "模块 12F 企业进阶 API 结课原创实验设计",
+      "url": "docs/course-plan.md",
+      "source_role": "course-original",
+      "pinned_version": "T31 enterprise-api-runner-v1; verified 2026-08-13",
+      "usage": "定义 Issue-to-PR 有界 draft-validation-plan、人工审批、高影响动作拒绝、预算门禁、结构化输出和匿名恢复 evidence；代码与正文为原创",
+      "license_or_terms": "project-original; code MIT and content CC-BY-4.0; no copied assets",
+      "copied_assets": false
     }
   ]
 }

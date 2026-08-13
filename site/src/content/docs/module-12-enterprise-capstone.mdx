@@ -1,0 +1,112 @@
+---
+title: 模块 12C：企业核心结课轨道
+description: 从 Issue 澄清到变更、测试、评审和交付，完成可核验的企业工程工作流。
+sidebar:
+  order: 14
+---
+
+import EnterpriseCapstoneLab from '../../components/EnterpriseCapstoneLab.astro';
+import EvidenceLoop from '../../components/EvidenceLoop.astro';
+
+# 模块 12C：企业核心结课轨道
+
+> 本课是一条核心课程结课路径，不要求付费 API。你要把前面学过的 Context、Memory、Skill、MCP 和 Coding Agent 方法收束为一份可评审的 Issue-to-PR 工程交付，而不是提交一段“看起来完成”的自然语言说明。
+
+## 真实问题：能否把一个 Issue 安全地走到交付？
+
+企业团队真正需要的不是 Agent 说“已经改好了”，而是能够回答：需求是否澄清？上下文和 Memory 是否受控？工具权限是否明确？变更、测试、评审和交付证据是否齐全？另一个人能否在同一课程版本下复核结论？
+
+完成本轨道后，你应能：
+
+- 将 Issue 写成目标、非目标、输入契约、验收条件和停止条件；
+- 用 Context 记录当前工作集，用受控 Memory 记录可复用事实和寿命，不把企业正文或密钥放入 evidence；
+- 用 Skill 固定检查与交付步骤，并通过 MCP 只读边界获取合成信息；
+- 留下变更摘要、测试结果、评审记录、交付说明和匿名 evidence；
+- 用变化 Issue 完成迁移挑战，并用共同评分量表解释证据强度；
+- 识别失败后停在哪里、如何恢复，以及为什么“恢复成功”不等于“应该立即合并”。
+
+## 心智模型：Issue-to-PR 是证据链
+
+```text
+Issue 澄清 ──> Context / Memory ──> Skill + MCP 边界
+     │                                  │
+     └── 目标 / 非目标 / 验收 ──> 变更 ──> 测试
+                                           │
+                                    评审 ──> 交付说明
+                                           │
+                                        匿名 evidence
+```
+
+Context 是当前工作的最小工作集；Memory 是有 owner、用途和寿命的记录；Skill 是程序性步骤；MCP 是工具/资源交换边界。它们都不能替代变更、测试、评审和交付证据。
+
+## 操作前预测
+
+在运行实验前写下预测：
+
+1. 一个目标不清的 Issue 为什么应该先停在澄清，而不是让 Agent 直接改代码？
+2. 如果 MCP 没有人工确认，企业助手应继续写交付说明，还是保持只读并留下阻塞记录？
+3. 为什么测试通过仍不足以证明可以交付？评审和副作用边界还缺什么？
+4. 将“增加夜班摘要”迁移为“修复压力单位换算”时，哪些验收目标应保持不变，哪些输入契约必须改变？
+
+## 主工具演示：离线 Issue-to-PR 工作台
+
+本课的确定性 lab 使用 Python 标准库生成合成结果；它不会启动 Codex、Claude Code、模型、远端 MCP、GitHub 或真实企业仓库。页面互动只让你观察状态，不会替你声称完成本地工程交付。
+
+<EnterpriseCapstoneLab />
+
+## 本地实验：留下四类交付证据
+
+在课程仓库根目录使用 Windows 11 + PowerShell 7：
+
+```powershell
+$out = Join-Path ([System.IO.Path]::GetTempPath()) 't24-enterprise-capstone'
+python .\labs\enterprise-capstone\run_lab.py --output $out --variant feature-issue
+Get-ChildItem -LiteralPath $out
+Set-Location -LiteralPath .\checker
+python -m course_check check t24-enterprise-capstone --root .. --evidence-file (Join-Path $out 't24-enterprise-capstone-evidence.json') --json
+```
+
+检查 `issue-clarification.md`、`change-summary.md`、`tests.txt`、`review.md`、`delivery.md`、`enterprise-record.json` 和匿名 evidence。Checker 只接受状态摘要，不接受 Issue 正文、路径、源码、命令日志、企业数据或密钥；它会从实验字段重新推导通过/部分状态。
+
+## 故障注入与恢复
+
+先运行故障，再恢复到安全默认：
+
+```powershell
+python .\labs\enterprise-capstone\run_lab.py --output $out --variant feature-issue --fault ambiguous-issue
+python .\labs\enterprise-capstone\run_lab.py --output $out --variant feature-issue
+```
+
+还可以使用 `test-failure`、`review-requested` 和 `mcp-denied`。前者要求回到 Issue 澄清；测试失败要求先保留失败证据并重跑；评审要求修改时不得跳过人审；MCP 未获确认时保持只读。故障输出是 `partial`，恢复输出才可能达到完整证据；不得修改 JSON 的 `result` 来伪造通过。
+
+## 迁移挑战：换 Issue，不换工程验收
+
+```powershell
+python .\labs\enterprise-capstone\run_lab.py --output $out --variant bug-fix
+```
+
+变化输入把功能需求改成压力单位换算缺陷，但仍要求澄清、Context、Memory、Skill、MCP 边界、变更、测试、评审、交付和 evidence。可以把“调用前检查单”交给 Codex 或 Claude Code 做方法迁移；真实客户端实验必须单独记录版本、账号、权限、成本和日期，本课不把未执行调用标为成功。
+
+## 可核验成果与公共评分量表
+
+完成成果包括：Issue 澄清、变更摘要、测试输出、评审记录、交付说明、匿名 evidence，以及一份变化 Issue 迁移记录。两条结课轨道共享问题定义、上下文质量、操作安全、验证证据、可复现性、迁移能力和交付清晰度评价维度。
+
+| 维度 | 通过证据 | 常见失败 | 恢复问题 |
+| --- | --- | --- | --- |
+| 问题定义 | 目标、非目标、验收和停止条件明确 | 让 Agent 猜 Issue 意图 | 哪个字段需要澄清？ |
+| 上下文质量 | Context 与 Memory 的 owner/lifetime 可追踪 | 把全部企业历史广播给 Agent | 当前工作集真正需要什么？ |
+| 操作安全 | MCP 只读，交付有人工确认 | 把工具发现当成授权 | 谁批准了哪一个副作用？ |
+| 变更与测试 | 变更摘要和测试结果可复核 | 只提交“已修改” | 哪条测试失败证据仍在？ |
+| 评审与交付 | 评审状态、限制和交付说明齐全 | 把测试通过当成可合并 | 谁负责最终人审？ |
+| 迁移能力 | 缺陷 Issue 保持同一工程目标 | 原样复制功能答案 | 哪些输入字段应变？ |
+| 交付清晰度 | evidence 不含正文、源码、路径和密钥 | 把 partial 写成 passed | 另一个人能否辨别证据强度？ |
+
+<EvidenceLoop lessonId="t24-enterprise-capstone" />
+
+## 风险、版本与来源卡片
+
+- **账号与成本**：离线 lab、页面、checker、Node 和浏览器测试免费且不需要账号；可选 Codex/Claude Code 迁移或 API 现场实验可能需要订阅和按量额度。
+- **权限与副作用**：本实验只写入学员显式指定的新输出目录，使用合成数据；不会创建分支、提交、推送、调用 MCP 或修改真实企业仓库。
+- **隐私**：不要把真实 Issue、企业代码、个人信息、令牌、绝对路径或账单放入 lab 输出、截图或 evidence。Checker 只输出匿名枚举与布尔状态。
+- **版本与验证边界**：实验合同为 `telemetry-report-issue-v1` / evidence v1，核验日期 2026-08-13；本课验证的是离线确定性路径，不声称真实 Coding Agent、模型 API、GitHub、MCP 或企业评审现场成功。
+- **来源与许可**：正文、页面、fixture、checker 和测试为课程原创；正文 CC BY 4.0，代码与 checker MIT；第三方官方文档仅作事实核验，不复制资产。

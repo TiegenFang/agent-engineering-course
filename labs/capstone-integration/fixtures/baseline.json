@@ -1,0 +1,8 @@
+{
+  "lesson_id": "t25-capstone-integration",
+  "version": "1",
+  "baseline_id": "telemetry-capstone-integration-v1",
+  "tracks": ["research", "enterprise"],
+  "faults": ["none", "missing-core", "unsafe-side-effect", "incomplete-delivery"],
+  "offline": true
+}

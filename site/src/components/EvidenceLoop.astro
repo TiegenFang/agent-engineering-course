@@ -183,6 +183,9 @@ const expectedCourseVersion = courseVersion.course_version;
     window.addEventListener("multi-agent:evidence", handleGeneratedEvidence);
     window.addEventListener("anthropic-messages:evidence", handleGeneratedEvidence);
     window.addEventListener("production:evidence", handleGeneratedEvidence);
+    window.addEventListener("research-api:evidence", handleGeneratedEvidence);
+    window.addEventListener("enterprise-api:evidence", handleGeneratedEvidence);
+    window.addEventListener("capstone-integration:evidence", handleGeneratedEvidence);
 
     try {
       const saved = loadLearningRecord(localStorage, storageKey, courseVersion) as LearningRecord;

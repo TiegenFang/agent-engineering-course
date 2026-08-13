@@ -1,0 +1,148 @@
+<section class="enterprise-capstone-lab" data-enterprise-capstone aria-labelledby="enterprise-capstone-title">
+  <div class="enterprise-capstone-lab__intro">
+    <p class="eyebrow">离线企业交付工作台 · t24-enterprise-capstone</p>
+    <h2 id="enterprise-capstone-title">把 Issue 走成可评审的交付</h2>
+    <p>
+      先选择变化 Issue 与故障，再观察澄清、Context、Memory、Skill、MCP 边界、变更、测试、评审和交付证据。
+      这里的状态是确定性教学夹具，不会调用模型、网络、GitHub 或真实企业仓库。
+    </p>
+  </div>
+
+  <div class="enterprise-capstone-lab__controls" aria-label="企业轨道实验输入">
+    <fieldset>
+      <legend>变化 Issue</legend>
+      <label><input type="radio" name="enterprise-input" value="feature-issue" checked /> 功能：增加夜班摘要</label>
+      <label><input type="radio" name="enterprise-input" value="bug-fix" /> 缺陷：修复压力单位换算</label>
+    </fieldset>
+    <fieldset>
+      <legend>故障注入</legend>
+      <label><input type="radio" name="enterprise-fault" value="none" checked /> 安全默认</label>
+      <label><input type="radio" name="enterprise-fault" value="ambiguous-issue" /> Issue 不清：先澄清</label>
+      <label><input type="radio" name="enterprise-fault" value="test-failure" /> 测试失败：恢复后重跑</label>
+      <label><input type="radio" name="enterprise-fault" value="review-requested" /> 评审要求修改</label>
+      <label><input type="radio" name="enterprise-fault" value="mcp-denied" /> MCP 未获确认：保持只读</label>
+    </fieldset>
+    <button type="button" class="enterprise-capstone-lab__run" data-enterprise-run>运行确定性实验</button>
+  </div>
+
+  <div class="enterprise-capstone-lab__output" aria-live="polite">
+    <div class="enterprise-capstone-lab__summary" data-enterprise-summary>尚未运行</div>
+    <ul class="enterprise-capstone-lab__checks" data-enterprise-checks></ul>
+    <p class="enterprise-capstone-lab__boundary" data-enterprise-boundary>
+      证据只保留固定枚举；真实 Issue-to-PR、权限审批、客户端与 API 需要另行核验。
+    </p>
+    <button type="button" class="enterprise-capstone-lab__export" data-enterprise-export disabled>
+      导出匿名 evidence
+    </button>
+  </div>
+</section>
+
+<script>
+  import {
+    buildEnterpriseEvidence,
+    buildEnterpriseRun,
+    summarizeEnterpriseRun,
+  } from "../lib/enterprise-capstone.mjs";
+
+  const root = document.querySelector("[data-enterprise-capstone]");
+  if (root) {
+    const summary = root.querySelector("[data-enterprise-summary]");
+    const checks = root.querySelector("[data-enterprise-checks]");
+    const boundary = root.querySelector("[data-enterprise-boundary]");
+    const runButton = root.querySelector("[data-enterprise-run]");
+    const exportButton = root.querySelector("[data-enterprise-export]");
+    let latestEvidence = null;
+
+    const selected = (name) => root.querySelector(`input[name="${name}"]:checked`)?.value;
+    const render = () => {
+      const run = buildEnterpriseRun({ input: selected("enterprise-input"), fault: selected("enterprise-fault") });
+      latestEvidence = buildEnterpriseEvidence(run);
+      const result = summarizeEnterpriseRun(run);
+      if (summary) {
+        summary.textContent = `${result.label} · ${result.result === "passed" ? "可交付" : "需要恢复"}`;
+        summary.dataset.result = result.result;
+      }
+      if (checks) {
+        checks.replaceChildren(
+          ...run.checks.map((check) => {
+            const item = document.createElement("li");
+            item.dataset.result = check.result;
+            item.textContent = `${check.result === "passed" ? "通过" : "待补齐"} · ${check.id}`;
+            return item;
+          }),
+        );
+      }
+      if (boundary) {
+        boundary.textContent = run.fault === "none"
+          ? "安全默认：澄清、变更、测试、评审、交付和匿名证据来自固定合成输入；不代表真实 Issue 或客户端已经执行。"
+          : `故障 ${run.fault} 已注入：先保留失败证据，再恢复同一验收；夹具不会把不完整交付伪装成通过。`;
+      }
+      if (exportButton) exportButton.disabled = false;
+    };
+
+    runButton?.addEventListener("click", render);
+    exportButton?.addEventListener("click", () => {
+      if (!latestEvidence) return;
+      const blob = new Blob([JSON.stringify(latestEvidence, null, 2)], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "t24-enterprise-capstone-evidence.json";
+      link.click();
+      URL.revokeObjectURL(link.href);
+      window.dispatchEvent(new CustomEvent("enterprise-capstone:evidence", { detail: latestEvidence }));
+    });
+    render();
+  }
+</script>
+
+<style>
+  .enterprise-capstone-lab {
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 1rem;
+    background: var(--sl-color-bg-nav);
+    padding: 1.2rem;
+    margin: 1.5rem 0;
+  }
+  .enterprise-capstone-lab__intro { max-width: 62rem; }
+  .enterprise-capstone-lab .eyebrow {
+    color: var(--sl-color-accent-high);
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .enterprise-capstone-lab__controls {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 1rem;
+  }
+  .enterprise-capstone-lab fieldset {
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.7rem;
+    min-width: 0;
+    padding: 0.8rem;
+  }
+  .enterprise-capstone-lab label { display: block; margin: 0.55rem 0; }
+  .enterprise-capstone-lab input { accent-color: var(--sl-color-accent); margin-right: 0.4rem; }
+  .enterprise-capstone-lab button {
+    border: 1px solid var(--sl-color-accent-high);
+    border-radius: 0.5rem;
+    background: var(--sl-color-accent-low);
+    color: var(--sl-color-white);
+    cursor: pointer;
+    font: inherit;
+    min-height: 44px;
+    padding: 0.65rem 1rem;
+  }
+  .enterprise-capstone-lab button:disabled { cursor: not-allowed; opacity: 0.55; }
+  .enterprise-capstone-lab__output { border-top: 1px solid var(--sl-color-gray-5); margin-top: 1rem; padding-top: 1rem; }
+  .enterprise-capstone-lab__summary { font-weight: 700; font-size: 1.15rem; }
+  .enterprise-capstone-lab__checks { columns: 2; list-style: none; padding: 0; }
+  .enterprise-capstone-lab__checks li { margin: 0.35rem 0; }
+  .enterprise-capstone-lab__checks li[data-result="failed"] { color: var(--sl-color-red-high); }
+  .enterprise-capstone-lab__boundary { color: var(--sl-color-gray-2); }
+  @media (max-width: 700px) {
+    .enterprise-capstone-lab__controls { grid-template-columns: 1fr; }
+    .enterprise-capstone-lab__checks { columns: 1; }
+  }
+</style>

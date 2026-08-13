@@ -1,0 +1,115 @@
+---
+const lessonId = "t25-capstone-integration";
+---
+
+<section class="capstone-integration-lab" data-capstone-integration aria-labelledby="capstone-integration-title">
+  <div class="capstone-integration-lab__intro">
+    <p class="eyebrow">双轨结课集成 · {lessonId}</p>
+    <h2 id="capstone-integration-title">把共同能力接到一条可交付的结课路径</h2>
+    <p>
+      选择科研或企业轨道，再注入一个边界故障。夹具只计算匿名状态，不调用模型、API、真实 Coding Agent、MCP 或 GitHub。
+    </p>
+  </div>
+
+  <div class="capstone-integration-lab__controls" aria-label="结课集成输入">
+    <fieldset>
+      <legend>双场景轨道</legend>
+      <label><input type="radio" name="capstone-track" value="enterprise" checked /> 企业：Issue-to-PR 工程工作流</label>
+      <label><input type="radio" name="capstone-track" value="research" /> 科研：可复现研究工作流</label>
+    </fieldset>
+    <fieldset>
+      <legend>故障注入</legend>
+      <label><input type="radio" name="capstone-fault" value="none" checked /> 安全默认</label>
+      <label><input type="radio" name="capstone-fault" value="missing-core" /> 前置核心证据缺失</label>
+      <label><input type="radio" name="capstone-fault" value="unsafe-side-effect" /> 副作用边界未确认</label>
+      <label><input type="radio" name="capstone-fault" value="incomplete-delivery" /> 交付材料不完整</label>
+    </fieldset>
+    <button type="button" class="capstone-integration-lab__run" data-capstone-run>运行确定性集成检查</button>
+  </div>
+
+  <div class="capstone-integration-lab__output" aria-live="polite">
+    <div class="capstone-integration-lab__summary" data-capstone-summary>尚未运行</div>
+    <ul class="capstone-integration-lab__checks" data-capstone-checks></ul>
+    <p class="capstone-integration-lab__boundary" data-capstone-boundary>
+      通过只证明离线证据契约成立；真实工具、Issue/PR、API、MCP 和生产数据必须另行核验。
+    </p>
+    <button type="button" class="capstone-integration-lab__export" data-capstone-export disabled>导出匿名 evidence</button>
+  </div>
+</section>
+
+<script>
+  import {
+    buildCapstoneIntegrationEvidence,
+    buildCapstoneIntegrationRun,
+    summarizeCapstoneIntegrationRun,
+  } from "../lib/capstone-integration.mjs";
+
+  const root = document.querySelector("[data-capstone-integration]");
+  if (root) {
+    const summary = root.querySelector("[data-capstone-summary]");
+    const checks = root.querySelector("[data-capstone-checks]");
+    const boundary = root.querySelector("[data-capstone-boundary]");
+    const runButton = root.querySelector("[data-capstone-run]");
+    const exportButton = root.querySelector("[data-capstone-export]");
+    let latestEvidence = null;
+    const selected = (name) => root.querySelector(`input[name="${name}"]:checked`)?.value;
+    const render = () => {
+      const run = buildCapstoneIntegrationRun({ track: selected("capstone-track"), fault: selected("capstone-fault") });
+      latestEvidence = buildCapstoneIntegrationEvidence(run);
+      const result = summarizeCapstoneIntegrationRun(run);
+      if (summary) {
+        summary.textContent = `${result.label} · ${result.result === "passed" ? "可交付" : "需要恢复"}`;
+        summary.dataset.result = result.result;
+      }
+      if (checks) {
+        checks.replaceChildren(...run.checks.map((check) => {
+          const item = document.createElement("li");
+          item.dataset.result = check.result;
+          item.textContent = `${check.result === "passed" ? "通过" : "待补齐"} · ${check.id}`;
+          return item;
+        }));
+      }
+      if (boundary) {
+        boundary.textContent = run.fault === "none"
+          ? "安全默认：公共能力、所选轨道、共同 rubric、版本和匿名交付都已连接；不代表真实客户端或服务执行。"
+          : `故障 ${run.fault} 已注入：保留失败证据，按课文恢复后再导出；不允许把 partial 改成 passed。`;
+      }
+      window.dispatchEvent(new CustomEvent("capstone-integration:evidence", { detail: latestEvidence }));
+      if (exportButton) exportButton.disabled = false;
+    };
+    runButton?.addEventListener("click", render);
+    exportButton?.addEventListener("click", () => {
+      if (!latestEvidence) return;
+      const blob = new Blob([JSON.stringify(latestEvidence, null, 2)], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "t25-capstone-integration-evidence.json";
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+    render();
+  }
+</script>
+
+<style>
+  .capstone-integration-lab { border: 1px solid var(--sl-color-gray-5); border-radius: 1rem; background: var(--sl-color-bg-nav); padding: 1.2rem; margin: 1.5rem 0; }
+  .capstone-integration-lab__intro { max-width: 62rem; }
+  .capstone-integration-lab .eyebrow { color: var(--sl-color-accent-high); font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; }
+  .capstone-integration-lab__controls { display: grid; gap: 1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 1rem; }
+  .capstone-integration-lab fieldset { border: 1px solid var(--sl-color-gray-5); border-radius: .7rem; min-width: 0; padding: .8rem; }
+  .capstone-integration-lab label { display: block; margin: .55rem 0; }
+  .capstone-integration-lab input { accent-color: var(--sl-color-accent); margin-right: .4rem; }
+  .capstone-integration-lab button { border: 1px solid var(--sl-color-accent-high); border-radius: 999px; background: var(--sl-color-accent-low); color: var(--sl-color-white); cursor: pointer; font: inherit; padding: .55rem .9rem; }
+  .capstone-integration-lab button:disabled { cursor: not-allowed; opacity: .55; }
+  .capstone-integration-lab__run { align-self: end; justify-self: start; }
+  .capstone-integration-lab__output { border-top: 1px solid var(--sl-color-gray-5); margin-top: 1rem; padding-top: 1rem; }
+  .capstone-integration-lab__summary { font-weight: 700; margin-bottom: .6rem; }
+  .capstone-integration-lab__summary[data-result="passed"] { color: var(--sl-color-green); }
+  .capstone-integration-lab__summary[data-result="partial"] { color: var(--sl-color-orange); }
+  .capstone-integration-lab__checks { columns: 2; list-style: none; margin: 0; padding: 0; }
+  .capstone-integration-lab__checks li { break-inside: avoid; margin: .35rem 0; }
+  .capstone-integration-lab__checks li[data-result="passed"]::before { content: "✓ "; color: var(--sl-color-green); }
+  .capstone-integration-lab__checks li[data-result="failed"]::before { content: "! "; color: var(--sl-color-orange); }
+  .capstone-integration-lab__boundary { color: var(--sl-color-gray-2); font-size: .9rem; }
+  @media (max-width: 640px) { .capstone-integration-lab__controls { grid-template-columns: 1fr; } .capstone-integration-lab__checks { columns: 1; } }
+</style>
