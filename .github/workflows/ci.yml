@@ -37,6 +37,8 @@ jobs:
           Write-Host "Using PowerShell $($PSVersionTable.PSVersion)"
       - name: Install site dependencies
         run: npm ci
+      - name: Install Chromium for browser verification
+        run: npm run browser:install
       - name: Validate course contracts
         run: npm run test:python
       - name: Typecheck site
@@ -45,3 +47,5 @@ jobs:
         run: npm run build
       - name: Verify public homepage contract
         run: npm run test:site
+      - name: Verify public browser routes
+        run: npm run test:browser

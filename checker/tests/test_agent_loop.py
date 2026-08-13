@@ -242,6 +242,44 @@ class AgentLoopCheckerTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)["result"], "alternative")
 
+    def test_t02_checker_rejects_budget_stop_after_error_status(self) -> None:
+        exported = {
+            "contract": "agent-engineering-course/evidence",
+            "contract_version": "1",
+            "course_version": COURSE_VERSION,
+            "lesson_id": "t02-agent-loop",
+            "result": "alternative",
+            "anonymous": True,
+            "checked_on": "2026-08-13",
+            "summary": "检测到满足验收目标的替代实现。",
+            "evidence": [
+                {"id": "prediction-recorded", "result": "passed"},
+                {"id": "trace-observed", "result": "passed"},
+                {"id": "stop-condition-observed", "result": "alternative"},
+            ],
+            "trace": trace_fixture(
+                ["prediction-1", "response-1", "tool-request-1", "tool-execution-1", "budget-stop-1"],
+                outcome="budget-stop",
+                max_steps=3,
+                status_overrides={"tool-execution-1": "error"},
+            ),
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            evidence_path = Path(temporary) / "budget-error-mix.json"
+            evidence_path.write_text(json.dumps(exported), encoding="utf-8")
+            result = self.run_checker(
+                "check",
+                "t02-agent-loop",
+                "--root",
+                str(ROOT),
+                "--evidence-file",
+                str(evidence_path),
+                "--json",
+            )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("budget-stop", result.stderr)
+
     def test_t02_checker_rejects_inconsistent_trace_status_and_result(self) -> None:
         malformed_traces = (
             trace_fixture(SUCCESS_TRACE_IDS, status_overrides={"stop-1": "error"}),

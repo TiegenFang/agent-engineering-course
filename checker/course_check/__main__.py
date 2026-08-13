@@ -524,6 +524,13 @@ def validate_t02_trace(trace: Any, *, document_result: str) -> dict[str, Any]:
             "Completed T02 evidence is missing trace steps: " + ", ".join(missing)
         )
 
+    if outcome == "budget-stop" and any(
+        step.get("status") == "error" for step in normalized_steps
+    ):
+        raise EvidenceError(
+            "budget-stop T02 trace cannot contain an error status; use outcome error"
+        )
+
     if outcome == "success":
         if any(step.get("status") in {"error", "budget"} for step in normalized_steps):
             raise EvidenceError("Success T02 trace cannot contain error or budget statuses")
