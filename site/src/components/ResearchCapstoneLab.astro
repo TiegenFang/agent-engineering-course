@@ -47,16 +47,16 @@ const lessonId = "t23-research-capstone";
     summarizeResearchRun,
   } from "../lib/research-capstone.mjs";
 
-  const root = document.querySelector("[data-research-capstone]");
+  const root = document.querySelector<HTMLElement>("[data-research-capstone]");
   if (root) {
-    const summary = root.querySelector("[data-research-summary]");
-    const checks = root.querySelector("[data-research-checks]");
-    const boundary = root.querySelector("[data-research-boundary]");
-    const runButton = root.querySelector("[data-research-run]");
-    const exportButton = root.querySelector("[data-research-export]");
-    let latestEvidence = null;
+    const summary = root.querySelector<HTMLElement>("[data-research-summary]");
+    const checks = root.querySelector<HTMLUListElement>("[data-research-checks]");
+    const boundary = root.querySelector<HTMLElement>("[data-research-boundary]");
+    const runButton = root.querySelector<HTMLButtonElement>("[data-research-run]");
+    const exportButton = root.querySelector<HTMLButtonElement>("[data-research-export]");
+    let latestEvidence: ReturnType<typeof buildResearchEvidence> | null = null;
 
-    const selected = (name) => root.querySelector(`input[name="${name}"]:checked`)?.value;
+    const selected = (name: string) => root.querySelector<HTMLInputElement>(`input[name="${name}"]:checked`)?.value;
     const render = () => {
       const run = buildResearchRun({ input: selected("research-input"), fault: selected("research-fault") });
       latestEvidence = buildResearchEvidence(run);

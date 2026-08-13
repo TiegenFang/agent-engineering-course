@@ -44,15 +44,15 @@ const lessonId = "t25-capstone-integration";
     summarizeCapstoneIntegrationRun,
   } from "../lib/capstone-integration.mjs";
 
-  const root = document.querySelector("[data-capstone-integration]");
+  const root = document.querySelector<HTMLElement>("[data-capstone-integration]");
   if (root) {
-    const summary = root.querySelector("[data-capstone-summary]");
-    const checks = root.querySelector("[data-capstone-checks]");
-    const boundary = root.querySelector("[data-capstone-boundary]");
-    const runButton = root.querySelector("[data-capstone-run]");
-    const exportButton = root.querySelector("[data-capstone-export]");
-    let latestEvidence = null;
-    const selected = (name) => root.querySelector(`input[name="${name}"]:checked`)?.value;
+    const summary = root.querySelector<HTMLElement>("[data-capstone-summary]");
+    const checks = root.querySelector<HTMLUListElement>("[data-capstone-checks]");
+    const boundary = root.querySelector<HTMLElement>("[data-capstone-boundary]");
+    const runButton = root.querySelector<HTMLButtonElement>("[data-capstone-run]");
+    const exportButton = root.querySelector<HTMLButtonElement>("[data-capstone-export]");
+    let latestEvidence: ReturnType<typeof buildCapstoneIntegrationEvidence> | null = null;
+    const selected = (name: string) => root.querySelector<HTMLInputElement>(`input[name="${name}"]:checked`)?.value;
     const render = () => {
       const run = buildCapstoneIntegrationRun({ track: selected("capstone-track"), fault: selected("capstone-fault") });
       latestEvidence = buildCapstoneIntegrationEvidence(run);

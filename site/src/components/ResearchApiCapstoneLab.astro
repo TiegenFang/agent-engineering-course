@@ -44,7 +44,7 @@ import courseVersion from "../../../course-version.json";
     const exportButton = root.querySelector("[data-research-api-export]");
     const output = root.querySelector("[data-research-api-output]");
     const status = root.querySelector("[data-research-api-status]");
-    let evidence;
+    let evidence: ReturnType<typeof buildResearchApiEvidence> | undefined;
     runButton?.addEventListener("click", () => {
       const variant = input instanceof HTMLSelectElement ? input.value : "pressure-night";
       const run = buildResearchApiRun(variant);

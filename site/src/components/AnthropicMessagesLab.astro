@@ -71,19 +71,19 @@ const { courseVersion = "development" } = Astro.props;
     selectAnthropicMessagesCase,
   } from "../lib/anthropic-messages.mjs";
 
-  document.querySelectorAll("[data-anthropic-messages]").forEach((root) => {
-    const form = root.querySelector("[data-anthropic-messages-form]");
-    const select = root.querySelector("#anthropic-messages-case");
-    const status = root.querySelector("[data-anthropic-messages-status]");
-    const request = root.querySelector("[data-anthropic-messages-request]");
-    const outcome = root.querySelector("[data-anthropic-messages-outcome]");
-    const observations = root.querySelector("[data-anthropic-messages-observations]");
-    const recordButton = root.querySelector("[data-record-anthropic-messages]");
-    const exportButton = root.querySelector("[data-export-anthropic-messages]");
-    const evidence = root.querySelector("[data-anthropic-messages-evidence]");
+  document.querySelectorAll<HTMLElement>("[data-anthropic-messages]").forEach((root) => {
+    const form = root.querySelector<HTMLFormElement>("[data-anthropic-messages-form]")!;
+    const select = root.querySelector<HTMLSelectElement>("#anthropic-messages-case")!;
+    const status = root.querySelector<HTMLElement>("[data-anthropic-messages-status]")!;
+    const request = root.querySelector<HTMLElement>("[data-anthropic-messages-request]")!;
+    const outcome = root.querySelector<HTMLElement>("[data-anthropic-messages-outcome]")!;
+    const observations = root.querySelector<HTMLElement>("[data-anthropic-messages-observations]")!;
+    const recordButton = root.querySelector<HTMLButtonElement>("[data-record-anthropic-messages]")!;
+    const exportButton = root.querySelector<HTMLButtonElement>("[data-export-anthropic-messages]")!;
+    const evidence = root.querySelector<HTMLElement>("[data-anthropic-messages-evidence]")!;
     const courseVersion = root.dataset.courseVersion || "development";
     let session = createAnthropicMessagesSession();
-    let lastRun = null;
+    let lastRun: ReturnType<typeof runAnthropicMessagesFixture> | null = null;
 
     const updateControls = () => {
       const next = ANTHROPIC_MESSAGES_CASE_ORDER[session.recordedCaseIds.length];
@@ -118,9 +118,9 @@ const { courseVersion = "development" } = Astro.props;
       showRun();
     });
 
-    root.querySelectorAll("[data-anthropic-messages-preset]").forEach((button) => {
+    root.querySelectorAll<HTMLButtonElement>("[data-anthropic-messages-preset]").forEach((button) => {
       button.addEventListener("click", () => {
-        select.value = button.dataset.anthropicMessagesPreset;
+        select.value = button.dataset.anthropicMessagesPreset ?? "offline-success";
         showRun();
       });
     });

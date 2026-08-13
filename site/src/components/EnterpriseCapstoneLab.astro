@@ -44,16 +44,16 @@
     summarizeEnterpriseRun,
   } from "../lib/enterprise-capstone.mjs";
 
-  const root = document.querySelector("[data-enterprise-capstone]");
+  const root = document.querySelector<HTMLElement>("[data-enterprise-capstone]");
   if (root) {
-    const summary = root.querySelector("[data-enterprise-summary]");
-    const checks = root.querySelector("[data-enterprise-checks]");
-    const boundary = root.querySelector("[data-enterprise-boundary]");
-    const runButton = root.querySelector("[data-enterprise-run]");
-    const exportButton = root.querySelector("[data-enterprise-export]");
-    let latestEvidence = null;
+    const summary = root.querySelector<HTMLElement>("[data-enterprise-summary]");
+    const checks = root.querySelector<HTMLUListElement>("[data-enterprise-checks]");
+    const boundary = root.querySelector<HTMLElement>("[data-enterprise-boundary]");
+    const runButton = root.querySelector<HTMLButtonElement>("[data-enterprise-run]");
+    const exportButton = root.querySelector<HTMLButtonElement>("[data-enterprise-export]");
+    let latestEvidence: ReturnType<typeof buildEnterpriseEvidence> | null = null;
 
-    const selected = (name) => root.querySelector(`input[name="${name}"]:checked`)?.value;
+    const selected = (name: string) => root.querySelector<HTMLInputElement>(`input[name="${name}"]:checked`)?.value;
     const render = () => {
       const run = buildEnterpriseRun({ input: selected("enterprise-input"), fault: selected("enterprise-fault") });
       latestEvidence = buildEnterpriseEvidence(run);
