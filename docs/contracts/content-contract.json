@@ -197,6 +197,58 @@
         "CC-BY-4.0",
         "MIT"
       ]
+    },
+    {
+      "id": "t03-agent-instruction",
+      "title": "Agent 指令工程对照实验",
+      "stage": "alpha",
+      "duration_minutes": 45,
+      "prerequisites": [
+        "t02-agent-loop"
+      ],
+      "outcomes": [
+        "使用目标、上下文、约束、非目标、工具边界、输出契约、验收标准和失败证据组织工程化指令",
+        "在同一合成任务上比较模糊请求与工程化指令，并解释差异来自哪些字段",
+        "识别规则冲突、提示注入和过长指令的失败证据并完成恢复",
+        "用改变主题、单位和记录限制的变化输入完成迁移挑战"
+      ],
+      "artifacts": [
+        "四个边界场景的模糊版/工程版对照记录",
+        "夜班压力报告变化输入的迁移记录",
+        "匿名 t03-agent-instruction evidence JSON"
+      ],
+      "primary_tool": "Deterministic browser instruction simulator (mock fixture)",
+      "migration_tool": "Codex or Claude Code (conceptual migration challenge; no live call from page)",
+      "platforms": {
+        "primary": "Desktop browser; Windows 11 + PowerShell 7 for course_check",
+        "secondary": [
+          "macOS/Linux browser; checker path not yet cross-platform verified"
+        ]
+      },
+      "versions": {
+        "client": "Astro/Starlight course page @ workspace baseline",
+        "sdk": "not-applicable",
+        "model": "deterministic instruction fixture v1; no model call",
+        "protocol": "agent-engineering-course/evidence v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free for fixture and checker; real-tool migration may require an account and paid usage",
+        "network": "browser experiment needs no network after page load; checker is local"
+      },
+      "risk": {
+        "permissions": "只读页面与本地导出的 JSON；checker 读取用户显式指定的 evidence 文件",
+        "side_effects": "fixture 不调用模型、API、真实 Coding Agent、设备、文件系统或网络；导出由用户主动触发",
+        "staleness": "课程交互、证据契约和浏览器兼容性需随课程版本复核；真实 Codex/Claude Code 适配内容需按官方文档重新核验"
+      },
+      "sources": [
+        "course-agent-instruction-original"
+      ],
+      "licenses": [
+        "CC-BY-4.0",
+        "MIT"
+      ]
     }
   ]
 }

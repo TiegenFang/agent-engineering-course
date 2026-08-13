@@ -231,6 +231,16 @@
       "usage": "模块 1 的厂商无关概念、确定性 trace、故障分支与匿名证据边界",
       "license_or_terms": "project-original; no copied assets",
       "copied_assets": false
+    },
+    {
+      "id": "course-agent-instruction-original",
+      "title": "模块 2 Agent 指令工程原创实验设计",
+      "url": "docs/course-plan.md",
+      "source_role": "course-original",
+      "pinned_version": "workspace baseline bc1fe08; fixture v1",
+      "usage": "模块 2 的模糊/工程化指令同基线对照、规则冲突、提示注入、过长预算、变化输入迁移和匿名证据边界",
+      "license_or_terms": "project-original; no copied assets",
+      "copied_assets": false
     }
   ]
 }

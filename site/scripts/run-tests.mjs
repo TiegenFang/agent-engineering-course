@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const testCommands = [
   ["--test", "scripts/test-agent-loop.mjs"],
+  ["--test", "scripts/test-agent-instruction.mjs"],
   ["--test", "scripts/test-evidence-record.mjs"],
   ["scripts/assert-homepage.mjs"],
   ["scripts/assert-module-zero.mjs"],

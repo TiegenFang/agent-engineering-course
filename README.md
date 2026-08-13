@@ -55,5 +55,15 @@ python -m course_check check t05-environment `
 
 只有 `environment-evidence.json` 是可导入网页的匿名 evidence contract；两个本地 JSON 文件已加入 `.gitignore`，不要提交。macOS/Linux 的 `python3`、`command -v` 和 Shell 差异见模块 0 页面，正式实验主路径仍是 Windows 11 + PowerShell 7。
 
+## 模块 2：Agent 指令工程
+
+模块 2 的本地证据命令为：
+
+```powershell
+python -m course_check check t03-agent-instruction --root .. --evidence-file ..\t03-agent-instruction-evidence.json --output ..\t03-agent-instruction-checked.json
+```
+
+它只读取学员主动指定的匿名 JSON；不会把编辑的指令、路径、密钥或原始遥测上传到网站。
+
 课程正文与图解采用 CC BY 4.0；自有代码、练习脚手架和检查器采用 MIT。第三方依赖和资产保留各自许可证，详见 `THIRD_PARTY_NOTICES.md` 与来源账本。
 

@@ -1,0 +1,387 @@
+---
+import courseVersion from "../../../course-version.json";
+import {
+  DEFAULT_SCENARIO,
+  DEFAULT_TASK_VARIANT,
+  PREDICTION_OPTIONS,
+  SCENARIOS,
+  SCENARIO_ORDER,
+  TASK_VARIANTS,
+  defaultEngineeredInstruction,
+  ambiguousInstruction,
+} from "../lib/instruction-engine.mjs";
+
+const expectedCourseVersion = courseVersion.course_version;
+const initialInstruction = defaultEngineeredInstruction(DEFAULT_TASK_VARIANT, DEFAULT_SCENARIO);
+---
+
+<section
+  class="instruction-lab"
+  data-instruction-lab
+  data-course-version={expectedCourseVersion}
+  aria-labelledby="instruction-lab-title"
+>
+  <div class="instruction-lab__heading">
+    <div>
+      <p class="eyebrow">模块 2 · Agent 指令工程</p>
+      <h2 id="instruction-lab-title">同一基线，比较两种指令</h2>
+    </div>
+    <span class="instruction-lab__version">experiment v1 · {expectedCourseVersion}</span>
+  </div>
+
+  <p class="instruction-lab__lead">
+    这是一个无网络、无模型调用的确定性教学夹具。它把同一份合成“设备遥测与报告工具”任务交给模糊请求和工程化指令，再按公开规则呈现差异；结果不是 Codex、Claude Code 或任何模型的真实评分。
+  </p>
+
+  <noscript>
+    <section class="instruction-lab__noscript" aria-labelledby="instruction-noscript-title">
+      <h3 id="instruction-noscript-title">无 JavaScript 时的固定对照合同</h3>
+      <p>
+        当前浏览器不能运行本地模拟器，因此不能记录交互 evidence。下面仍保留可阅读、可迁移的固定实验：模糊请求没有目标、工具边界和验收契约；工程化指令把这些字段显式写出。
+      </p>
+      <table>
+        <caption>同一基线的预期差异（deterministic fixture v1）</caption>
+        <thead><tr><th scope="col">输入</th><th scope="col">模糊请求</th><th scope="col">工程化指令</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">基线报告</th><td>目标和失败证据不清</td><td>目标、输出契约和验收字段可检查</td></tr>
+          <tr><th scope="row">规则冲突</th><td>不知道谁优先，可能越过确认点</td><td>遵守更高优先级只读规则并停止请求确认</td></tr>
+          <tr><th scope="row">提示注入</th><td>可能把不可信备注当作指令</td><td>把备注当数据，忽略其中改变边界的指令</td></tr>
+          <tr><th scope="row">过长指令</th><td>背景噪声挤出关键条件</td><td>保留必要字段并遵守 720 字符预算</td></tr>
+        </tbody>
+      </table>
+      <h4>工程化指令的最小字段</h4>
+      <p><code>目标</code> · <code>上下文</code> · <code>约束</code> · <code>非目标</code> · <code>工具边界</code> · <code>输出契约</code> · <code>验收标准</code> · <code>失败证据</code></p>
+      <h4>迁移输入</h4>
+      <p>把“日常温度报告 / 最近 5 条 / °C”改为“夜班压力报告 / 最近 3 条 / kPa”，保留同一组字段和安全边界；不要把原样答案当成迁移证据。</p>
+    </section>
+  </noscript>
+
+  <form class="instruction-lab__form" data-instruction-form>
+    <fieldset>
+      <legend>1. 选择输入并先做预测</legend>
+      <label for="instruction-variant">变化输入</label>
+      <select id="instruction-variant" data-instruction-variant>
+        {Object.values(TASK_VARIANTS).map((variant) => (
+          <option value={variant.id} selected={variant.id === DEFAULT_TASK_VARIANT}>{variant.label}</option>
+        ))}
+      </select>
+
+      <label for="instruction-scenario">故障/边界场景</label>
+      <select id="instruction-scenario" data-instruction-scenario>
+        {SCENARIO_ORDER.map((scenarioId) => (
+          <option value={scenarioId} selected={scenarioId === DEFAULT_SCENARIO}>{SCENARIOS[scenarioId as keyof typeof SCENARIOS].label}</option>
+        ))}
+      </select>
+
+      <label for="instruction-prediction">我的预测</label>
+      <select id="instruction-prediction" data-instruction-prediction>
+        {PREDICTION_OPTIONS.map((prediction) => <option value={prediction}>{prediction}</option>)}
+      </select>
+      <button type="button" data-record-instruction-prediction>记录预测</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>2. 检查并修改工程化指令</legend>
+      <label for="instruction-engineered">工程化指令（可编辑）</label>
+      <textarea id="instruction-engineered" data-instruction-engineered rows="14" spellcheck="false">{initialInstruction}</textarea>
+      <p class="instruction-lab__hint">
+        默认版本包含 8 个最小字段。删掉字段后重跑，可观察“字段不足”的失败证据；点击恢复只恢复当前场景的教学输入。
+      </p>
+      <button type="button" data-reset-instruction>恢复当前场景指令</button>
+    </fieldset>
+
+    <div class="instruction-lab__preview" aria-labelledby="instruction-preview-title">
+      <h3 id="instruction-preview-title">将被比较的输入</h3>
+      <div class="instruction-lab__prompt-grid">
+        <article>
+          <h4>模糊请求</h4>
+          <pre data-ambiguous-prompt>{ambiguousInstruction(DEFAULT_TASK_VARIANT, DEFAULT_SCENARIO)}</pre>
+        </article>
+        <article>
+          <h4>工程化指令</h4>
+          <pre data-engineered-prompt>{initialInstruction}</pre>
+        </article>
+      </div>
+    </div>
+
+    <button class="instruction-lab__run" type="submit" data-run-instruction disabled>3. 运行一次对照</button>
+  </form>
+
+  <div class="instruction-lab__prediction-status" data-instruction-status role="status" aria-live="polite">
+    请选择预测并记录；模拟器不会在预测前运行。
+  </div>
+
+  <section class="instruction-lab__comparison" aria-labelledby="instruction-comparison-title" aria-live="polite">
+    <div class="instruction-lab__comparison-heading">
+      <div>
+        <p class="eyebrow">可观察结果</p>
+        <h3 id="instruction-comparison-title">模糊请求 vs 工程化指令</h3>
+      </div>
+      <span data-instruction-current>尚未运行</span>
+    </div>
+    <div class="instruction-lab__run-grid">
+      <article class="instruction-lab__run-card" data-run-card="ambiguous">
+        <h4>模糊请求</h4>
+        <p data-run-ambiguous>等待运行；这里不会调用模型。</p>
+      </article>
+      <article class="instruction-lab__run-card" data-run-card="engineered">
+        <h4>工程化指令</h4>
+        <p data-run-engineered>等待运行；结果来自公开的确定性规则。</p>
+      </article>
+    </div>
+    <p class="instruction-lab__difference" data-instruction-difference>
+      差异说明会在对照运行后出现；它只解释指令字段，不声称模型质量。
+    </p>
+  </section>
+
+  <section class="instruction-lab__checklist" aria-labelledby="instruction-checklist-title">
+    <div class="instruction-lab__comparison-heading">
+      <div>
+        <p class="eyebrow">可核验成果</p>
+        <h3 id="instruction-checklist-title">完成进度与失败证据</h3>
+      </div>
+      <span data-instruction-evidence-summary>尚未形成证据</span>
+    </div>
+    <ol data-instruction-checklist>
+      <li>先记录一个预测</li>
+      <li>运行同一基线</li>
+      <li>依次运行规则冲突、提示注入和过长指令</li>
+      <li>切换到夜班压力报告完成迁移挑战</li>
+    </ol>
+    <div class="instruction-lab__controls">
+      <button type="button" data-export-instruction-evidence>导出匿名 evidence</button>
+    </div>
+    <p class="instruction-lab__evidence" data-instruction-evidence role="status" aria-live="polite">
+      evidence 只保留固定场景 ID、结果状态和迁移状态，不包含你编辑的指令正文。
+    </p>
+  </section>
+
+  <details class="instruction-lab__help">
+    <summary>逐层求助：如何恢复</summary>
+    <ol>
+      <li>若“字段不足”，点击恢复当前场景指令，或补回 8 个字段后重跑。</li>
+      <li>若“冲突未封装”，明确规则优先级、只读边界、停止和人工确认。</li>
+      <li>若“不可信输入未隔离”，把备注放在数据上下文中，写出忽略改变边界的指令。</li>
+      <li>若“过长”，删除无关背景，使工程化版本回到 720 字符以内。</li>
+      <li>最后改变任务输入为夜班压力报告；迁移挑战必须改变单位、主题和记录数约束。</li>
+    </ol>
+  </details>
+</section>
+
+<script>
+  import {
+    InstructionInputError,
+    InstructionStateError,
+    DEFAULT_SCENARIO,
+    DEFAULT_TASK_VARIANT,
+    buildInstructionEvidence,
+    createInstructionSession,
+    defaultEngineeredInstruction,
+    ambiguousInstruction,
+    describeInstructionRun,
+    runInstructionComparison,
+    selectInstructionInput,
+    submitInstructionPrediction,
+  } from "../lib/instruction-engine.mjs";
+
+  const root = document.querySelector("[data-instruction-lab]");
+  if (root instanceof HTMLElement) {
+    type InstructionRun = { id: string; status: string; title: string; outcome: string; findings: string[] };
+    type InstructionComparison = {
+      scenarioId: string;
+      variantId: string;
+      variantLabel: string;
+      runs: InstructionRun[];
+      difference: string;
+    };
+    type InstructionSession = {
+      scenarioId: string;
+      variantId: string;
+      engineeredInstruction: string;
+      predictions: Record<string, string>;
+      comparisons: Record<string, InstructionComparison>;
+      completedScenarios: string[];
+      migrationVariants: string[];
+      latest: InstructionComparison | null;
+      status: string;
+    };
+    type InstructionEvidence = {
+      result: string;
+      evidence: Array<{ id: string; result: string }>;
+    };
+    const courseVersion = root.dataset.courseVersion ?? "";
+    const form = root.querySelector("[data-instruction-form]");
+    const variantInput = root.querySelector("[data-instruction-variant]");
+    const scenarioInput = root.querySelector("[data-instruction-scenario]");
+    const predictionInput = root.querySelector("[data-instruction-prediction]");
+    const engineeredInput = root.querySelector("[data-instruction-engineered]");
+    const recordPredictionButton = root.querySelector("[data-record-instruction-prediction]");
+    const resetButton = root.querySelector("[data-reset-instruction]");
+    const runButton = root.querySelector("[data-run-instruction]");
+    const exportButton = root.querySelector("[data-export-instruction-evidence]");
+    const status = root.querySelector("[data-instruction-status]");
+    const current = root.querySelector("[data-instruction-current]");
+    const ambiguousPrompt = root.querySelector("[data-ambiguous-prompt]");
+    const engineeredPrompt = root.querySelector("[data-engineered-prompt]");
+    const ambiguousRun = root.querySelector("[data-run-ambiguous]");
+    const engineeredRun = root.querySelector("[data-run-engineered]");
+    const difference = root.querySelector("[data-instruction-difference]");
+    const checklist = root.querySelector("[data-instruction-checklist]");
+    const evidenceSummary = root.querySelector("[data-instruction-evidence-summary]");
+    const evidenceStatus = root.querySelector("[data-instruction-evidence]");
+    let session = createInstructionSession({
+      scenarioId: DEFAULT_SCENARIO,
+      variantId: DEFAULT_TASK_VARIANT,
+    }) as InstructionSession;
+    let generatedInstruction = defaultEngineeredInstruction(DEFAULT_TASK_VARIANT, DEFAULT_SCENARIO);
+
+    const setMessage = (element: Element | null, message: string, kind = "") => {
+      if (!(element instanceof HTMLElement)) return;
+      element.textContent = message;
+      element.dataset.status = kind;
+    };
+
+    const selectedIds = () => ({
+      scenarioId: scenarioInput instanceof HTMLSelectElement ? scenarioInput.value : DEFAULT_SCENARIO,
+      variantId: variantInput instanceof HTMLSelectElement ? variantInput.value : DEFAULT_TASK_VARIANT,
+    });
+
+    const renderPreview = () => {
+      const { scenarioId, variantId } = selectedIds();
+      if (ambiguousPrompt instanceof HTMLElement) ambiguousPrompt.textContent = ambiguousInstruction(variantId, scenarioId);
+      if (engineeredPrompt instanceof HTMLElement) engineeredPrompt.textContent = engineeredInput instanceof HTMLTextAreaElement ? engineeredInput.value : "";
+      if (current instanceof HTMLElement) current.textContent = `${scenarioId} · ${variantId}`;
+    };
+
+    const renderRuns = () => {
+      const comparison: InstructionComparison | null = session.latest;
+      if (!comparison) {
+        setMessage(ambiguousRun, "等待运行；这里不会调用模型。");
+        setMessage(engineeredRun, "等待运行；结果来自公开的确定性规则。");
+        setMessage(difference, "差异说明会在对照运行后出现；它只解释指令字段，不声称模型质量。");
+        return;
+      }
+      const ambiguous = comparison.runs.find((run) => run.id === "ambiguous");
+      const engineered = comparison.runs.find((run) => run.id === "engineered");
+      setMessage(ambiguousRun, `${ambiguous?.title ?? "未运行"} · ${ambiguous?.findings?.join(" ") ?? "无"}`, ambiguous?.status ?? "");
+      setMessage(engineeredRun, `${engineered?.title ?? "未运行"} · ${engineered?.findings?.join(" ") ?? "无"}`, engineered?.status ?? "");
+      setMessage(difference, describeInstructionRun(comparison));
+    };
+
+    const renderChecklist = () => {
+      try {
+        const evidence = buildInstructionEvidence(session, { courseVersion }) as InstructionEvidence;
+        const passed = evidence.evidence.filter((check) => check.result === "passed").length;
+        setMessage(evidenceSummary, `${evidence.result} · ${passed} / ${evidence.evidence.length} 项通过`, evidence.result);
+        if (checklist instanceof HTMLOListElement) {
+          checklist.replaceChildren();
+          for (const check of evidence.evidence) {
+            const item = document.createElement("li");
+            item.dataset.status = check.result;
+            item.textContent = `${check.id} · ${check.result === "passed" ? "通过" : "待补齐"}`;
+            checklist.append(item);
+          }
+        }
+        setMessage(evidenceStatus, "evidence 只保留固定场景 ID、结果状态和迁移状态，不包含你编辑的指令正文。", "");
+      } catch (error) {
+        setMessage(evidenceStatus, `证据暂不可用：${error instanceof Error ? error.message : "输入无效"}`, "error");
+      }
+    };
+
+    const render = () => {
+      renderPreview();
+      renderRuns();
+      renderChecklist();
+      if (runButton instanceof HTMLButtonElement) runButton.disabled = session.status !== "ready";
+      if (recordPredictionButton instanceof HTMLButtonElement) recordPredictionButton.disabled = session.status === "ready";
+    };
+
+    const selectCurrentInput = () => {
+      const { scenarioId, variantId } = selectedIds();
+      const nextGenerated = defaultEngineeredInstruction(variantId, scenarioId);
+      if (engineeredInput instanceof HTMLTextAreaElement && engineeredInput.value === generatedInstruction) {
+        engineeredInput.value = nextGenerated;
+      }
+      generatedInstruction = nextGenerated;
+      session = selectInstructionInput(session, {
+        scenarioId,
+        variantId,
+        engineeredInstruction: engineeredInput instanceof HTMLTextAreaElement ? engineeredInput.value : nextGenerated,
+      });
+      setMessage(status, "输入已改变。先预测当前场景，再运行对照。", "warning");
+      render();
+    };
+
+    variantInput?.addEventListener("change", selectCurrentInput);
+    scenarioInput?.addEventListener("change", selectCurrentInput);
+    engineeredInput?.addEventListener("input", () => {
+      renderPreview();
+      if (session.status === "ready") {
+        session = selectInstructionInput(session, {
+          scenarioId: session.scenarioId,
+          variantId: session.variantId,
+          engineeredInstruction: engineeredInput instanceof HTMLTextAreaElement ? engineeredInput.value : generatedInstruction,
+        });
+      }
+      renderChecklist();
+    });
+
+    recordPredictionButton?.addEventListener("click", () => {
+      try {
+        const prediction = predictionInput instanceof HTMLSelectElement ? predictionInput.value : "";
+        session = submitInstructionPrediction(session, prediction);
+        setMessage(status, "预测已记录；现在可以运行同一基线的两种指令。", "success");
+        render();
+      } catch (error) {
+        setMessage(status, error instanceof Error ? error.message : "预测无效", "error");
+      }
+    });
+
+    form?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      try {
+        session = runInstructionComparison(session, {
+          scenarioId: scenarioInput instanceof HTMLSelectElement ? scenarioInput.value : DEFAULT_SCENARIO,
+          variantId: variantInput instanceof HTMLSelectElement ? variantInput.value : DEFAULT_TASK_VARIANT,
+          engineeredInstruction: engineeredInput instanceof HTMLTextAreaElement ? engineeredInput.value : generatedInstruction,
+        });
+        setMessage(status, "对照已运行。观察两列的失败原因，再切换到下一个场景。", "success");
+        render();
+      } catch (error) {
+        const message = error instanceof InstructionStateError || error instanceof InstructionInputError
+          ? error.message
+          : "对照输入无效";
+        setMessage(status, message, "error");
+      }
+    });
+
+    resetButton?.addEventListener("click", () => {
+      const { scenarioId, variantId } = selectedIds();
+      const nextGenerated = defaultEngineeredInstruction(variantId, scenarioId);
+      generatedInstruction = nextGenerated;
+      if (engineeredInput instanceof HTMLTextAreaElement) engineeredInput.value = nextGenerated;
+      session = selectInstructionInput(session, { scenarioId, variantId, engineeredInstruction: nextGenerated });
+      setMessage(status, "已恢复当前场景的工程化指令。请重新记录预测。", "success");
+      render();
+    });
+
+    exportButton?.addEventListener("click", () => {
+      try {
+        const evidence = buildInstructionEvidence(session, { courseVersion });
+        const blob = new Blob([`${JSON.stringify(evidence, null, 2)}\n`], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "t03-agent-instruction-evidence.json";
+        link.click();
+        URL.revokeObjectURL(url);
+        window.dispatchEvent(new CustomEvent("agent-loop:evidence", { detail: evidence }));
+        setMessage(evidenceStatus, "已导出匿名 evidence；正文和输入值没有进入文件。", "success");
+      } catch (error) {
+        setMessage(evidenceStatus, `导出失败：${error instanceof Error ? error.message : "证据无效"}`, "error");
+      }
+    });
+
+    render();
+  }
+</script>

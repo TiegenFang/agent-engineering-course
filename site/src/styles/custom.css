@@ -486,3 +486,298 @@
   }
 }
 
+.instruction-lab {
+  margin-block: 2rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.75rem;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: color-mix(in srgb, var(--sl-color-accent-low) 36%, transparent);
+}
+
+.instruction-lab__heading,
+.instruction-lab__comparison-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.instruction-lab__heading h2,
+.instruction-lab__comparison-heading h3 {
+  margin-block: 0.35rem 0;
+}
+
+.instruction-lab__version,
+.instruction-lab__comparison-heading > span {
+  color: var(--sl-color-gray-2);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.instruction-lab__lead {
+  max-inline-size: 75ch;
+  color: var(--sl-color-gray-2);
+}
+
+.instruction-lab__noscript {
+  margin-block: 1rem;
+  border-inline-start: 0.2rem solid var(--sl-color-orange-high);
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+  background: var(--sl-color-bg);
+}
+
+.instruction-lab__noscript h3,
+.instruction-lab__noscript h4 {
+  margin-block: 0.25rem 0;
+}
+
+.instruction-lab__noscript p {
+  margin-block: 0.5rem 1rem;
+}
+
+.instruction-lab__noscript table {
+  min-inline-size: 42rem;
+  border-collapse: collapse;
+  margin-block: 1rem;
+}
+
+.instruction-lab__noscript th,
+.instruction-lab__noscript td {
+  border: 1px solid var(--sl-color-gray-5);
+  padding: 0.5rem 0.65rem;
+  text-align: start;
+  vertical-align: top;
+}
+
+.instruction-lab__noscript th {
+  color: var(--sl-color-accent-high);
+}
+
+.instruction-lab__form {
+  display: grid;
+  gap: 1rem;
+  margin-block: 1.25rem;
+}
+
+.instruction-lab__form fieldset {
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.4fr) minmax(0, 1fr);
+  gap: 0.6rem 0.8rem;
+  margin: 0;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.55rem;
+  padding: 0.85rem;
+  background: var(--sl-color-bg);
+}
+
+.instruction-lab__form legend {
+  grid-column: 1 / -1;
+  padding-inline: 0.25rem;
+  font-weight: 700;
+}
+
+.instruction-lab__form label {
+  align-self: center;
+  font-weight: 700;
+}
+
+.instruction-lab__form select,
+.instruction-lab__form textarea {
+  min-inline-size: 0;
+  border: 1px solid var(--sl-color-gray-4);
+  border-radius: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  color: var(--sl-color-text);
+  background: var(--sl-color-bg);
+  font: inherit;
+}
+
+.instruction-lab__form textarea {
+  inline-size: 100%;
+  min-block-size: 13rem;
+  resize: vertical;
+  font-family: var(--sl-font-mono, ui-monospace, monospace);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.instruction-lab__form button,
+.instruction-lab__controls button {
+  inline-size: fit-content;
+  border: 1px solid var(--sl-color-accent);
+  border-radius: 0.45rem;
+  padding: 0.5rem 0.75rem;
+  color: var(--sl-color-text-invert);
+  background: var(--sl-color-accent);
+  cursor: pointer;
+  font: inherit;
+}
+
+.instruction-lab__form button:hover,
+.instruction-lab__controls button:hover {
+  background: var(--sl-color-accent-high);
+}
+
+.instruction-lab__form button:focus-visible,
+.instruction-lab__controls button:focus-visible,
+.instruction-lab__form select:focus-visible,
+.instruction-lab__form textarea:focus-visible {
+  outline: 0.2rem solid var(--sl-color-accent-high);
+  outline-offset: 0.15rem;
+}
+
+.instruction-lab__hint {
+  grid-column: 2;
+  margin: 0;
+  color: var(--sl-color-gray-2);
+  font-size: 0.88rem;
+}
+
+.instruction-lab__form fieldset button {
+  grid-column: 2;
+}
+
+.instruction-lab__run {
+  justify-self: start;
+}
+
+.instruction-lab__run:disabled,
+.instruction-lab__form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.instruction-lab__preview,
+.instruction-lab__comparison,
+.instruction-lab__checklist {
+  margin-block: 1rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.55rem;
+  padding: 0.85rem;
+  background: var(--sl-color-bg);
+}
+
+.instruction-lab__preview h3 {
+  margin-block: 0 0.75rem;
+}
+
+.instruction-lab__prompt-grid,
+.instruction-lab__run-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.instruction-lab__prompt-grid article,
+.instruction-lab__run-card {
+  min-inline-size: 0;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.45rem;
+  padding: 0.7rem;
+}
+
+.instruction-lab__prompt-grid h4,
+.instruction-lab__run-card h4 {
+  margin-block: 0;
+}
+
+.instruction-lab__prompt-grid pre {
+  max-block-size: 18rem;
+  margin-block: 0.55rem 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--sl-color-gray-2);
+  font-size: 0.82rem;
+}
+
+.instruction-lab__run-card p {
+  margin-block: 0.55rem 0;
+  border-inline-start: 0.2rem solid var(--sl-color-gray-4);
+  padding-inline-start: 0.65rem;
+  font-size: 0.9rem;
+}
+
+.instruction-lab__run-card p[data-status='passed'] {
+  border-color: var(--sl-color-accent);
+}
+
+.instruction-lab__run-card p[data-status='failed'] {
+  border-color: var(--sl-color-red-high);
+}
+
+.instruction-lab__prediction-status,
+.instruction-lab__difference,
+.instruction-lab__evidence {
+  border-inline-start: 0.2rem solid var(--sl-color-gray-4);
+  padding-inline-start: 0.75rem;
+}
+
+.instruction-lab__prediction-status[data-status='success'],
+.instruction-lab__evidence[data-status='passed'] {
+  border-color: var(--sl-color-accent);
+}
+
+.instruction-lab__prediction-status[data-status='warning'] {
+  border-color: var(--sl-color-orange-high);
+}
+
+.instruction-lab__prediction-status[data-status='error'],
+.instruction-lab__evidence[data-status='failed'] {
+  border-color: var(--sl-color-red-high);
+}
+
+.instruction-lab__difference {
+  margin-block-end: 0;
+  color: var(--sl-color-gray-2);
+}
+
+.instruction-lab__checklist ol,
+.instruction-lab__checklist > ol {
+  display: grid;
+  gap: 0.4rem;
+  padding-inline-start: 1.4rem;
+}
+
+.instruction-lab__checklist li[data-status='passed'] {
+  color: var(--sl-color-accent-high);
+}
+
+.instruction-lab__checklist li[data-status='failed'] {
+  color: var(--sl-color-red-high);
+}
+
+.instruction-lab__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-block: 1rem;
+}
+
+.instruction-lab__help {
+  margin-block-start: 1rem;
+  border-block-start: 1px solid var(--sl-color-gray-5);
+  padding-block-start: 0.75rem;
+}
+
+@media (max-width: 42rem) {
+  .instruction-lab__heading,
+  .instruction-lab__comparison-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .instruction-lab__prompt-grid,
+  .instruction-lab__run-grid,
+  .instruction-lab__form fieldset {
+    grid-template-columns: 1fr;
+  }
+
+  .instruction-lab__form fieldset button,
+  .instruction-lab__hint {
+    grid-column: auto;
+  }
+}
+

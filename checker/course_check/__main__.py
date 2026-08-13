@@ -166,6 +166,33 @@ T02_TRACE_CONTRACTS = {
 }
 T02_TRACE_EVENT_CONTRACT = T02_TRACE_CONTRACTS["success"][1:-1]
 
+T03_INSTRUCTION_CHECK_IDS = (
+    "prediction-recorded",
+    "baseline-compared",
+    "conflict-contained",
+    "injection-contained",
+    "long-instruction-diagnosed",
+    "migration-completed",
+)
+T03_INSTRUCTION_VERSION = "1"
+T03_BASELINE_ID = "telemetry-report-v1"
+T03_SCENARIOS = {"baseline", "conflict", "injection", "long"}
+T03_VARIANTS = {"temperature-daily", "pressure-night"}
+T03_AMBIGUOUS_OUTCOMES = {
+    "under-specified",
+    "conflict-unresolved",
+    "injection-followed",
+    "overloaded",
+}
+T03_ENGINEERED_OUTCOMES = {
+    "controlled",
+    "conflict-contained",
+    "injection-contained",
+    "scoped",
+    "incomplete",
+    "overlong",
+}
+
 
 class ContractError(ValueError):
     """Raised when the public Foundation contract is incomplete."""
@@ -608,6 +635,147 @@ def validate_t02_check_semantics(
         raise EvidenceError("Alternative T02 evidence requires a budget-stop trace")
 
 
+def validate_t03_evidence_checks(value: Any) -> list[dict[str, Any]]:
+    """Validate the stable learner-facing checks for the instruction lesson."""
+
+    if not isinstance(value, list) or not value:
+        raise EvidenceError("T03 instruction evidence checks must be a non-empty list")
+
+    seen: set[str] = set()
+    actual_ids: list[str] = []
+    normalized: list[dict[str, Any]] = []
+    for index, check in enumerate(value):
+        if not isinstance(check, dict):
+            raise EvidenceError(f"T03 instruction evidence check {index} must be an object")
+        check_id = check.get("id")
+        if not isinstance(check_id, str) or not check_id:
+            raise EvidenceError(f"T03 instruction evidence check {index} needs an id")
+        if check_id in seen:
+            raise EvidenceError(f"T03 instruction evidence check ID repeated: {check_id}")
+        seen.add(check_id)
+        actual_ids.append(check_id)
+        result = check.get("result")
+        if result not in {"passed", "failed", "alternative"}:
+            raise EvidenceError(
+                f"T03 instruction evidence check {check_id}.result is not supported"
+            )
+        normalized.append({"id": check_id, "result": result})
+
+    expected_ids = list(T03_INSTRUCTION_CHECK_IDS)
+    if actual_ids != expected_ids:
+        missing = [check_id for check_id in expected_ids if check_id not in seen]
+        unknown = [check_id for check_id in actual_ids if check_id not in expected_ids]
+        raise EvidenceError(
+            "T03 instruction evidence IDs must be exactly "
+            + ", ".join(expected_ids)
+            + (f"; missing: {', '.join(missing)}" if missing else "")
+            + (f"; unknown: {', '.join(unknown)}" if unknown else "")
+        )
+    return normalized
+
+
+def validate_t03_experiment(
+    experiment: Any,
+    *,
+    checks: list[dict[str, Any]],
+    document_result: str,
+) -> dict[str, Any]:
+    """Validate only stable experiment enums; discard prompts and raw findings."""
+
+    if not isinstance(experiment, dict):
+        raise EvidenceError("T03 completed evidence must include an experiment object")
+    unexpected = sorted(
+        set(experiment)
+        - {"version", "baseline_id", "completed_scenarios", "migration_variants", "latest"}
+    )
+    if unexpected:
+        raise EvidenceError(
+            "T03 experiment contains unsupported fields: " + ", ".join(unexpected)
+        )
+    if experiment.get("version") != T03_INSTRUCTION_VERSION:
+        raise EvidenceError("Unsupported T03 instruction experiment version")
+    if experiment.get("baseline_id") != T03_BASELINE_ID:
+        raise EvidenceError("T03 instruction evidence has an unknown baseline")
+
+    completed = experiment.get("completed_scenarios")
+    if not isinstance(completed, list) or any(
+        not isinstance(item, str) or item not in T03_SCENARIOS for item in completed
+    ):
+        raise EvidenceError("T03 completed_scenarios must contain known scenario IDs")
+    if len(completed) != len(set(completed)):
+        raise EvidenceError("T03 completed_scenarios must not repeat IDs")
+
+    migration = experiment.get("migration_variants")
+    if not isinstance(migration, list) or any(
+        not isinstance(item, str) or item not in T03_VARIANTS for item in migration
+    ):
+        raise EvidenceError("T03 migration_variants must contain known input IDs")
+    if len(migration) != len(set(migration)):
+        raise EvidenceError("T03 migration_variants must not repeat IDs")
+
+    check_by_id = {check["id"]: check["result"] for check in checks}
+    if check_by_id["baseline-compared"] in {"passed", "alternative"} and "baseline" not in completed:
+        raise EvidenceError("T03 baseline evidence is passed without a baseline run")
+    if check_by_id["conflict-contained"] in {"passed", "alternative"} and "conflict" not in completed:
+        raise EvidenceError("T03 conflict evidence is passed without a conflict run")
+    if check_by_id["injection-contained"] in {"passed", "alternative"} and "injection" not in completed:
+        raise EvidenceError("T03 injection evidence is passed without an injection run")
+    if check_by_id["long-instruction-diagnosed"] in {"passed", "alternative"} and "long" not in completed:
+        raise EvidenceError("T03 long-instruction evidence is passed without a long run")
+    if check_by_id["migration-completed"] in {"passed", "alternative"} and "pressure-night" not in migration:
+        raise EvidenceError("T03 migration evidence is passed without the changed input")
+
+    if document_result in {"passed", "alternative"}:
+        missing_scenarios = sorted(T03_SCENARIOS - set(completed))
+        if missing_scenarios:
+            raise EvidenceError(
+                "Completed T03 evidence is missing scenarios: " + ", ".join(missing_scenarios)
+            )
+        if "pressure-night" not in migration:
+            raise EvidenceError("Completed T03 evidence is missing the pressure-night migration")
+        if experiment.get("latest") is None:
+            raise EvidenceError("Completed T03 evidence is missing its latest comparison")
+
+    latest = experiment.get("latest")
+    normalized_latest: dict[str, str] | None = None
+    if latest is not None:
+        if not isinstance(latest, dict):
+            raise EvidenceError("T03 latest comparison must be an object or null")
+        unexpected_latest = sorted(
+            set(latest)
+            - {"scenario_id", "variant_id", "ambiguous_outcome", "engineered_outcome"}
+        )
+        if unexpected_latest:
+            raise EvidenceError(
+                "T03 latest comparison contains unsupported fields: "
+                + ", ".join(unexpected_latest)
+            )
+        scenario_id = latest.get("scenario_id")
+        variant_id = latest.get("variant_id")
+        ambiguous_outcome = latest.get("ambiguous_outcome")
+        engineered_outcome = latest.get("engineered_outcome")
+        if scenario_id not in T03_SCENARIOS or variant_id not in T03_VARIANTS:
+            raise EvidenceError("T03 latest comparison has an unknown scenario or input")
+        if ambiguous_outcome not in T03_AMBIGUOUS_OUTCOMES:
+            raise EvidenceError("T03 latest comparison has an unknown ambiguous outcome")
+        if engineered_outcome not in T03_ENGINEERED_OUTCOMES:
+            raise EvidenceError("T03 latest comparison has an unknown engineered outcome")
+        normalized_latest = {
+            "scenario_id": scenario_id,
+            "variant_id": variant_id,
+            "ambiguous_outcome": ambiguous_outcome,
+            "engineered_outcome": engineered_outcome,
+        }
+
+    return {
+        "version": T03_INSTRUCTION_VERSION,
+        "baseline_id": T03_BASELINE_ID,
+        "completed_scenarios": sorted(completed),
+        "migration_variants": sorted(migration),
+        "latest": normalized_latest,
+    }
+
+
 def load_evidence_checks(
     evidence_file: Path, *, expected_lesson_id: str, expected_course_version: str
 ) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
@@ -638,6 +806,14 @@ def load_evidence_checks(
             trace = validate_t02_trace(value.get("trace"), document_result=document["result"])
             validate_t02_check_semantics(checks, trace, document_result=document["result"])
             return checks, trace
+        if expected_lesson_id == "t03-agent-instruction":
+            checks = validate_t03_evidence_checks(document["evidence"])
+            experiment = validate_t03_experiment(
+                value.get("experiment"),
+                checks=checks,
+                document_result=document["result"],
+            )
+            return checks, experiment
         return document["evidence"], None
     checks = value.get("checks")
     if not isinstance(checks, list):
@@ -648,6 +824,14 @@ def load_evidence_checks(
         trace = validate_t02_trace(value.get("trace"), document_result=result)
         validate_t02_check_semantics(checks, trace, document_result=result)
         return checks, trace
+    if expected_lesson_id == "t03-agent-instruction":
+        checks = validate_t03_evidence_checks(checks)
+        result = classify_checks([check["result"] for check in checks])
+        return checks, validate_t03_experiment(
+            value.get("experiment"),
+            checks=checks,
+            document_result=result,
+        )
     return checks, None
 
 
@@ -904,6 +1088,7 @@ def check_lesson(
         ENVIRONMENT_LESSON_ID,
         GIT_SAFETY_LESSON_ID,
         "t02-agent-loop",
+        "t03-agent-instruction",
     }:
         raise ContractError(f"Unsupported evidence lesson: {lesson_id}")
     course_version = validate_foundation(root)
@@ -925,7 +1110,7 @@ def check_lesson(
                 "t06-git-safety requires --evidence-file with the local Git safety JSON"
             )
         checks = load_git_safety_checks(evidence_file)
-    else:
+    elif lesson_id == "t02-agent-loop":
         checks = [
             {
                 "id": "agent-loop-page",
@@ -956,6 +1141,46 @@ def check_lesson(
                 expected_lesson_id=lesson_id,
                 expected_course_version=course_version,
             )
+    else:
+        checks = [
+            {
+                "id": "instruction-page",
+                "result": "passed"
+                if (root / "site/src/content/docs/module-2-agent-instruction.mdx").is_file()
+                else "failed",
+            },
+            {
+                "id": "instruction-simulator",
+                "result": "passed"
+                if (root / "site/src/lib/instruction-engine.mjs").is_file()
+                else "failed",
+            },
+            {
+                "id": "instruction-contract",
+                "result": "passed"
+                if (root / "labs/agent-instructions/README.md").is_file()
+                else "failed",
+            },
+            {
+                "id": "instruction-scenarios",
+                "result": "passed"
+                if all(
+                    token in (root / "site/src/lib/instruction-engine.mjs").read_text(
+                        encoding="utf-8"
+                    )
+                    for token in ("conflict", "injection", "long", "pressure-night")
+                )
+                else "failed",
+            },
+            {"id": "instruction-evidence-executed", "result": "failed"},
+            {"id": "instruction-migration-executed", "result": "failed"},
+        ]
+        if evidence_file is not None:
+            checks, trace = load_evidence_checks(
+                evidence_file,
+                expected_lesson_id=lesson_id,
+                expected_course_version=course_version,
+            )
     if lesson_id == "t01-foundation" and evidence_file is not None:
         checks, trace = load_evidence_checks(
             evidence_file,
@@ -968,7 +1193,10 @@ def check_lesson(
         checks=checks,
     )
     if trace is not None:
-        document["trace"] = trace
+        if lesson_id == "t02-agent-loop":
+            document["trace"] = trace
+        else:
+            document["experiment"] = trace
     return document
 
 
