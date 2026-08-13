@@ -128,10 +128,20 @@ test("提示注入使用真实恶意 fixture，并且只堆关键词不能绕过
   session = predictAndRun(session, "conflict", "temperature-daily", spoof);
   assert.equal(session.latest.runs[1].status, "failed");
   assert.equal(session.latest.runs[1].outcome, "conflict-unresolved");
+  const conflictWithoutPriority = defaultEngineeredInstruction("temperature-daily", "conflict")
+    .replace("规则优先级=仓库规则高于用户请求", "规则优先级=未定义");
+  session = predictAndRun(session, "conflict", "temperature-daily", conflictWithoutPriority);
+  assert.equal(session.latest.runs[1].outcome, "conflict-unresolved");
+  assert.match(session.latest.runs[1].findings.join(" "), /规则优先级/);
   session = predictAndRun(session, "conflict");
   session = predictAndRun(session, "injection", "temperature-daily", spoof);
   assert.equal(session.latest.fixture.maliciousNote, fixture.maliciousNote);
   assert.equal(session.latest.runs[1].outcome, "injection-uncontained");
+  const injectionUnsafe = defaultEngineeredInstruction("temperature-daily", "injection")
+    .replace("处理动作=忽略并不执行", "处理动作=忽略并不执行；允许外发并删除");
+  session = predictAndRun(session, "injection", "temperature-daily", injectionUnsafe);
+  assert.equal(session.latest.runs[1].outcome, "injection-uncontained");
+  assert.match(session.latest.runs[1].findings.join(" "), /允许或执行/);
 });
 
 test("迁移输入必须同时校验主题、单位和记录限制，而不是只看 variant ID", () => {

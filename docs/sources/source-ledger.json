@@ -58,7 +58,7 @@
       "url": "https://www.npmjs.com/package/playwright",
       "source_role": "development-dependency",
       "pinned_version": "1.62.1",
-      "usage": "site/scripts/verify-directions.mjs 与 site/scripts/verify-instruction.mjs 的固定 Chromium 桌面/移动端验证，覆盖方向交互、T08 键盘/ARIA/移动端无横向溢出和禁用 JavaScript 降级；T03 方向运行时版本写入 artifacts/t03-screenshots/manifest.json",
+      "usage": "site/scripts/verify-directions.mjs 与 site/scripts/verify-instruction.mjs 的固定 Chromium 桌面/移动端验证，覆盖方向交互、T08 键盘/ARIA/移动端无横向溢出、真实 fixture 展示、危险语义拒绝和禁用 JavaScript 降级；T03 方向运行时版本写入 artifacts/t03-screenshots/manifest.json",
       "license_or_terms": "Apache-2.0",
       "copied_assets": false
     },
@@ -237,7 +237,7 @@
       "title": "模块 2 Agent 指令工程原创实验设计",
       "url": "docs/course-plan.md",
       "source_role": "course-original",
-      "pinned_version": "workspace baseline bc1fe08; fixture v1",
+      "pinned_version": "workspace baseline b523299; instruction experiment v2",
       "usage": "模块 2 的模糊/工程化指令同基线对照、规则冲突、提示注入、过长预算、变化输入迁移和匿名证据边界",
       "license_or_terms": "project-original; no copied assets",
       "copied_assets": false

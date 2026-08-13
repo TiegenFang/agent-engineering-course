@@ -226,9 +226,9 @@
         ]
       },
       "versions": {
-        "client": "Astro/Starlight course page @ workspace baseline",
+        "client": "Astro/Starlight course page @ workspace baseline b523299; T08 instruction experiment v2",
         "sdk": "not-applicable",
-        "model": "deterministic instruction fixture v1; no model call",
+        "model": "deterministic instruction fixture v2; no model call",
         "protocol": "agent-engineering-course/evidence v1"
       },
       "verified_on": "2026-08-13",
