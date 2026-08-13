@@ -429,10 +429,10 @@ class MessagesResponseSource:
 @dataclass
 class _FixtureMessagesEndpoint:
     responses: list[Any]
-    requests: list[dict[str, Any]]
+    request_log: list[dict[str, Any]]
 
     def create(self, **request: Any) -> Any:
-        self.requests.append(request)
+        self.request_log.append(request)
         if not self.responses:
             raise MessagesProtocolError("Offline fixture has no recorded Messages result remaining.")
         next_response = self.responses.pop(0)
@@ -445,8 +445,8 @@ class OfflineMessagesClient:
     """A deterministic fake exposing the official SDK's ``messages.create`` seam."""
 
     def __init__(self, responses: Sequence[Any]) -> None:
-        self.requests: list[dict[str, Any]] = []
-        self.messages = _FixtureMessagesEndpoint(list(responses), self.requests)
+        self.request_log: list[dict[str, Any]] = []
+        self.messages = _FixtureMessagesEndpoint(list(responses), self.request_log)
 
 
 class APIConnectionError(Exception):
@@ -537,7 +537,7 @@ def run_offline_case(case_id: str) -> dict[str, Any]:
         second = source.respond(state)
         if second.kind != "final":
             raise MessagesProtocolError("Offline fixture did not produce a final response.")
-        history_replayed = len(client.requests) == 2 and len(client.requests[1]["messages"]) == 3
+        history_replayed = len(client.request_log) == 2 and len(client.request_log[1]["messages"]) == 3
         if case_id == "offline-success":
             outcome, structured, error = "completed", "accepted", "none"
         elif case_id == "invalid-arguments":
