@@ -1,0 +1,181 @@
+---
+import courseVersion from "../../../course-version.json";
+
+const expectedCourseVersion = courseVersion.course_version;
+---
+
+<section
+  class="memory-lab"
+  data-memory-lab
+  data-course-version={expectedCourseVersion}
+  aria-labelledby="memory-lab-title"
+>
+  <div class="memory-lab__heading">
+    <div>
+      <p class="eyebrow">离线确定性实验 · memory-ledger-v1</p>
+      <h2 id="memory-lab-title">受控 Memory：设计、回忆、纠错与删除</h2>
+    </div>
+    <span class="memory-lab__version">{expectedCourseVersion}</span>
+  </div>
+
+  <p>
+    这是一个浏览器内 fixture：它只运行固定规则，不调用真实模型、Codex、Claude Code、API、文件系统或网络。先按顺序完成步骤，再导出只含状态 ID 的匿名 evidence。
+  </p>
+
+  <noscript>
+    <section class="memory-lab__noscript" aria-labelledby="memory-noscript-title">
+      <h3 id="memory-noscript-title">实验交互需要 JavaScript</h3>
+      <p>
+        当前仍可阅读上面的心智模型和本地 checker 命令。启用 JavaScript 后，页面只在浏览器中运行固定的合成实验；不会自动上传任何内容。
+      </p>
+    </section>
+  </noscript>
+
+  <div class="memory-lab__model" aria-label="Memory 类型和边界">
+    <article>
+      <h3>短期 Memory</h3>
+      <p>当前任务的临时工作记忆。所有者是当前会话，寿命通常到任务或会话结束；不要因为它出现在 History 就自动升级。</p>
+    </article>
+    <article>
+      <h3>长期 Memory</h3>
+      <p>经过确认的项目事实、偏好或决定。必须有目的、所有者、复核/过期时间和删除条件；陈旧后应更新或删除。</p>
+    </article>
+    <article>
+      <h3>外部 Memory</h3>
+      <p>文件、数据库或索引中的受控记录。应用负责权限、检索范围、保留策略和擦除；只有选中的结果才进入当前 Context。</p>
+    </article>
+  </div>
+
+  <div class="memory-lab__controls" aria-label="Memory 实验操作">
+    <button type="button" data-memory-action="design">1. 设计记录</button>
+    <button type="button" data-memory-action="write">2. 写入受控记录</button>
+    <button type="button" data-memory-action="recall">3. 摘要、检索并注入</button>
+    <button type="button" data-memory-action="stale-update">4. 更新陈旧记忆</button>
+    <button type="button" data-memory-action="inject-pollution">注入污染备注</button>
+    <button type="button" data-memory-action="pollution">5. 隔离并恢复</button>
+    <button type="button" data-memory-action="delete">6. 删除并复核</button>
+    <button type="button" data-memory-reset>重置实验</button>
+  </div>
+
+  <p class="memory-lab__status" data-memory-status role="status" aria-live="polite">
+    尚未运行。先记录设计约束，再观察每一步的证据。
+  </p>
+
+  <div class="memory-lab__observation" data-memory-observation aria-live="polite">
+    Context 是本轮有限工作集；Memory 只有在检索后才会被显式注入 Context。
+  </div>
+
+  <div class="memory-lab__steps" aria-labelledby="memory-steps-title">
+    <h3 id="memory-steps-title">实验步骤证据</h3>
+    <ol data-memory-steps>
+      <li data-step="design">设计：目的、所有者、寿命、删除条件和三类 Memory</li>
+      <li data-step="write">写入：完整元数据和敏感信息排除</li>
+      <li data-step="recall">回忆：Context 预算、摘要、检索、显式注入</li>
+      <li data-step="stale-update">纠错：发现陈旧版本并更新</li>
+      <li data-step="pollution">污染恢复：隔离不可信备注并复核边界</li>
+      <li data-step="delete">删除：请求、确认、不再回忆</li>
+    </ol>
+  </div>
+
+  <div class="memory-lab__evidence" data-memory-evidence aria-labelledby="memory-evidence-title">
+    <h3 id="memory-evidence-title">匿名证据</h3>
+    <p data-memory-evidence-summary>完成全部步骤后才能通过；导出不包含记录文本、路径、密钥或原始数据。</p>
+    <ul data-memory-checklist>
+      <li>等待实验运行。</li>
+    </ul>
+    <button type="button" data-export-memory-evidence disabled>导出匿名 Memory evidence</button>
+  </div>
+</section>
+
+<script>
+  import {
+    MemoryStateError,
+    buildMemoryEvidence,
+    createMemorySession,
+    injectMemoryPollution,
+    resetMemorySession,
+    runMemoryAction,
+  } from "../lib/memory-engine.mjs";
+
+  const root = document.querySelector("[data-memory-lab]");
+  if (root instanceof HTMLElement) {
+    const courseVersion = root.dataset.courseVersion ?? "";
+    const status = root.querySelector("[data-memory-status]");
+    const observation = root.querySelector("[data-memory-observation]");
+    const steps = root.querySelector("[data-memory-steps]");
+    const checklist = root.querySelector("[data-memory-checklist]");
+    const summary = root.querySelector("[data-memory-evidence-summary]");
+    const exportButton = root.querySelector("[data-export-memory-evidence]");
+    let session = createMemorySession();
+
+    const setMessage = (element, message, kind = "") => {
+      if (!(element instanceof HTMLElement)) return;
+      element.textContent = message;
+      element.dataset.status = kind;
+    };
+
+    const render = () => {
+      const evidence = buildMemoryEvidence(session, { courseVersion });
+      setMessage(summary, `${evidence.result} · ${evidence.evidence.filter((item) => item.result === "passed").length} / ${evidence.evidence.length} 项通过`);
+      if (exportButton instanceof HTMLButtonElement) exportButton.disabled = evidence.result !== "passed";
+      if (observation instanceof HTMLElement) observation.textContent = session.lastObservation;
+      if (steps instanceof HTMLOListElement) {
+        for (const item of steps.querySelectorAll("[data-step]")) {
+          const id = item.getAttribute("data-step") ?? "";
+          const stage = session.stages.find((entry) => entry.id === id);
+          item.dataset.status = stage?.result ?? "pending";
+          item.setAttribute("aria-label", `${item.textContent} · ${stage?.result ?? "pending"}`);
+        }
+      }
+      if (checklist instanceof HTMLUListElement) {
+        checklist.replaceChildren();
+        for (const check of evidence.evidence) {
+          const item = document.createElement("li");
+          item.dataset.status = check.result;
+          item.textContent = `${check.id} · ${check.result === "passed" ? "通过" : "待补齐"}`;
+          checklist.append(item);
+        }
+      }
+    };
+
+    root.querySelectorAll("[data-memory-action]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const action = button.getAttribute("data-memory-action") ?? "";
+        try {
+          session = action === "inject-pollution"
+            ? injectMemoryPollution(session)
+            : runMemoryAction(session, action);
+          setMessage(status, session.status === "complete" ? "实验完成：现在可以导出匿名证据。" : session.lastObservation, session.status === "warning" ? "warning" : "success");
+          render();
+        } catch (error) {
+          setMessage(status, error instanceof MemoryStateError ? error.message : "实验动作无效。", "error");
+        }
+      });
+    });
+
+    root.querySelector("[data-memory-reset]")?.addEventListener("click", () => {
+      session = resetMemorySession();
+      setMessage(status, "已重置。请先记录设计约束。", "success");
+      render();
+    });
+
+    exportButton?.addEventListener("click", () => {
+      const evidence = buildMemoryEvidence(session, { courseVersion });
+      if (evidence.result !== "passed") {
+        setMessage(status, "证据尚未完整；请按步骤恢复后再导出。", "error");
+        return;
+      }
+      const blob = new Blob([`${JSON.stringify(evidence, null, 2)}\n`], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "t16-memory-evidence.json";
+      link.click();
+      URL.revokeObjectURL(url);
+      window.dispatchEvent(new CustomEvent("agent-loop:evidence", { detail: evidence }));
+      setMessage(status, "已导出匿名 evidence；实验文本没有进入交换文件。", "success");
+    });
+
+    render();
+  }
+</script>
