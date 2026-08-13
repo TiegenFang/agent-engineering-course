@@ -192,7 +192,7 @@ try {
   await desktop.goto(`${baseUrl}/module-2-agent-instruction/`, { waitUntil: "networkidle" });
   await assertPageContract(desktop, "desktop");
   await desktop.locator("a.sl-skip-link").focus();
-  assert.match(await desktop.locator("a.sl-skip-link").textContent() || "", /Skip to content/);
+  assert.match(await desktop.locator("a.sl-skip-link").textContent() || "", /Skip to content|跳转到内容|跳到主要内容/);
   await runKeyboardExperiment(desktop);
   await desktop.close();
 
