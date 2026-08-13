@@ -1,0 +1,108 @@
+---
+title: 模块 1：Agent、模型与 Harness
+description: 用确定性的浏览器 trace 观察最小 Agent loop，并记录可核验证据。
+sidebar:
+  order: 2
+---
+
+import AgentLoop from '../../components/AgentLoop.astro';
+import EvidenceLoop from '../../components/EvidenceLoop.astro';
+
+# 模块 1：Agent、模型与 Harness
+
+> 本课的主实验是浏览器内的确定性 mock trace。它帮助你看见控制流，不伪装成真实模型、Codex、Claude Code 或设备调用。
+
+## 你要解决的真实问题
+
+当一个 Agent 说“我已经检查过设备”时，单看最后一句话无法判断它是否真的请求了工具、工具是否执行、结果是否回到了上下文，以及它为什么停止。本课把这些事件拆开，让你能在每一步提出预测、观察证据并解释失败位置。
+
+完成本课后，你应能：
+
+- 区分 Model、Agent、Agent Harness 与 Agent Application 的职责边界。
+- 按 `response → tool request → execution → result → response/stop` 顺序描述一次最小 Agent loop。
+- 在变化输入和预置工具错误下，记录预测、观察和停止条件，并说明恢复动作。
+- 导出不含设备原始值、路径、密钥或个人信息的匿名 `evidence` JSON。
+
+## 心智模型：谁拥有哪一段控制流？
+
+- **Model（模型）**：根据当前上下文提出响应或工具请求；它不等于完整的应用控制器。
+- **Agent**：围绕目标组织“响应—行动—观察—下一步”的循环过程。
+- **Agent Harness**：承载状态、工具边界、执行控制、权限和停止条件的运行外壳。
+- **Agent Application**：把模型 API、工具、状态与上下文管理组合成目标导向的软件。
+
+本实验只演示稳定的控制流。页面中的“模型响应”是教学事件，不代表某个厂商的 API 字段；工具读数由输入标识计算，不读取真实设备、文件或网络。
+
+## 操作前预测
+
+在每个事件执行前，先在交互实验左侧选择你认为会发生的下一步。预测可以错；错误只会记录为证据失败，不会删除已经观察到的事件。先写下你的理由，再点击“记录预测”和“执行下一步”。
+
+## 主工具演示：逐步观察
+
+下面的实验固定显示一条成功 trace，也允许你改变目标、`deviceId`、阈值和故障模式。请留意每个事件的角色（`model`、`harness` 或 `tool`）与状态。
+
+<AgentLoop />
+
+观察重点：
+
+1. 初始 **response** 由模型理解目标并提出读取遥测的下一步。
+2. **tool-request** 只是声明工具和参数；Harness 还没有把它当成结果。
+3. **tool-execution** 在实验中返回确定性读数，或按你的选择注入工具错误。
+4. **tool-result** 由 Harness 把成功值或错误写回上下文。
+5. 成功路径会再出现一次 **response**，随后以满足停止条件结束；错误路径会在错误回填后停止。
+
+## 本地实验：改变输入
+
+依次完成两次观察：
+
+1. 使用默认输入完成成功路径，至少故意做一次错误预测，并观察预测与实际事件如何同时保留。
+2. 改变 `deviceId` 或阈值，确认观察值和模型说明会变化，但事件顺序仍然是同一条控制流。
+
+实验不需要账号、API key、网络或付费模型；可在移动设备阅读，完整交互建议使用桌面浏览器。
+
+## 故障注入与恢复
+
+把“故障注入”切换为“工具错误（可恢复）”，重新开始并走到 **错误回填**。这里的停止不是成功读数，而是 Harness 根据错误停止循环，避免模型假装得到了数据。
+
+恢复时切回“无故障成功路径”，点击“应用输入并重置实验”，再完成一次成功 trace。你应能指出：错误发生在工具执行，错误证据由结果回填，停止条件由 Harness 保持。
+
+## 迁移挑战：换工具，保留能力目标
+
+不调用 Codex 或 Claude Code 也可以完成本课。请任选一个你可用的 Coding Agent，向它解释同一条 trace 的五个事件，并让它用不同的合成 `deviceId` 说明：
+
+- 哪个部分属于模型响应；
+- 哪个部分属于 Harness 的状态和停止控制；
+- 哪个部分属于工具执行和结果回填；
+- 工具失败时应该保留什么证据、如何安全恢复。
+
+迁移挑战改变输入，不要求复制任何厂商界面或 API 字段；它也不属于下一模块的 Agent 指令工程。
+
+## 可核验成果：导出匿名 evidence
+
+完成成功路径和故障路径后，点击实验下方的“导出匿名证据”。导出的文档遵循课程已有的 `agent-engineering-course/evidence` v1 合同，只保留课节身份、结果状态和三项证据摘要。你可以把它交给本地 `course_check`，再导入本页的本地学习记录组件：
+
+<EvidenceLoop lessonId="t02-agent-loop" />
+
+在课程工作区的 `checker` 目录运行（Windows 11 + PowerShell 7 主路径）：
+
+```powershell
+python -m course_check check t02-agent-loop --root .. --json
+```
+
+如果你把页面导出的 JSON 保存为 `t02-agent-loop-evidence.json`，也可以显式检查它：
+
+```powershell
+python -m course_check check t02-agent-loop --root .. --evidence-file ..\t02-agent-loop-evidence.json --output ..\t02-agent-loop-checked.json
+```
+
+检查器只读取你主动指定的本地证据文件，并丢弃 trace 细节；它不会上传源码、密钥、绝对路径或原始遥测。
+
+## 风险、版本与来源卡片
+
+- **账号与成本**：不需要账号；mock trace 和本地 checker 免费，不调用付费模型。
+- **权限与副作用**：页面只在浏览器内计算；下载、导入和清除记录都由你主动操作，不触碰设备、文件系统或网络服务。
+- **隐私边界**：请只使用合成标识符；不要把真实设备名、个人信息、密钥或研究数据填入页面。导出的 evidence 不应包含这些信息。
+- **预期失败与恢复**：错误预测会留下失败证据；工具错误通过重置输入并切回无故障路径恢复。若 checker 拒绝版本，先确认网页、练习和 checker 来自同一课程版本。
+- **版本与验证边界**：trace v1、evidence v1 与当前课程版本锁定；本实验未验证真实 Codex/Claude Code、付费 API、真实设备、MCP transport 或跨平台浏览器行为。
+- **来源与许可**：概念、叙事和 trace 为本课程原创设计（正文 CC BY 4.0；组件、实验脚手架与 checker MIT），不复制第三方资产。
+
+下一步是模块 2 的 Agent 指令工程；本课先把循环本身看清，不提前引入指令模板或框架。

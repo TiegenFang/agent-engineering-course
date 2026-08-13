@@ -1,6 +1,11 @@
 ---
 import courseVersion from "../../../course-version.json";
 
+interface Props {
+  lessonId?: string;
+}
+
+const { lessonId = "t01-foundation" } = Astro.props;
 const expectedCourseVersion = courseVersion.course_version;
 ---
 
@@ -8,6 +13,7 @@ const expectedCourseVersion = courseVersion.course_version;
   class="evidence-loop"
   data-evidence-loop
   data-course-version={expectedCourseVersion}
+  data-lesson-id={lessonId}
   aria-labelledby="evidence-loop-title"
 >
   <div class="evidence-loop__heading">
@@ -19,7 +25,7 @@ const expectedCourseVersion = courseVersion.course_version;
   </div>
 
   <p>
-    在课程工作区的 <code>checker</code> 目录运行 <code>python -m course_check check t01-foundation --root .. --output ..\evidence.json</code>，
+    在课程工作区的 <code>checker</code> 目录运行 <code>python -m course_check check {lessonId} --root .. --output ..\evidence.json</code>，
     再把生成的匿名 JSON 导入这里。记录只保存在当前浏览器，不上传源码、密钥或原始数据。
   </p>
 
@@ -150,6 +156,13 @@ const expectedCourseVersion = courseVersion.course_version;
         }
       }
     };
+
+    window.addEventListener("agent-loop:evidence", (event) => {
+      const detail = (event as CustomEvent<unknown>).detail;
+      if (detail !== null && typeof detail === "object") {
+        importText(JSON.stringify(detail));
+      }
+    });
 
     try {
       const saved = loadLearningRecord(localStorage, storageKey, courseVersion) as LearningRecord;

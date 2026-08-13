@@ -1,0 +1,335 @@
+---
+import courseVersion from "../../../course-version.json";
+
+const expectedCourseVersion = courseVersion.course_version;
+---
+
+<section
+  class="agent-loop-lab"
+  data-agent-loop
+  data-course-version={expectedCourseVersion}
+  aria-labelledby="agent-loop-title"
+>
+  <div class="agent-loop-lab__heading">
+    <div>
+      <p class="eyebrow">模块 1 · Agent、模型与 Harness</p>
+      <h2 id="agent-loop-title">先预测，再观察最小 Agent loop</h2>
+    </div>
+    <span class="agent-loop-lab__version">trace v1 · {expectedCourseVersion}</span>
+  </div>
+
+  <p class="agent-loop-lab__lead">
+    这是一个无网络、无模型调用的确定性教学夹具。它把“模型响应 → 工具请求 → 工具执行 → 结果回填 → 停止条件”拆成可预测、可逐步推进的事件；它不代表真实 Codex 或 Claude Code 的产品行为。
+  </p>
+
+  <div class="agent-loop-lab__model-grid" aria-label="四个概念边界">
+    <article>
+      <h3>模型（Model）</h3>
+      <p>根据当前上下文生成下一次响应或工具请求的推理服务。</p>
+    </article>
+    <article>
+      <h3>Agent</h3>
+      <p>围绕目标组织响应、行动、观察和下一步判断的循环过程。</p>
+    </article>
+    <article>
+      <h3>Agent Harness</h3>
+      <p>承载状态、工具、权限、执行控制和停止条件的运行外壳。</p>
+    </article>
+    <article>
+      <h3>Agent Application</h3>
+      <p>用模型 API、工具、状态和上下文管理完成目标工作流的软件应用。</p>
+    </article>
+  </div>
+
+  <form class="agent-loop-lab__inputs" data-loop-form>
+    <fieldset>
+      <legend>改变输入，再观察同一控制流</legend>
+      <label for="agent-loop-goal">目标</label>
+      <input
+        id="agent-loop-goal"
+        name="goal"
+        type="text"
+        maxlength="160"
+        required
+        value="检查设备遥测并在异常时停止"
+      />
+
+      <label for="agent-loop-device">deviceId</label>
+      <input
+        id="agent-loop-device"
+        name="deviceId"
+        type="text"
+        pattern="[A-Za-z0-9][A-Za-z0-9._-]{0,31}"
+        maxlength="32"
+        required
+        value="device-17"
+      />
+
+      <label for="agent-loop-threshold">异常阈值（°C）</label>
+      <input
+        id="agent-loop-threshold"
+        name="threshold"
+        type="number"
+        min="0"
+        max="100"
+        step="1"
+        required
+        value="42"
+      />
+
+      <label for="agent-loop-failure">故障注入</label>
+      <select id="agent-loop-failure" name="failureMode">
+        <option value="none">无故障成功路径</option>
+        <option value="tool-error">工具错误（可恢复）</option>
+      </select>
+
+      <button type="submit" data-reset-loop>应用输入并重置实验</button>
+    </fieldset>
+  </form>
+
+  <div class="agent-loop-lab__workbench">
+    <section class="agent-loop-lab__prediction" aria-labelledby="agent-loop-prediction-title">
+      <p class="eyebrow">操作前预测</p>
+      <h3 id="agent-loop-prediction-title">下一步会是什么？</h3>
+      <p data-loop-prompt>先不要执行：预测第 1 个事件，再记录你的判断。</p>
+      <label for="agent-loop-prediction">我的预测</label>
+      <select id="agent-loop-prediction" data-loop-prediction>
+        <option value="response">模型响应</option>
+        <option value="tool-request">工具请求</option>
+        <option value="tool-execution">工具执行</option>
+        <option value="tool-result">结果回填</option>
+        <option value="stop">停止条件</option>
+      </select>
+      <button type="button" data-record-prediction>记录预测</button>
+      <p class="agent-loop-lab__status" data-loop-status role="status" aria-live="polite">
+        预测完成后才能执行下一步。
+      </p>
+    </section>
+
+    <section class="agent-loop-lab__trace-panel" aria-labelledby="agent-loop-trace-title">
+      <div class="agent-loop-lab__trace-heading">
+        <div>
+          <p class="eyebrow">可观察 trace</p>
+          <h3 id="agent-loop-trace-title">响应—行动—证据</h3>
+        </div>
+        <span data-loop-progress>已观察 0 / 6</span>
+      </div>
+      <ol class="agent-loop-lab__trace" data-loop-trace>
+        <li>尚未执行事件；先完成左侧预测。</li>
+      </ol>
+      <p class="agent-loop-lab__observation" data-loop-observation>
+        模拟读数会在工具结果回填后出现。
+      </p>
+    </section>
+  </div>
+
+  <div class="agent-loop-lab__controls">
+    <button type="button" data-advance-loop disabled>执行下一步</button>
+    <button type="button" data-export-loop-evidence>导出匿名证据</button>
+  </div>
+
+  <p class="agent-loop-lab__evidence" data-loop-evidence-status role="status" aria-live="polite">
+    可随时导出当前进度；完成全部事件后，三项 t02 证据应全部通过。
+  </p>
+
+  <details class="agent-loop-lab__help">
+    <summary>逐层求助：方向提示与故障恢复</summary>
+    <p>
+      如果预测错误，先观察实际事件的角色和状态，再预测下一事件；错误不会清除已经留下的观察记录。工具错误分支应在“错误回填”后停止，恢复方法是切回“无故障成功路径”并点击“应用输入并重置实验”。
+    </p>
+  </details>
+</section>
+
+<script>
+  import {
+    AgentLoopInputError,
+    AgentLoopStateError,
+    DEFAULT_LOOP_INPUT,
+    STEP_KIND_LABELS,
+    advanceAgentLoop,
+    buildAgentLoopEvidence,
+    createAgentLoopSession,
+    submitPrediction,
+  } from "../lib/agent-loop.mjs";
+
+  const root = document.querySelector("[data-agent-loop]");
+  if (root instanceof HTMLElement) {
+    const courseVersion = root.dataset.courseVersion ?? "";
+    const form = root.querySelector("[data-loop-form]");
+    const goalInput = root.querySelector("#agent-loop-goal");
+    const deviceInput = root.querySelector("#agent-loop-device");
+    const thresholdInput = root.querySelector("#agent-loop-threshold");
+    const failureInput = root.querySelector("#agent-loop-failure");
+    const predictionInput = root.querySelector("[data-loop-prediction]");
+    const recordButton = root.querySelector("[data-record-prediction]");
+    const advanceButton = root.querySelector("[data-advance-loop]");
+    const exportButton = root.querySelector("[data-export-loop-evidence]");
+    const prompt = root.querySelector("[data-loop-prompt]");
+    const status = root.querySelector("[data-loop-status]");
+    const progress = root.querySelector("[data-loop-progress]");
+    const traceList = root.querySelector("[data-loop-trace]");
+    const observation = root.querySelector("[data-loop-observation]");
+    const evidenceStatus = root.querySelector("[data-loop-evidence-status]");
+    let session = createAgentLoopSession(DEFAULT_LOOP_INPUT);
+
+    const statusLabel = (value: string) => {
+      const labels: Record<string, string> = {
+        ok: "已完成",
+        passed: "通过",
+        error: "错误",
+      };
+      return labels[value] ?? value;
+    };
+
+    const setMessage = (element: Element | null, message: string, kind = "") => {
+      if (!(element instanceof HTMLElement)) return;
+      element.textContent = message;
+      element.dataset.status = kind;
+    };
+
+    const renderTrace = () => {
+      if (!(traceList instanceof HTMLOListElement)) return;
+      traceList.replaceChildren();
+      if (session.history.length === 0) {
+        const empty = document.createElement("li");
+        empty.textContent = "尚未执行事件；先完成左侧预测。";
+        traceList.append(empty);
+      } else {
+        for (const event of session.history) {
+          const item = document.createElement("li");
+          item.className = "agent-loop-lab__trace-item";
+          item.dataset.kind = event.kind;
+          item.dataset.status = event.status;
+
+          const heading = document.createElement("div");
+          heading.className = "agent-loop-lab__trace-item-heading";
+          const title = document.createElement("strong");
+          title.textContent = `${STEP_KIND_LABELS[event.kind] ?? event.kind} · ${event.title}`;
+          const state = document.createElement("span");
+          state.textContent = `${event.actor} · ${statusLabel(event.status)}`;
+          heading.append(title, state);
+
+          const detail = document.createElement("p");
+          detail.textContent = event.detail;
+          item.append(heading, detail);
+          traceList.append(item);
+        }
+      }
+    };
+
+    const render = () => {
+      const nextStep = session.trace.steps[session.cursor] ?? null;
+      if (progress instanceof HTMLElement) {
+        progress.textContent = `已观察 ${session.history.length} / ${session.trace.steps.length}`;
+      }
+      if (prompt instanceof HTMLElement) {
+        prompt.textContent = nextStep
+          ? `先不要执行：预测第 ${session.cursor + 1} 个事件，再记录你的判断。`
+          : "循环已停止；你可以导出证据或改变输入重新开始。";
+      }
+      if (predictionInput instanceof HTMLSelectElement) {
+        predictionInput.disabled = !nextStep || session.status !== "predicting";
+      }
+      if (recordButton instanceof HTMLButtonElement) {
+        recordButton.disabled = !nextStep || session.status !== "predicting";
+      }
+      if (advanceButton instanceof HTMLButtonElement) {
+        advanceButton.disabled = session.status !== "ready";
+      }
+      if (observation instanceof HTMLElement) {
+        const resultVisible = session.history.some((event) => event.kind === "tool-result");
+        observation.textContent = resultVisible
+          ? `本次模拟观察：${session.trace.observation.deviceId} = ${session.trace.observation.value} ${session.trace.observation.unit}；${session.trace.observation.condition === "threshold-exceeded" ? "超过" : "未超过"}阈值 ${session.trace.observation.threshold} °C。`
+          : "模拟读数会在工具结果回填后出现。";
+      }
+      renderTrace();
+      try {
+        const evidence = buildAgentLoopEvidence(session, { courseVersion });
+        if (evidenceStatus instanceof HTMLElement) {
+          evidenceStatus.textContent = `当前证据：${evidence.result} · 已记录 ${evidence.evidence.filter((check) => check.result === "passed").length} / ${evidence.evidence.length} 项。`;
+          evidenceStatus.dataset.status = evidence.result;
+        }
+      } catch (error) {
+        setMessage(evidenceStatus, `证据暂不可用：${error instanceof Error ? error.message : "输入无效"}`, "error");
+      }
+    };
+
+    const readInput = () => ({
+      goal: goalInput instanceof HTMLInputElement ? goalInput.value : "",
+      deviceId: deviceInput instanceof HTMLInputElement ? deviceInput.value : "",
+      threshold: thresholdInput instanceof HTMLInputElement ? Number(thresholdInput.value) : NaN,
+      failureMode: failureInput instanceof HTMLSelectElement ? failureInput.value : "none",
+    });
+
+    form?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      try {
+        session = createAgentLoopSession(readInput());
+        setMessage(status, "输入已应用。先预测下一个事件，再执行。", "success");
+        render();
+      } catch (error) {
+        const message = error instanceof AgentLoopInputError || error instanceof Error ? error.message : "输入无效";
+        setMessage(status, `无法开始实验：${message}`, "error");
+      }
+    });
+
+    recordButton?.addEventListener("click", () => {
+      if (!(predictionInput instanceof HTMLSelectElement)) return;
+      try {
+        session = submitPrediction(session, predictionInput.value);
+        const prediction = session.pendingPrediction;
+        const expected = prediction ? STEP_KIND_LABELS[prediction.expectedKind] : "未知";
+        setMessage(
+          status,
+          prediction?.correct
+            ? `预测命中：${expected}。现在执行下一步查看证据。`
+            : `预测未命中；实际下一步是 ${expected}。现在执行下一步并保留这个观察。`,
+          prediction?.correct ? "success" : "warning",
+        );
+        render();
+      } catch (error) {
+        const message = error instanceof AgentLoopStateError || error instanceof Error ? error.message : "预测无效";
+        setMessage(status, `无法记录预测：${message}`, "error");
+      }
+    });
+
+    advanceButton?.addEventListener("click", () => {
+      try {
+        const expected = session.trace.steps[session.cursor];
+        session = advanceAgentLoop(session);
+        setMessage(
+          status,
+          session.status === "complete"
+            ? `已执行“${expected.title}”；停止条件出现，循环结束。`
+            : `已执行“${expected.title}”。继续预测下一个事件。`,
+          expected.status === "error" ? "error" : "success",
+        );
+        render();
+      } catch (error) {
+        const message = error instanceof AgentLoopStateError || error instanceof Error ? error.message : "无法执行下一步";
+        setMessage(status, `无法执行：${message}`, "error");
+      }
+    });
+
+    exportButton?.addEventListener("click", () => {
+      try {
+        const evidence = buildAgentLoopEvidence(session, { courseVersion });
+        const encoded = `${JSON.stringify(evidence, null, 2)}\n`;
+        const blob = new Blob([encoded], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "t02-agent-loop-evidence.json";
+        link.click();
+        URL.revokeObjectURL(url);
+        window.dispatchEvent(new CustomEvent("agent-loop:evidence", { detail: evidence }));
+        setMessage(evidenceStatus, `已导出并发送 ${evidence.result} 匿名证据；EvidenceLoop 可直接接收。`, "success");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "证据生成失败";
+        setMessage(evidenceStatus, `无法导出证据：${message}`, "error");
+      }
+    });
+
+    render();
+  }
+</script>

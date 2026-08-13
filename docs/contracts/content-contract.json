@@ -153,6 +153,50 @@
         "CC-BY-4.0",
         "MIT"
       ]
+    },
+    {
+      "id": "t02-agent-loop",
+      "title": "Agent loop 交互实验",
+      "stage": "alpha",
+      "duration_minutes": 35,
+      "prerequisites": ["t01-foundation"],
+      "outcomes": [
+        "区分模型、Agent、Agent Harness 与 Agent Application",
+        "按预测逐步观察响应、工具请求、工具执行、结果回填和停止条件",
+        "在确定性故障与变化输入下记录可核验证据并恢复"
+      ],
+      "artifacts": [
+        "一次完成的 Agent loop 观察—行动—证据追踪",
+        "匿名 t02-agent-loop evidence JSON"
+      ],
+      "primary_tool": "Deterministic browser simulator (mock trace)",
+      "migration_tool": "Codex or Claude Code (conceptual migration challenge; no live call)",
+      "platforms": {
+        "primary": "Desktop browser; Windows 11 + PowerShell 7 for course_check",
+        "secondary": ["macOS/Linux browser; checker path not yet cross-platform verified"]
+      },
+      "versions": {
+        "client": "Astro/Starlight course page @ workspace baseline",
+        "sdk": "not-applicable",
+        "model": "mock/deterministic trace v1; no model call",
+        "protocol": "agent-engineering-course/evidence v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free",
+        "network": "browser experiment needs no network after page load; checker is local"
+      },
+      "risk": {
+        "permissions": "只读页面与本地导出的 JSON；checker 读取用户显式指定的证据文件",
+        "side_effects": "不调用付费模型、真实 Codex/Claude Code、设备或网络；导出由用户主动触发",
+        "staleness": "课程交互、证据契约与浏览器兼容性需随课程版本复核"
+      },
+      "sources": ["course-agent-loop-original"],
+      "licenses": [
+        "CC-BY-4.0",
+        "MIT"
+      ]
     }
   ]
 }

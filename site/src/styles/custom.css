@@ -191,6 +191,252 @@
   font-size: 0.9rem;
 }
 
+.agent-loop-lab {
+  margin-block: 2rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.75rem;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: color-mix(in srgb, var(--sl-color-accent-low) 36%, transparent);
+}
+
+.agent-loop-lab__heading,
+.agent-loop-lab__trace-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.agent-loop-lab__heading h2,
+.agent-loop-lab__trace-heading h3 {
+  margin-block: 0.35rem 0;
+}
+
+.agent-loop-lab__version,
+.agent-loop-lab__trace-heading > span {
+  color: var(--sl-color-gray-2);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.agent-loop-lab__lead {
+  max-inline-size: 70ch;
+  color: var(--sl-color-gray-2);
+}
+
+.agent-loop-lab__model-grid,
+.agent-loop-lab__workbench {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.agent-loop-lab__model-grid {
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  margin-block: 1.25rem;
+}
+
+.agent-loop-lab__model-grid article,
+.agent-loop-lab__prediction,
+.agent-loop-lab__trace-panel {
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.55rem;
+  padding: 0.8rem;
+  background: var(--sl-color-bg);
+}
+
+.agent-loop-lab__model-grid h3 {
+  margin-block: 0;
+  font-size: 1rem;
+}
+
+.agent-loop-lab__model-grid p {
+  margin-block: 0.45rem 0 0;
+  font-size: 0.9rem;
+}
+
+.agent-loop-lab__inputs {
+  margin-block: 1.25rem;
+}
+
+.agent-loop-lab__inputs fieldset {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem 0.75rem;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.agent-loop-lab__inputs legend {
+  grid-column: 1 / -1;
+  margin-block-end: 0.25rem;
+  font-weight: 700;
+}
+
+.agent-loop-lab__inputs label {
+  align-self: center;
+  font-weight: 700;
+}
+
+.agent-loop-lab__inputs input,
+.agent-loop-lab__inputs select,
+.agent-loop-lab__prediction select {
+  min-inline-size: 0;
+  border: 1px solid var(--sl-color-gray-4);
+  border-radius: 0.4rem;
+  padding: 0.45rem 0.55rem;
+  color: var(--sl-color-text);
+  background: var(--sl-color-bg);
+  font: inherit;
+}
+
+.agent-loop-lab__inputs button,
+.agent-loop-lab__controls button,
+.agent-loop-lab__prediction button {
+  inline-size: fit-content;
+  border: 1px solid var(--sl-color-accent);
+  border-radius: 0.45rem;
+  padding: 0.5rem 0.75rem;
+  color: var(--sl-color-text-invert);
+  background: var(--sl-color-accent);
+  cursor: pointer;
+  font: inherit;
+}
+
+.agent-loop-lab__inputs button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.agent-loop-lab__inputs button:hover,
+.agent-loop-lab__controls button:hover,
+.agent-loop-lab__prediction button:hover {
+  background: var(--sl-color-accent-high);
+}
+
+.agent-loop-lab__inputs button:focus-visible,
+.agent-loop-lab__inputs input:focus-visible,
+.agent-loop-lab__inputs select:focus-visible,
+.agent-loop-lab__prediction button:focus-visible,
+.agent-loop-lab__prediction select:focus-visible,
+.agent-loop-lab__controls button:focus-visible {
+  outline: 0.2rem solid var(--sl-color-accent-high);
+  outline-offset: 0.15rem;
+}
+
+.agent-loop-lab__workbench {
+  grid-template-columns: minmax(13rem, 0.85fr) minmax(0, 1.5fr);
+}
+
+.agent-loop-lab__prediction label {
+  display: block;
+  margin-block-start: 1rem;
+  font-weight: 700;
+}
+
+.agent-loop-lab__prediction select {
+  inline-size: 100%;
+  margin-block: 0.45rem 0.65rem;
+}
+
+.agent-loop-lab__status,
+.agent-loop-lab__evidence {
+  border-inline-start: 0.2rem solid var(--sl-color-gray-4);
+  padding-inline-start: 0.75rem;
+}
+
+.agent-loop-lab__status[data-status='success'],
+.agent-loop-lab__evidence[data-status='passed'] {
+  border-color: var(--sl-color-accent);
+}
+
+.agent-loop-lab__status[data-status='warning'] {
+  border-color: var(--sl-color-orange-high);
+}
+
+.agent-loop-lab__status[data-status='error'],
+.agent-loop-lab__evidence[data-status='failed'] {
+  border-color: var(--sl-color-red-high);
+}
+
+.agent-loop-lab__trace {
+  display: grid;
+  gap: 0.6rem;
+  margin-block: 1rem;
+  padding-inline-start: 1.25rem;
+}
+
+.agent-loop-lab__trace-item {
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.45rem;
+  padding: 0.65rem 0.75rem;
+  background: var(--sl-color-bg);
+}
+
+.agent-loop-lab__trace-item[data-status='error'] {
+  border-color: var(--sl-color-red-high);
+}
+
+.agent-loop-lab__trace-item-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.agent-loop-lab__trace-item-heading span {
+  color: var(--sl-color-gray-2);
+  font-size: 0.8rem;
+}
+
+.agent-loop-lab__trace-item p {
+  margin-block: 0.35rem 0;
+  font-size: 0.9rem;
+}
+
+.agent-loop-lab__observation {
+  margin-block-end: 0;
+  color: var(--sl-color-gray-2);
+}
+
+.agent-loop-lab__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-block: 1rem;
+}
+
+.agent-loop-lab button:disabled,
+.agent-loop-lab select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.agent-loop-lab__help {
+  margin-block-start: 1rem;
+  border-block-start: 1px solid var(--sl-color-gray-5);
+  padding-block-start: 0.75rem;
+}
+
+@media (max-width: 42rem) {
+  .agent-loop-lab__heading,
+  .agent-loop-lab__trace-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .agent-loop-lab__workbench,
+  .agent-loop-lab__inputs fieldset {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-loop-lab__inputs legend,
+  .agent-loop-lab__inputs button {
+    grid-column: auto;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

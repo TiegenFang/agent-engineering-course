@@ -14,6 +14,7 @@ from .evidence import (
     _require_identifier,
     _reject_sensitive_unknown_fields,
     build_evidence_document,
+    validate_evidence_document,
 )
 
 
@@ -373,6 +374,8 @@ def load_evidence_checks(
     fixture_lesson_id = value.get("lesson_id", expected_lesson_id)
     if fixture_lesson_id != expected_lesson_id:
         raise EvidenceError("Evidence fixture lesson_id does not match the requested lesson")
+    if value.get("contract") == "agent-engineering-course/evidence":
+        return validate_evidence_document(value)["evidence"]
     checks = value.get("checks")
     if not isinstance(checks, list):
         raise EvidenceError("Evidence fixture checks must be a list")
@@ -627,7 +630,12 @@ def check_lesson(
 ) -> dict[str, Any]:
     """Run a public lesson check and build its anonymous result."""
 
-    if lesson_id not in {"t01-foundation", ENVIRONMENT_LESSON_ID, GIT_SAFETY_LESSON_ID}:
+    if lesson_id not in {
+        "t01-foundation",
+        ENVIRONMENT_LESSON_ID,
+        GIT_SAFETY_LESSON_ID,
+        "t02-agent-loop",
+    }:
         raise ContractError(f"Unsupported evidence lesson: {lesson_id}")
     course_version = validate_foundation(root)
     if lesson_id == "t01-foundation":
@@ -649,6 +657,29 @@ def check_lesson(
                 "t06-git-safety requires --evidence-file with the local Git safety JSON"
             )
         checks = load_git_safety_checks(evidence_file)
+    else:
+        checks = [
+            {
+                "id": "agent-loop-page",
+                "result": "passed"
+                if (root / "site/src/content/docs/module-1-agent-loop.mdx").is_file()
+                else "failed",
+            },
+            {
+                "id": "agent-loop-simulator",
+                "result": "passed"
+                if (root / "site/src/lib/agent-loop.mjs").is_file()
+                else "failed",
+            },
+            {
+                "id": "agent-loop-trace-contract",
+                "result": "passed"
+                if (root / "labs/agent-loop/README.md").is_file()
+                else "failed",
+            },
+        ]
+        if evidence_file is not None:
+            checks = load_evidence_checks(evidence_file, expected_lesson_id=lesson_id)
     return build_evidence_document(
         course_version=course_version,
         lesson_id=lesson_id,
