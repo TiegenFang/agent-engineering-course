@@ -19,6 +19,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CHECKER = ROOT / "checker"
+COURSE_VERSION = json.loads(
+    (ROOT / "course-version.json").read_text(encoding="utf-8")
+)["course_version"]
 
 
 class FoundationContractTests(unittest.TestCase):
@@ -56,7 +59,7 @@ class FoundationContractTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("Foundation validation passed", result.stdout)
-        self.assertIn("0.1.0-alpha", result.stdout)
+        self.assertIn(COURSE_VERSION, result.stdout)
 
     def test_public_contract_contains_unified_version_content_and_sources(self) -> None:
         contract = json.loads((ROOT / "course-version.json").read_text(encoding="utf-8"))
@@ -71,7 +74,12 @@ class FoundationContractTests(unittest.TestCase):
             contract["boundaries"],
             {"site": "site", "labs": "labs", "checker": "checker", "docs": "docs"},
         )
-        self.assertEqual(contract["course_version"], "0.1.0-alpha")
+        self.assertEqual(contract["course_version"], COURSE_VERSION)
+        package = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+        lock = json.loads((ROOT / "package-lock.json").read_text(encoding="utf-8"))
+        self.assertEqual(package["version"], COURSE_VERSION)
+        self.assertEqual(lock["version"], package["version"])
+        self.assertEqual(lock["packages"][""]["version"], package["version"])
         self.assertEqual(content["contract_version"], "1")
         self.assertEqual(content["lessons"][0]["id"], "t01-foundation")
         self.assertGreaterEqual(len(sources["entries"]), 1)

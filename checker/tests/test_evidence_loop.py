@@ -28,7 +28,9 @@ from course_check.evidence import (
 )
 
 
-COURSE_VERSION = "0.1.0-alpha"
+COURSE_VERSION = json.loads(
+    (ROOT / "course-version.json").read_text(encoding="utf-8")
+)["course_version"]
 
 
 class EvidenceDocumentTests(unittest.TestCase):

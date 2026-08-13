@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,10 +17,12 @@ import {
   serializeLearningRecord,
 } from "../src/lib/evidence-record.mjs";
 
-const COURSE_VERSION = "0.1.0-alpha";
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const workspaceRoot = resolve(siteRoot, "..");
 const checkerRoot = join(workspaceRoot, "checker");
+const COURSE_VERSION = JSON.parse(
+  readFileSync(join(workspaceRoot, "course-version.json"), "utf8"),
+).course_version;
 
 function evidence(result = "passed", lessonId = "t01-foundation") {
   const checksByResult = {
@@ -180,7 +182,7 @@ test("localStorage 适配器可以持久化、恢复和清除本地记录", () =
     setItem: (key, value) => values.set(key, value),
     removeItem: (key) => values.delete(key),
   };
-  const key = "agent-engineering-course:learning-record:0.1.0-alpha";
+  const key = `agent-engineering-course:learning-record:${COURSE_VERSION}`;
   const original = mergeEvidence(
     emptyLearningRecord(COURSE_VERSION),
     parseLearningInput(evidence(), COURSE_VERSION),

@@ -1,9 +1,9 @@
 """Public seams for the module 0 environment-diagnosis journey.
 
-These tests describe what a learner can observe: a real lesson page, a
-copyable PowerShell diagnostic, and an anonymous evidence document that can be
-imported by the existing website contract.  They intentionally do not test
-the implementation details of version probing or a particular editor.
+These tests describe what a learner can observe: a PowerShell diagnostic's
+public output and an anonymous evidence document that can be imported by the
+existing website contract.  The built page contract is checked by the site
+test seam, not by reading MDX or PowerShell source files here.
 """
 
 from __future__ import annotations
@@ -20,10 +20,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 CHECKER = ROOT / "checker"
 CONTENT_CONTRACT = ROOT / "docs" / "contracts" / "content-contract.json"
-LESSON_PAGE = ROOT / "site" / "src" / "content" / "docs" / "module-0-environment.mdx"
 DIAGNOSTIC_SCRIPT = ROOT / "labs" / "module-0" / "diagnose-environment.ps1"
-README = ROOT / "README.md"
-COURSE_VERSION = "0.1.0-alpha"
+COURSE_VERSION = json.loads(
+    (ROOT / "course-version.json").read_text(encoding="utf-8")
+)["course_version"]
 ENVIRONMENT_CHECK_IDS = {
     "powershell-7",
     "editor-command",
@@ -49,56 +49,6 @@ class EnvironmentContentTests(unittest.TestCase):
         self.assertTrue(lesson["artifacts"])
         self.assertIn("GitHub account (manual check)", lesson["access"]["accounts"])
         self.assertIn("one Coding Agent account (manual check)", lesson["access"]["accounts"])
-
-    def test_module_zero_page_and_script_are_reviewable_and_platform_explicit(self) -> None:
-        self.assertTrue(LESSON_PAGE.is_file())
-        self.assertTrue(DIAGNOSTIC_SCRIPT.is_file())
-        page = LESSON_PAGE.read_text(encoding="utf-8")
-        script = DIAGNOSTIC_SCRIPT.read_text(encoding="utf-8")
-
-        for heading in (
-            "真实问题",
-            "心智模型",
-            "操作前预测",
-            "主工具演示",
-            "本地实验",
-            "故障注入与恢复",
-            "迁移挑战",
-            "可核验成果",
-            "风险与来源卡片",
-        ):
-            self.assertIn(heading, page)
-        for required_text in (
-            "Windows 11",
-            "PowerShell 7",
-            "macOS",
-            "Linux",
-            "Get-Command",
-            "course_check",
-            "匿名",
-            "绝对路径",
-        ):
-            self.assertIn(required_text, page)
-        self.assertIn("课程首页", page)
-        self.assertNotIn("导入本页", page)
-
-        for required_text in (
-            "$PSVersionTable.PSVersion",
-            "Get-Command",
-            "python",
-            "git",
-            'lesson_id = "t05-environment"',
-            "platform = $platform",
-        ):
-            self.assertIn(required_text, script)
-        for forbidden in ("$env:USERNAME", "$env:USERPROFILE", "$HOME", "api_key", "token"):
-            self.assertNotIn(forbidden.lower(), script.lower())
-
-        readme = README.read_text(encoding="utf-8")
-        self.assertIn("模块 0：环境诊断", readme)
-        self.assertIn("environment-diagnostic.json", readme)
-        self.assertIn("environment-evidence.json", readme)
-
 
 class EnvironmentEvidenceCommandTests(unittest.TestCase):
     def run_diagnostic(

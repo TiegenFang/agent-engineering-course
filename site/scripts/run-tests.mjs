@@ -6,6 +6,7 @@ const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const testCommands = [
   ["--test", "scripts/test-evidence-record.mjs"],
   ["scripts/assert-homepage.mjs"],
+  ["scripts/assert-module-zero.mjs"],
 ];
 
 for (const args of testCommands) {
