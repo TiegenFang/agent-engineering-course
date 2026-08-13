@@ -244,6 +244,8 @@ const evidencePoints = [
     --shell-paper: #f5f7f3;
     --shell-soft: #e7eee9;
     width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
     margin-inline: auto;
     background: var(--shell-paper);
     color: var(--shell-ink);
@@ -254,7 +256,12 @@ const evidencePoints = [
     line-break: strict;
   }
 
-  .course-shell :global(*) { box-sizing: border-box; }
+  .course-shell :global(*) { box-sizing: border-box; min-width: 0; }
+  .course-shell :global(p),
+  .course-shell :global(h1),
+  .course-shell :global(h2),
+  .course-shell :global(h3),
+  .course-shell :global(a) { overflow-wrap: anywhere; }
   .course-shell :global(a) { color: inherit; }
   .course-shell :global(h1),
   .course-shell :global(h2),
@@ -487,7 +494,7 @@ const evidencePoints = [
     .shell-hero,
     .shell-nav,
     .shell-main,
-    .shell-footer { width: min(100% - 2rem, 1240px); }
+    .shell-footer { width: min(1240px, calc(100% - 2rem)); max-width: calc(100% - 2rem); }
     .shell-hero { display: block; padding-block: 3.5rem 3rem; }
     .hero-copy h1 { max-width: 9ch; font-size: clamp(3.3rem, 16vw, 5.2rem); }
     .hero-note { margin-top: 3.5rem; }
