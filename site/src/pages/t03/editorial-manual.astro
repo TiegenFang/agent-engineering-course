@@ -69,10 +69,10 @@ const claudeLogo = `${base}${t03Products[1].logoPath}`;
             <h2 id="map-title">八层能力，沿一条线逐步加深。</h2>
             <p>用同一公共练习仓库累积上下文，而不是每章更换无关联玩具。先理解关系，再打开产品表面。</p>
             <div class="view-switch" role="tablist" aria-label="能力地图阅读方式">
-              <button type="button" role="tab" aria-selected="true" aria-controls="layers-view" data-view-target="layers-view">八层地图</button>
-              <button type="button" role="tab" aria-selected="false" aria-controls="evidence-view" data-view-target="evidence-view">对应证据</button>
+              <button id="layers-tab" type="button" role="tab" aria-selected="true" aria-controls="layers-view" aria-labelledby="layers-tab-label" data-view-target="layers-view" tabindex="0"><span id="layers-tab-label">八层地图</span></button>
+              <button id="evidence-tab" type="button" role="tab" aria-selected="false" aria-controls="evidence-view" aria-labelledby="evidence-tab-label" data-view-target="evidence-view" tabindex="-1"><span id="evidence-tab-label">对应证据</span></button>
             </div>
-            <div class="reading-view" id="layers-view" role="tabpanel">
+            <div class="reading-view" id="layers-view" role="tabpanel" aria-labelledby="layers-tab" tabindex="0">
               <ol class="layer-list">
                 {t03Content.capabilityLayers.map((layer) => (
                   <li>
@@ -82,7 +82,7 @@ const claudeLogo = `${base}${t03Products[1].logoPath}`;
                 ))}
               </ol>
             </div>
-            <div class="reading-view" id="evidence-view" role="tabpanel" hidden>
+            <div class="reading-view" id="evidence-view" role="tabpanel" aria-labelledby="evidence-tab" tabindex="0" hidden>
               <ol class="evidence-list">
                 {t03Content.capabilityLayers.map((layer) => (
                   <li><span class="layer-number">{layer.index}</span><p><strong>{layer.title}</strong>{layer.evidence}</p></li>
@@ -154,13 +154,30 @@ const claudeLogo = `${base}${t03Products[1].logoPath}`;
     </footer>
 
     <script is:inline>
-      const viewButtons = [...document.querySelectorAll("[data-view-target]")];
+      const viewButtons = [...document.querySelectorAll('[role="tab"]')];
       const views = [...document.querySelectorAll(".reading-view")];
-      viewButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          const target = button.dataset.viewTarget;
-          viewButtons.forEach((item) => item.setAttribute("aria-selected", String(item === button)));
-          views.forEach((view) => { view.hidden = view.id !== target; });
+      const activateView = (button, moveFocus = false) => {
+        const target = button.dataset.viewTarget;
+        viewButtons.forEach((item) => {
+          const selected = item === button;
+          item.setAttribute("aria-selected", String(selected));
+          item.setAttribute("tabindex", selected ? "0" : "-1");
+        });
+        views.forEach((view) => { view.hidden = view.id !== target; });
+        if (moveFocus) button.focus();
+      };
+      viewButtons.forEach((button, index) => {
+        button.addEventListener("click", () => activateView(button));
+        button.addEventListener("keydown", (event) => {
+          let nextIndex = index;
+          if (event.key === "ArrowRight" || event.key === "ArrowDown") nextIndex = (index + 1) % viewButtons.length;
+          if (event.key === "ArrowLeft" || event.key === "ArrowUp") nextIndex = (index - 1 + viewButtons.length) % viewButtons.length;
+          if (event.key === "Home") nextIndex = 0;
+          if (event.key === "End") nextIndex = viewButtons.length - 1;
+          if (nextIndex !== index || event.key === "Home" || event.key === "End") {
+            event.preventDefault();
+            activateView(viewButtons[nextIndex], true);
+          }
         });
       });
     </script>
@@ -172,24 +189,24 @@ const claudeLogo = `${base}${t03Products[1].logoPath}`;
       :global(h1), :global(h2), :global(h3), :global(p) { text-wrap: pretty; }
       :global(h1), :global(h2), :global(h3) { text-wrap: balance; }
       :global(a) { color: inherit; }
-      .editorial-page { --ink: #24231f; --muted: #716a60; --paper: #f4efe7; --paper-deep: #e8dfd2; --rust: #b9573b; --line: #cfc5b7; }
-      .skip-link { position: fixed; left: 1rem; top: -5rem; z-index: 20; background: var(--ink); color: #fff; padding: 0.65rem 0.9rem; text-decoration: none; }
+      .editorial-page { --ink: #24231f; --muted: #716a60; --paper: #f4efe7; --paper-deep: #e8dfd2; --rust: #963b28; --line: #cfc5b7; }
+      .skip-link { min-height: 44px; position: fixed; left: 1rem; top: -5rem; z-index: 20; display: inline-flex; align-items: center; background: var(--ink); color: #fff; padding: 0.65rem 0.9rem; text-decoration: none; }
       .skip-link:focus { top: 1rem; }
       .editorial-header { width: min(1320px, calc(100% - 3rem)); display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-inline: auto; padding-block: 1.4rem; border-bottom: 1px solid var(--ink); }
-      .masthead { font-family: "Newsreader", Georgia, "Noto Serif SC", serif; font-size: 1.25rem; text-decoration: none; }
+      .masthead { min-height: 44px; display: inline-flex; align-items: center; font-family: "Newsreader", Georgia, "Noto Serif SC", serif; font-size: 1.25rem; text-decoration: none; }
       .header-meta { display: flex; gap: 1.2rem; color: var(--muted); font-family: "Geist Mono", "Cascadia Mono", monospace; font-size: 0.72rem; }
-      .header-meta a { color: var(--ink); text-underline-offset: 0.3em; }
+      .header-meta a { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; color: var(--ink); text-underline-offset: 0.3em; }
       .editorial-hero { width: min(1320px, calc(100% - 3rem)); margin-inline: auto; padding-block: clamp(4.5rem, 11vw, 9rem) clamp(3rem, 8vw, 7rem); }
       .hero-kicker, .hero-footer { display: flex; justify-content: space-between; gap: 1rem; color: var(--rust); font-family: "Geist Mono", "Cascadia Mono", monospace; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
       .editorial-hero h1 { max-width: 9ch; margin: 2rem 0 1.3rem; font-family: "Newsreader", Georgia, "Noto Serif SC", serif; font-size: clamp(4.6rem, 14vw, 13rem); font-weight: 450; letter-spacing: -0.08em; line-height: 0.82; }
       .hero-dek { max-width: 40rem; margin: 0; color: var(--muted); font-size: clamp(1rem, 1.3vw, 1.2rem); }
       .hero-rule { height: 1px; margin-block: 3.5rem 1rem; background: var(--ink); }
-      .hero-footer a { color: var(--ink); text-underline-offset: 0.35em; text-transform: none; }
+      .hero-footer a { min-height: 44px; display: inline-flex; align-items: center; color: var(--ink); text-underline-offset: 0.35em; text-transform: none; }
       .reading-layout { width: min(1320px, calc(100% - 3rem)); display: grid; grid-template-columns: minmax(180px, 0.35fr) minmax(0, 1fr); gap: clamp(2rem, 8vw, 9rem); margin-inline: auto; padding-block: 2rem 7rem; border-top: 1px solid var(--ink); }
       .reading-rail { position: sticky; top: 1rem; align-self: start; padding-top: 1rem; }
       .rail-label, .article-label, .tool-overline, .ui-boundary-label { margin: 0 0 1rem; color: var(--rust); font-family: "Geist Mono", "Cascadia Mono", monospace; font-size: 0.72rem; letter-spacing: 0.07em; text-transform: uppercase; }
       .reading-rail nav { display: grid; gap: 0.45rem; }
-      .reading-rail nav a { font-family: "Newsreader", Georgia, serif; font-size: 1.15rem; text-decoration: none; text-underline-offset: 0.25em; }
+      .reading-rail nav a { min-height: 44px; display: inline-flex; align-items: center; font-family: "Newsreader", Georgia, serif; font-size: 1.15rem; text-decoration: none; text-underline-offset: 0.25em; }
       .reading-rail nav a:hover, .reading-rail nav a:focus-visible { color: var(--rust); text-decoration: underline; }
       .rail-note { max-width: 16ch; margin-top: 3rem; color: var(--muted); font-size: 0.8rem; line-height: 1.7; }
       .reading-column { max-width: 760px; }
@@ -221,11 +238,11 @@ const claudeLogo = `${base}${t03Products[1].logoPath}`;
       .tool-entry { min-height: 14rem; padding-block: 1.5rem; }
       .tool-entry + .tool-entry { padding-inline-start: 2rem; border-inline-start: 1px solid var(--line); }
       .tool-entry h3 { margin: 0; font-family: "Newsreader", Georgia, serif; font-size: 2.1rem; }
-      .tool-entry h3 a { text-underline-offset: 0.2em; }
+      .tool-entry h3 a { min-height: 44px; display: inline-flex; align-items: center; text-underline-offset: 0.2em; }
       .tool-entry h3 a:hover, .tool-entry h3 a:focus-visible { color: var(--rust); }
       .tool-entry p:not(.tool-overline) { max-width: 25em; color: var(--muted); font-size: 0.9rem; }
       .tool-entry img { width: min(100%, 280px); height: auto; margin-block: 0.2rem 0.55rem; }
-      .tool-entry a:not(h3 a) { font-size: 0.85rem; text-underline-offset: 0.25em; }
+      .tool-entry a:not(h3 a) { min-height: 44px; display: inline-flex; align-items: center; font-size: 0.85rem; text-underline-offset: 0.25em; }
       .ui-boundary { margin-top: 2rem; padding: 1rem 1.2rem; border: 1px dashed var(--rust); }
       .ui-boundary-label { margin-bottom: 0.4rem; }
       .ui-boundary p { margin: 0; color: var(--muted); font-size: 0.82rem; }
@@ -237,10 +254,10 @@ const claudeLogo = `${base}${t03Products[1].logoPath}`;
       .direction-summary { width: min(980px, calc(100% - 3rem)); margin-inline: auto; padding-block: 5rem 6rem; }
       .direction-summary h2 { max-width: 12ch; margin: 0; font-family: "Newsreader", Georgia, serif; font-size: clamp(2.6rem, 6vw, 5rem); font-weight: 500; letter-spacing: -0.06em; line-height: 1; }
       .direction-summary p:not(.article-label) { max-width: 42em; color: var(--muted); }
-      .direction-summary a { text-underline-offset: 0.3em; }
+      .direction-summary > a { min-height: 44px; display: inline-flex; align-items: center; text-underline-offset: 0.3em; }
       .editorial-footer { width: min(1320px, calc(100% - 3rem)); display: flex; justify-content: space-between; gap: 1rem; margin-inline: auto; padding-block: 1.5rem 3rem; border-top: 1px solid var(--ink); color: var(--muted); font-size: 0.76rem; }
-      .editorial-footer a { color: var(--ink); }
-      :global(:focus-visible) { outline: 3px solid #db971c; outline-offset: 3px; }
+      .editorial-footer a { min-height: 44px; display: inline-flex; align-items: center; color: var(--ink); }
+      :global(:focus-visible) { outline: 3px solid #a45d00; outline-offset: 3px; }
       @media (max-width: 800px) {
         :global(body) { font-size: 16px; }
         .editorial-header, .editorial-hero, .reading-layout, .editorial-footer { width: min(100% - 2rem, 1320px); }

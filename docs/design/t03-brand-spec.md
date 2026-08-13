@@ -9,16 +9,16 @@
 ### OpenAI / Codex
 
 - 真实产品 mark：`Codex` 文本，旁注 `OpenAI`；适用于课程中的“Codex 主讲/迁移”语境。
-- 官方 wordmark 来源：[OpenAI Design Guidelines](https://openai.com/brand/)；页面中的官方 CDN 资源作为可选远程引用：`https://images.ctfassets.net/kftzwdyauwt9/2fkAIT3PbTRytKTBx9cx8o/229bc28cb338565fe735d8935abc801f/OpenAI_Wordmark_Gif.gif?fm=webp&q=90&w=3840`。
+- 官方 wordmark 来源：[OpenAI Design Guidelines](https://openai.com/brand/)。本 demo 不复制或远程加载 OpenAI wordmark，而是保留 `OpenAI` / `Codex` 文字 mark；这是有意的 license-safe exception，避免把远程 CDN 资源当作可离线再发布资产。
 - 使用约束：按原样使用；只在直接相关的 OpenAI/Codex 说明中出现；不拉伸、重绘、加效果、融入课程 logo；不暗示 OpenAI 赞助、合作或背书。OpenAI marks 仍归 OpenAI 所有，当前页面的使用条款优先于本文件。
-- 本 demo 的离线降级：如果远程 wordmark 无法加载，保留可见的 `OpenAI` / `Codex` 文本 mark 和官方链接，不显示破图图标。
+- 文字 mark 只作为课程直接介绍 Codex 的事实标签，不是 OpenAI logo、课程 logo 或背书标识；页面同时提供官方产品链接。
 
 ### Anthropic / Claude Code
 
 - 本地资产：`site/public/brands/claude-code-logo-slate.svg`。
 - 来源：Anthropic 官方 Newsroom 的 `Download press kit`（官方 press kit 条目名：`Anthropic media resources/Anthropic logos/Claude logos/2 Claude Code logo/SVG/Claude Code logo - Slate.svg`）。
 - 许可/条款：官方 press kit / 商标资产，未声明以 MIT、Apache 或 CC 重新许可；使用仅限直接介绍 Claude Code 的课程语境，保留原始 SVG 内容和比例，不改色、不裁切、不暗示 Anthropic 认可本项目。发布前应重新查看 Anthropic 当前 press-kit/brand 条款。
-- 本 demo 使用 Slate 版本；深底方向为原始 logo 提供浅色承托区，保留实际深色字与赤陶橙 mark，并提供文字链接，避免在暗底上人为反色或制造低对比度。
+- 本 demo 使用 Slate 版本；深底方向为原始 logo 提供浅色承托区，保留实际深色字与赤陶橙 mark，并提供文字链接，避免在暗底上人为反色或制造低对比度。落盘文件 SHA-256 为 `8d42fc0238362e163af2cbf8d9a25e9bd8666bfd6702de58197844092d7f2665`。
 
 ## 辅助色与排印
 

@@ -7,15 +7,15 @@
 ## OpenAI / Codex
 
 - OpenAI 的官方产品页 [Introducing the Codex app](https://openai.com/index/introducing-the-codex-app/) 说明 Codex app 是用于管理多个 agent、并行任务和长期协作的产品界面；页面标注 2026-02-02 发布，并在 2026-03-04 更新 Windows 可用性。页面还把 CLI、IDE、app 和 cloud 作为 Codex 的工作表面。
-- OpenAI 的官方 [Design Guidelines](https://openai.com/brand/) 说明 OpenAI 名称、logo、ChatGPT/GPT 等属于 OpenAI 商标；使用条件包括只在直接相关服务语境中使用、按原样使用、不暗示背书，并遵守当前 Marks usage terms。官方页面提供 wordmark 图像资源，本项目只把该 CDN URL 作为可选远程 logo 资产，不在仓库中重绘或修改。
+- OpenAI 的官方 [Design Guidelines](https://openai.com/brand/) 说明 OpenAI 名称、logo、ChatGPT/GPT 等属于 OpenAI 商标；使用条件包括只在直接相关服务语境中使用、按原样使用、不暗示背书，并遵守当前 Marks usage terms。本 demo 有意只使用 `OpenAI` / `Codex` 文字 mark 与官方链接，不复制或加载 wordmark 图像；这是 license-safe exception，不把远程 CDN 当作可离线资产。
 - 本课程页面只断言“Codex 是课程的主要 Coding Agent 实例之一”，不在 T03 固定模型、客户端版本、价格、安装命令或当前 UI 布局。上述内容属于后续工具适配层，必须在正式课节当天重新核验。
 
 ## Anthropic / Claude Code
 
 - Anthropic 官方 [Claude Code overview](https://code.claude.com/docs/en/overview)（2026-08-13 页面现场打开）描述 Claude Code 为能读取代码库、编辑文件、运行命令并连接开发工具的 agentic coding tool，工作表面包括 terminal、IDE、desktop app 和 browser。
 - 同一官方页面当前列出 Windows PowerShell 的安装入口、WinGet、桌面和 web surface，并说明多数表面需要 Claude subscription 或 Anthropic Console account；本项目不复制这些安装命令到方向 demo，也不声称本次完成客户端实验。
-- Anthropic 官方 [Newsroom](https://www.anthropic.com/news) 的 Media assets 区提供 “Download press kit” 入口。内存读取 press kit 后确认包含 `Claude Code logo - Slate.svg`、`Claude Code logo - Ivory.svg` 和 `Claude Code logo - One-color.svg` 等官方资产。本分支落盘的是 Slate SVG，路径为 `site/public/brands/claude-code-logo-slate.svg`。
-- Anthropic 官方产品页面与 press kit 的商标/资产条款未被本项目重新许可；本 demo 只在直接介绍 Claude Code 的课程语境中展示原始比例 logo，不暗示 Anthropic 对本课程的赞助、合作或背书。
+- Anthropic 官方 [Newsroom](https://www.anthropic.com/news) 的 Media assets 区提供 “Download press kit” 入口。内存读取 press kit 后确认包含 `Claude Code logo - Slate.svg`、`Claude Code logo - Ivory.svg` 和 `Claude Code logo - One-color.svg` 等官方资产。本分支落盘的是 Slate SVG，路径为 `site/public/brands/claude-code-logo-slate.svg`，SHA-256 为 `8d42fc0238362e163af2cbf8d9a25e9bd8666bfd6702de58197844092d7f2665`。本次下载的官方 press-kit archive SHA-256 为 `c68ac92df86c825f95177e24016fcc9a8863a3fd4ca344fe6f0700b2c1e07151`，entry 为 `Anthropic media resources/Anthropic logos/Claude logos/2 Claude Code logo/SVG/Claude Code logo - Slate.svg`（7000 bytes）。
+- 官方 press kit archive 没有随 ZIP 提供单独的 logo license 文本；因此本项目采用的 exact terms boundary 是“Anthropic press-kit/trademark asset，reference-only，保留原始比例，仅在直接介绍 Claude Code 的语境使用，不主张 MIT/Apache/CC 再许可，不暗示赞助、合作或背书”，并要求生产发布前重新核对当前条款。
 
 ## UI 截图边界
 

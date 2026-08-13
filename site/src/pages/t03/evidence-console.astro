@@ -61,14 +61,14 @@ const claudeLogo = `${base}${t03Products[1].logoPath}`;
           <div class="mode-switch" role="group" aria-label="控制台模式"><button type="button" class="mode-button is-active" data-mode="read" aria-pressed="true">READ</button><button type="button" class="mode-button" data-mode="verify" aria-pressed="false">VERIFY</button></div>
         </div>
         <div class="capability-workspace">
-          <div class="layer-tabs" role="listbox" aria-label="八层能力选择">
+          <div class="layer-tabs" id="layer-listbox" role="listbox" aria-label="八层能力选择" aria-orientation="vertical">
             {t03Content.capabilityLayers.map((layer, index) => (
-              <button type="button" role="option" aria-selected={index === 0 ? "true" : "false"} data-layer-index={index}>
+              <button type="button" role="option" aria-selected={index === 0 ? "true" : "false"} aria-controls="layer-output" data-layer-index={index} tabindex={index === 0 ? "0" : "-1"}>
                 <span>{layer.index}</span><strong>{layer.title}</strong><i aria-hidden="true">↗</i>
               </button>
             ))}
           </div>
-          <div class="layer-output" aria-live="polite">
+          <div class="layer-output" id="layer-output" aria-live="polite">
             {t03Content.capabilityLayers.map((layer, index) => (
               <article class:list={["layer-output-item", index === 0 && "is-active"]} data-layer-output={index}>
                 <div class="output-label"><span data-output-mode>问题</span><span>{layer.index}</span></div>
@@ -126,13 +126,40 @@ const claudeLogo = `${base}${t03Products[1].logoPath}`;
     <script is:inline>
       const layerButtons = [...document.querySelectorAll("[data-layer-index]")];
       const layerOutputs = [...document.querySelectorAll("[data-layer-output]")];
-      layerButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          const target = button.dataset.layerIndex;
-          layerButtons.forEach((item) => item.setAttribute("aria-selected", String(item === button)));
-          layerOutputs.forEach((item) => item.classList.toggle("is-active", item.dataset.layerOutput === target));
+      const listbox = document.querySelector("#layer-listbox");
+      const setListboxOrientation = () => {
+        listbox?.setAttribute("aria-orientation", window.matchMedia("(max-width: 800px)").matches ? "horizontal" : "vertical");
+      };
+      const activateLayer = (button, moveFocus = false) => {
+        const target = button.dataset.layerIndex;
+        layerButtons.forEach((item) => {
+          const selected = item === button;
+          item.setAttribute("aria-selected", String(selected));
+          item.setAttribute("tabindex", selected ? "0" : "-1");
+        });
+        layerOutputs.forEach((item) => item.classList.toggle("is-active", item.dataset.layerOutput === target));
+        if (moveFocus) button.focus();
+      };
+      layerButtons.forEach((button, index) => {
+        button.addEventListener("click", () => activateLayer(button));
+        button.addEventListener("keydown", (event) => {
+          const horizontal = listbox?.getAttribute("aria-orientation") === "horizontal";
+          const forward = horizontal ? "ArrowRight" : "ArrowDown";
+          const backward = horizontal ? "ArrowLeft" : "ArrowUp";
+          let nextIndex = index;
+          if (event.key === forward) nextIndex = (index + 1) % layerButtons.length;
+          if (event.key === backward) nextIndex = (index - 1 + layerButtons.length) % layerButtons.length;
+          if (event.key === "Home") nextIndex = 0;
+          if (event.key === "End") nextIndex = layerButtons.length - 1;
+          if (nextIndex !== index || event.key === "Home" || event.key === "End") {
+            event.preventDefault();
+            activateLayer(layerButtons[nextIndex], true);
+          }
+          if (event.key === " " || event.key === "Enter") activateLayer(button);
         });
       });
+      setListboxOrientation();
+      window.matchMedia("(max-width: 800px)").addEventListener("change", setListboxOrientation);
       const modeButtons = [...document.querySelectorAll("[data-mode]")];
       const page = document.body;
       modeButtons.forEach((button) => {
@@ -153,11 +180,12 @@ const claudeLogo = `${base}${t03Products[1].logoPath}`;
       :global(h1), :global(h2), :global(h3) { text-wrap: balance; }
       :global(a) { color: inherit; }
       .console-page { --bg: #151716; --panel: #1d211e; --panel-light: #252a26; --ink: #f3ede1; --muted: #abb0a7; --line: #3c433d; --amber: #f3c75f; --coral: #e47c60; --mono: "Geist Mono", "Cascadia Mono", monospace; }
-      .skip-link { position: fixed; left: 1rem; top: -5rem; z-index: 30; background: var(--amber); color: #151716; padding: 0.65rem 0.9rem; text-decoration: none; }
+      .skip-link { min-height: 44px; position: fixed; left: 1rem; top: -5rem; z-index: 30; display: inline-flex; align-items: center; background: var(--amber); color: #151716; padding: 0.65rem 0.9rem; text-decoration: none; }
       .skip-link:focus { top: 1rem; }
       .console-header, .console-hero, .console-contract, .capability-console, .console-lessons, .console-tools, .console-proof, .console-note, .console-footer { width: min(1280px, calc(100% - 3rem)); margin-inline: auto; }
       .console-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 1rem; min-height: 4.5rem; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 0.72rem; }
-      .console-brand, .header-exit { color: var(--ink); text-decoration: none; letter-spacing: 0.04em; }
+      .console-brand, .header-exit { min-height: 44px; display: inline-flex; align-items: center; color: var(--ink); text-decoration: none; letter-spacing: 0.04em; }
+      .header-exit { min-width: 44px; justify-content: center; }
       .console-brand span { color: var(--amber); font-size: 1.4rem; }
       .console-status { display: flex; align-items: center; gap: 0.65rem; color: var(--muted); }
       .status-dot { width: 0.5rem; height: 0.5rem; background: var(--amber); border-radius: 50%; }
@@ -248,10 +276,10 @@ const claudeLogo = `${base}${t03Products[1].logoPath}`;
       .console-note { padding-block: 5rem 6rem; }
       .console-note h2 { margin-top: 2rem; font-size: clamp(3rem, 8vw, 7rem); }
       .console-note p { max-width: 40em; margin-block: 2rem; color: var(--muted); }
-      .console-note a { color: var(--amber); font-family: var(--mono); font-size: 0.72rem; text-decoration: none; }
+      .console-note a { min-height: 44px; display: inline-flex; align-items: center; color: var(--amber); font-family: var(--mono); font-size: 0.72rem; text-decoration: none; }
       .console-footer { display: flex; justify-content: space-between; gap: 1rem; padding-block: 1.5rem 3rem; border-top: 1px solid var(--line); color: var(--muted); font-family: var(--mono); font-size: 0.62rem; }
-      .console-footer a { color: var(--amber); text-decoration: none; }
-      :global(:focus-visible) { outline: 3px solid var(--amber); outline-offset: 3px; }
+      .console-footer a { min-height: 44px; display: inline-flex; align-items: center; color: var(--amber); text-decoration: none; }
+      :global(:focus-visible) { outline: 3px solid #a45d00; outline-offset: 3px; }
       @media (max-width: 800px) {
         :global(body) { font-size: 16px; }
         .console-header, .console-hero, .console-contract, .capability-console, .console-lessons, .console-tools, .console-proof, .console-note, .console-footer { width: min(100% - 2rem, 1280px); }

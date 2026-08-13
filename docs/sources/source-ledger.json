@@ -78,7 +78,7 @@
       "url": "https://openai.com/brand/",
       "source_role": "official-brand-asset-source",
       "pinned_version": "page observed 2026-08-13",
-      "usage": "核验 OpenAI/Codex wordmark 使用边界与官方 CDN 资源",
+      "usage": "核验 OpenAI/Codex wordmark 使用边界；本 demo 有意采用 license-safe 的文字 mark，不复制 logo",
       "license_or_terms": "OpenAI marks usage terms; exact-as-provided, direct relation, no endorsement",
       "copied_assets": false
     },
@@ -95,11 +95,11 @@
     {
       "id": "anthropic-claude-code-logo-press-kit-t03",
       "title": "Claude Code logo - Slate.svg",
-      "url": "https://www.anthropic.com/news",
+      "url": "https://www.anthropic.com/press-kit",
       "source_role": "official-brand-asset-source",
-      "pinned_version": "Anthropic press kit entry observed 2026-08-13",
-      "usage": "三套 T03 方向 demo 的官方 Claude Code logo；本地路径 site/public/brands/claude-code-logo-slate.svg",
-      "license_or_terms": "Anthropic press-kit/trademark asset; no open-source relicensing claimed; retain original proportions and recheck terms before production",
+      "pinned_version": "Anthropic press kit archive observed 2026-08-13; archive SHA-256 c68ac92df86c825f95177e24016fcc9a8863a3fd4ca344fe6f0700b2c1e07151",
+      "usage": "三套 T03 方向 demo 的官方 Claude Code logo；entry Anthropic media resources/Anthropic logos/Claude logos/2 Claude Code logo/SVG/Claude Code logo - Slate.svg; local site/public/brands/claude-code-logo-slate.svg; asset SHA-256 8d42fc0238362e163af2cbf8d9a25e9bd8666bfd6702de58197844092d7f2665",
+      "license_or_terms": "Archive provided no separate logo license text; reference-only Anthropic press-kit/trademark asset, original proportions, direct Claude Code context only, no MIT/Apache/CC relicensing or endorsement claim; recheck terms before production",
       "copied_assets": true
     }
   ]

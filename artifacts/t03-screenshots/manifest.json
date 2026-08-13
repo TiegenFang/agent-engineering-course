@@ -1,0 +1,211 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-13T03:52:41.943Z",
+  "runtime": {
+    "node": "v22.18.0",
+    "playwright": "1.62.1",
+    "browser": {
+      "name": "chromium",
+      "version": "151.0.7922.34"
+    }
+  },
+  "preview": {
+    "baseUrl": "http://127.0.0.1:4321/agent-engineering-course",
+    "managedByVerifier": true
+  },
+  "viewports": {
+    "desktop": {
+      "width": 1440,
+      "height": 900
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844
+    }
+  },
+  "directions": [
+    {
+      "direction": "quiet-grid",
+      "desktop": {
+        "title": "Quiet Grid · Agent 工程入门",
+        "width": 1440,
+        "viewport": 1440,
+        "main": true,
+        "skipLabel": "跳到主要内容",
+        "reducedMotionActive": false,
+        "reducedMotionRule": true,
+        "styles": {
+          "normalContrast": 4.58811996534815,
+          "focusContrast": 4.700741358244081,
+          "focusContrastBody": 4.700741358244081,
+          "under44": [],
+          "normalSelector": ".eyebrow",
+          "normalColor": "rgb(8, 127, 104)",
+          "bodyBackground": "rgb(245, 247, 243)",
+          "focusColor": "rgb(164, 93, 0)",
+          "focusBackground": "rgb(245, 247, 243)",
+          "focusElement": {
+            "tag": "A",
+            "className": "skip-link astro-om3zz7n7",
+            "outlineStyle": "solid",
+            "outlineWidth": "3px"
+          }
+        },
+        "screenshot": "quiet-grid-desktop.png",
+        "sha256": "6ed20b39648917568b9003e2ff7b1beb2c1e04354837605ee25a2d742d04b722"
+      },
+      "mobile": {
+        "title": "Quiet Grid · Agent 工程入门",
+        "width": 390,
+        "viewport": 390,
+        "main": true,
+        "skipLabel": "跳到主要内容",
+        "reducedMotionActive": true,
+        "reducedMotionRule": true,
+        "styles": {
+          "normalContrast": 4.58811996534815,
+          "focusContrast": 4.700741358244081,
+          "focusContrastBody": 4.700741358244081,
+          "under44": [],
+          "normalSelector": ".eyebrow",
+          "normalColor": "rgb(8, 127, 104)",
+          "bodyBackground": "rgb(245, 247, 243)",
+          "focusColor": "rgb(164, 93, 0)",
+          "focusBackground": "rgb(245, 247, 243)",
+          "focusElement": {
+            "tag": "A",
+            "className": "skip-link astro-om3zz7n7",
+            "outlineStyle": "solid",
+            "outlineWidth": "3px"
+          }
+        },
+        "screenshot": "quiet-grid-mobile.png",
+        "sha256": "8ea9a13689b154b2e520b66e244b9bf0762d9a0353d07f8aba692602f6afb166"
+      },
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "direction": "editorial-manual",
+      "desktop": {
+        "title": "Editorial Manual · Agent 工程入门",
+        "width": 1440,
+        "viewport": 1440,
+        "main": true,
+        "skipLabel": "跳到主要内容",
+        "reducedMotionActive": false,
+        "reducedMotionRule": true,
+        "styles": {
+          "normalContrast": 6.212978186176223,
+          "focusContrast": 4.427135369634619,
+          "focusContrastBody": 4.427135369634619,
+          "under44": [],
+          "normalSelector": ".article-label",
+          "normalColor": "rgb(150, 59, 40)",
+          "bodyBackground": "rgb(244, 239, 231)",
+          "focusColor": "rgb(164, 93, 0)",
+          "focusBackground": "rgb(244, 239, 231)",
+          "focusElement": {
+            "tag": "A",
+            "className": "skip-link astro-yw2lhnam",
+            "outlineStyle": "solid",
+            "outlineWidth": "3px"
+          }
+        },
+        "screenshot": "editorial-manual-desktop.png",
+        "sha256": "ad87cab6b0a916e7311e62723310cb2b76c26858b66d7720d864a2574148b2b3"
+      },
+      "mobile": {
+        "title": "Editorial Manual · Agent 工程入门",
+        "width": 390,
+        "viewport": 390,
+        "main": true,
+        "skipLabel": "跳到主要内容",
+        "reducedMotionActive": true,
+        "reducedMotionRule": true,
+        "styles": {
+          "normalContrast": 6.212978186176223,
+          "focusContrast": 4.427135369634619,
+          "focusContrastBody": 4.427135369634619,
+          "under44": [],
+          "normalSelector": ".article-label",
+          "normalColor": "rgb(150, 59, 40)",
+          "bodyBackground": "rgb(244, 239, 231)",
+          "focusColor": "rgb(164, 93, 0)",
+          "focusBackground": "rgb(244, 239, 231)",
+          "focusElement": {
+            "tag": "A",
+            "className": "skip-link astro-yw2lhnam",
+            "outlineStyle": "solid",
+            "outlineWidth": "3px"
+          }
+        },
+        "screenshot": "editorial-manual-mobile.png",
+        "sha256": "76abe055f008cb1cc51d2c0b66985cf657e0d039a38b887e2c61f26d21b9f6c1"
+      },
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
+      "direction": "evidence-console",
+      "desktop": {
+        "title": "Evidence Console · Agent 工程入门",
+        "width": 1440,
+        "viewport": 1440,
+        "main": true,
+        "skipLabel": "跳到主要内容",
+        "reducedMotionActive": false,
+        "reducedMotionRule": true,
+        "styles": {
+          "normalContrast": 11.273769364800044,
+          "focusContrast": 3.554148249745352,
+          "focusContrastBody": 3.554148249745352,
+          "under44": [],
+          "normalSelector": ".console-kicker",
+          "normalColor": "rgb(243, 199, 95)",
+          "bodyBackground": "rgb(21, 23, 22)",
+          "focusColor": "rgb(164, 93, 0)",
+          "focusBackground": "rgb(21, 23, 22)",
+          "focusElement": {
+            "tag": "A",
+            "className": "skip-link astro-wv25dst4",
+            "outlineStyle": "solid",
+            "outlineWidth": "3px"
+          }
+        },
+        "screenshot": "evidence-console-desktop.png",
+        "sha256": "f2fd40c4b9cb347c0e07be1b26847c63b629f95f28aec7b168c9d1dc37392ce9"
+      },
+      "mobile": {
+        "title": "Evidence Console · Agent 工程入门",
+        "width": 390,
+        "viewport": 390,
+        "main": true,
+        "skipLabel": "跳到主要内容",
+        "reducedMotionActive": true,
+        "reducedMotionRule": true,
+        "styles": {
+          "normalContrast": 11.273769364800044,
+          "focusContrast": 3.554148249745352,
+          "focusContrastBody": 3.554148249745352,
+          "under44": [],
+          "normalSelector": ".console-kicker",
+          "normalColor": "rgb(243, 199, 95)",
+          "bodyBackground": "rgb(21, 23, 22)",
+          "focusColor": "rgb(164, 93, 0)",
+          "focusBackground": "rgb(21, 23, 22)",
+          "focusElement": {
+            "tag": "A",
+            "className": "skip-link astro-wv25dst4",
+            "outlineStyle": "solid",
+            "outlineWidth": "3px"
+          }
+        },
+        "screenshot": "evidence-console-mobile.png",
+        "sha256": "c3b38c2de15e0568452125312e902fa50a815f89e38604f2a42fca658c23f085"
+      },
+      "consoleErrors": [],
+      "pageErrors": []
+    }
+  ]
+}

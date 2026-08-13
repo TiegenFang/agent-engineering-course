@@ -8,6 +8,8 @@
     "check": "npm run check --workspace @agent-engineering-course/site",
     "build": "npm run build --workspace @agent-engineering-course/site",
     "test:site": "npm run test --workspace @agent-engineering-course/site",
+    "browser:install": "npm run browser:install --workspace @agent-engineering-course/site",
+    "test:browser": "npm run test:browser --workspace @agent-engineering-course/site",
     "test:python": "python -m unittest discover -s checker/tests -v",
     "verify": "npm run test:python && npm run check && npm run build && npm run test:site"
   },

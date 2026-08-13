@@ -11,6 +11,8 @@
 
 浏览器验收截图（1440×900 桌面视口与约 390px 移动视口，整页截图）保存在 `artifacts/t03-screenshots/`：
 
+可复现的浏览器命令、运行时边界和每张截图的 SHA-256/Chromium 版本见 `artifacts/t03-screenshots/manifest.json` 与 `t03-browser-verification.md`。
+
 | 方向 | 桌面 | 移动 |
 | --- | --- | --- |
 | Quiet Grid | `quiet-grid-desktop.png` | `quiet-grid-mobile.png` |

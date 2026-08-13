@@ -119,8 +119,6 @@ export const t03Products = [
     kind: "官方文本 mark + 官方 wordmark 来源",
     officialUrl: "https://openai.com/index/introducing-the-codex-app/",
     brandUrl: "https://openai.com/brand/",
-    logoUrl:
-      "https://images.ctfassets.net/kftzwdyauwt9/2fkAIT3PbTRytKTBx9cx8o/229bc28cb338565fe735d8935abc801f/OpenAI_Wordmark_Gif.gif?fm=webp&q=90&w=3840",
     uiStatus: "不嵌入 UI 截图；只链接官方产品页面",
   },
   {
