@@ -108,7 +108,7 @@ const expectedCourseVersion = courseVersion.course_version;
     const exportButton = root.querySelector("[data-export-memory-evidence]");
     let session = createMemorySession();
 
-    const setMessage = (element, message, kind = "") => {
+    const setMessage = (element: Element | null, message: string, kind = "") => {
       if (!(element instanceof HTMLElement)) return;
       element.textContent = message;
       element.dataset.status = kind;
@@ -120,7 +120,7 @@ const expectedCourseVersion = courseVersion.course_version;
       if (exportButton instanceof HTMLButtonElement) exportButton.disabled = evidence.result !== "passed";
       if (observation instanceof HTMLElement) observation.textContent = session.lastObservation;
       if (steps instanceof HTMLOListElement) {
-        for (const item of steps.querySelectorAll("[data-step]")) {
+        for (const item of steps.querySelectorAll<HTMLElement>("[data-step]")) {
           const id = item.getAttribute("data-step") ?? "";
           const stage = session.stages.find((entry) => entry.id === id);
           item.dataset.status = stage?.result ?? "pending";

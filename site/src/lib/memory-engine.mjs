@@ -6,6 +6,9 @@
  * reaches the network. The exported evidence contains stable enums only.
  */
 
+/** @typedef {{id: string, sequence: number, result: "passed"|"failed", observations: Record<string, boolean>}} MemoryStage */
+/** @typedef {{version: string, baselineId: string, memoryTypes: string[], contextModes: string[], stages: MemoryStage[], pollutionInjected: boolean, pollutionRecovered: boolean, lastObservation: string, status: "ready"|"warning"|"success"|"complete"}} MemorySession */
+
 export const MEMORY_EXPERIMENT_VERSION = "1";
 export const MEMORY_BASELINE_ID = "memory-ledger-v1";
 export const MEMORY_STAGE_IDS = ["design", "write", "recall", "stale-update", "pollution", "delete"];
@@ -64,18 +67,22 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+/** @param {Record<string, boolean>} observations */
 function stageResult(observations) {
   return Object.values(observations).every(Boolean) ? "passed" : "failed";
 }
 
+/** @param {MemorySession} session @param {string} stageId */
 function completedStage(session, stageId) {
   return session.stages.find((stage) => stage.id === stageId) ?? null;
 }
 
+/** @param {MemorySession} session @param {string} stageId @param {string} message */
 function requireStage(session, stageId, message) {
   if (!completedStage(session, stageId)) throw new MemoryStateError(message);
 }
 
+/** @returns {MemorySession} */
 export function createMemorySession() {
   return {
     version: MEMORY_EXPERIMENT_VERSION,
@@ -90,6 +97,7 @@ export function createMemorySession() {
   };
 }
 
+/** @param {MemorySession} session @returns {MemorySession} */
 export function injectMemoryPollution(session) {
   requireStage(session, "stale-update", "先完成陈旧记忆更新，再注入污染。");
   if (completedStage(session, "pollution")) {
@@ -104,6 +112,7 @@ export function injectMemoryPollution(session) {
   };
 }
 
+/** @param {MemorySession} session @param {string} action @returns {MemorySession} */
 export function runMemoryAction(session, action) {
   const current = clone(session);
   if (!current || current.version !== MEMORY_EXPERIMENT_VERSION) {
@@ -148,10 +157,12 @@ export function runMemoryAction(session, action) {
   return next;
 }
 
+/** @returns {MemorySession} */
 export function resetMemorySession() {
   return createMemorySession();
 }
 
+/** @returns {MemorySession} */
 export function runCompleteMemorySession() {
   let session = createMemorySession();
   for (const action of ["design", "write", "recall", "stale-update"]) {
