@@ -787,6 +787,60 @@
         "course-mcp-discovery-original"
       ],
       "licenses": ["CC-BY-4.0", "MIT"]
+    },
+    {
+      "id": "t20-mcp-call",
+      "title": "模块 9B：MCP 调用、权限与故障恢复",
+      "stage": "alpha",
+      "duration_minutes": 90,
+      "prerequisites": ["t04-project-rules", "t14-context-budget"],
+      "outcomes": [
+        "通过官方 TypeScript SDK v2 的真实 stdio transport 调用 MCP Tool，并识别 Host、Client、Server 与 Tool 的边界",
+        "在调用前记录权限、人工确认点和有界副作用，拒绝未经确认的写入调用",
+        "注入连接、工具、数据形状和参数/协议故障，按错误类别恢复而不泄露密钥、路径或原始 payload",
+        "区分 T19 discovery、正式 MCP 调用与 deterministic offline fallback，并生成匿名 evidence JSON"
+      ],
+      "artifacts": [
+        "labs/mcp-call/server.mjs 与 client.mjs（真实 stdio MCP 实验）",
+        "官方 MCP Inspector CLI 的 tools/list 检查结果",
+        "t20-mcp-call evidence JSON（仅含稳定状态与 fault 枚举）",
+        "一份调用前权限确认与故障恢复记录"
+      ],
+      "primary_tool": "官方 MCP TypeScript SDK v2.0.0 + Inspector 2.2.0",
+      "migration_tool": "Codex 或 Claude Code（变化故障输入的调用前检查单；页面不发起 live Coding Agent 调用）",
+      "platforms": {
+        "primary": "Windows 11 + PowerShell 7; Node.js >=22.19.0",
+        "secondary": ["macOS/Linux：仅复核 Node MCP 子进程语义，未在本轮现场验收"]
+      },
+      "versions": {
+        "client": "Node.js >=22.19.0; course client.mjs",
+        "sdk": "@modelcontextprotocol/server@2.0.0; @modelcontextprotocol/client@2.0.0; zod@4.4.3",
+        "model": "not-applicable; no model or paid API call",
+        "protocol": "MCP 2026-07-28; agent-engineering-course/evidence v1; t20 experiment v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free; npm install uses public registry; no model, API key, OAuth or paid service",
+        "network": "dependency installation may need network; live lab uses local child process only and does not call remote MCP"
+      },
+      "risk": {
+        "permissions": "默认只调用 read-only telemetry.read；report.publish 需要显式 --approve、confirmed=true 和一个由实验创建的临时输出目录",
+        "side_effects": "只在隔离临时目录创建一个 synthetic published-report.json；不执行未知代码、PowerShell、shell、下载、Git push、外部消息或凭据读取",
+        "staleness": "MCP 规范、SDK v2、Inspector CLI 和 Node 版本属于工具适配层；发布前重新核验版本、版本协商、Inspector 参数、远程 HTTP/OAuth 行为"
+      },
+      "sources": [
+        "mcp-spec-2026-07-28",
+        "mcp-typescript-sdk-v2",
+        "mcp-inspector-v2",
+        "course-mcp-call-original-t20"
+      ],
+      "licenses": [
+        "CC-BY-4.0",
+        "MIT",
+        "Apache-2.0",
+        "MCP-Inspector-MIT"
+      ]
     }
   ]
 }

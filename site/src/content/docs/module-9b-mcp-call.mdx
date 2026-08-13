@@ -1,0 +1,140 @@
+---
+title: 模块 9B：MCP 调用、权限与故障恢复
+description: 用真实 stdio transport 调用 MCP Tool，在人工确认后执行受控副作用，并从连接、参数、工具和数据错误中恢复。
+sidebar:
+  order: 10
+---
+
+# 模块 9B：MCP 调用、权限与故障恢复
+
+> 本课的正式实验会启动一个本地 MCP Server 子进程，由独立 Client 通过真实 `stdio` transport 调用 `tools/list` 和 `tools/call`。`--offline` 只用于熟悉证据形状，**不等于 MCP 正式完成**。
+
+## 你要解决的真实问题
+
+“发现了一个 Tool”不代表可以安全调用它。Host 还需要在调用前知道：谁拥有权限、参数是否满足 schema、调用会不会写文件或联网、失败后能否重试，以及证据是否泄露原始 payload。本课把 T19 的发现结果接到一次真实调用：T19 负责发现/检查工具目录；T20 负责调用前的权限决策、调用、故障注入和恢复。
+
+完成后，你应能：
+
+- 解释 Host、Client、Server、Tool 与 transport 的边界；
+- 在调用前区分只读 `telemetry.read` 与有副作用的 `report.publish`；
+- 使用独立 Client pin `MCP 2026-07-28`，通过真实 stdio transport 完成一次 `tools/call`；
+- 对连接、工具、数据形状和参数/协议错误进行分类，并用新的已知命令恢复；
+- 生成不含路径、环境变量、密钥、原始参数和错误正文的匿名 evidence JSON。
+
+## 心智模型：发现不是授权，Tool 不是执行许可
+
+```text
+T19 server/discover + tools/list
+          │  工具目录与 schema
+          ▼
+T20 Host policy ── 人工确认 ──> Client ── stdio ──> Server
+      │                              │                 │
+      │                              └── tools/call ────┘
+      └── 记录副作用、错误类别、恢复证据
+```
+
+在本实验里，`telemetry.read` 声明为只读；`report.publish` 声明会写入一个明确的、一次性的本地输出目录。Client 默认不会发送后者，只有传入 `--approve` 才允许调用。Server 也要求 `confirmed: true`，形成 Host policy 与 Server guard 的双重检查。没有 `--approve` 的运行可能得到 `partial`，这是预期的安全结果。
+
+2026-07-28 规范把现代请求设计为自描述请求，并规定现代 HTTP 请求携带 `MCP-Protocol-Version`、`Mcp-Method`、`Mcp-Name`；本课使用官方 TypeScript SDK v2 的版本协商，在本地采用真实 `stdio` binding，不伪造 HTTP header，也不把一个进程内替身当作正式 MCP。规范的无状态 HTTP、MRTR、授权和弃用变化见 [官方发布说明](https://blog.modelcontextprotocol.io/posts/2026-07-28/)。
+
+## 操作前预测
+
+运行前先回答：
+
+1. 如果 Server 子进程在 `tools/call` 前退出，重试同一个 Client 是否可靠？为什么应创建新的 transport/Client？
+2. 如果 `report.publish` 的 `confirmed` 为 `false`，哪一层应拒绝：Host、Server，还是两层都应拒绝？
+3. 如果 Server 返回的 `structuredContent` 缺少 `sampleCount`，这属于网络断开、工具业务错误，还是数据契约错误？
+4. 为什么 `--offline` 的 tool catalog 可以帮助练习页面，却不能证明真实 transport 已连接？
+
+先把答案写进本地记录，再运行实验。检查器只接收稳定枚举，不会替你提交原始预测文本。
+
+## 主工具演示：真实 stdio client/server
+
+依赖已锁定在仓库根 `package.json`：`@modelcontextprotocol/server@2.0.0`、`@modelcontextprotocol/client@2.0.0`、`@modelcontextprotocol/inspector@2.2.0`、`zod@4.4.3`。Node 主路径遵循仓库要求 `>=22.19.0`。在仓库根目录安装依赖后，先做不写文件的只读调用：
+
+```powershell
+npm install
+node .\labs\mcp-call\client.mjs --live
+```
+
+输出中的 `mode: "live"`、`formal_mcp: true`、`protocol: "2026-07-28"`、`transport: "stdio"` 和 `tool-called` 是真实调用的可观察线索。默认不执行 `report.publish`，因为没有人工确认。
+
+## 本地实验：批准一个有边界的副作用
+
+只在课程工作区之外的临时位置写 evidence；不要把真实研究数据、企业文本、API key 或个人资料放入参数。下面的命令会将匿名 evidence 写入显式路径，并把报告副作用限制在实验创建的临时目录：
+
+```powershell
+$evidence = Join-Path ([System.IO.Path]::GetTempPath()) 't20-mcp-evidence.json'
+node .\labs\mcp-call\client.mjs --live --approve --output $evidence
+Get-Content -LiteralPath $evidence
+```
+
+`--approve` 不是“让模型自行决定”，而是学习者对以下事实做人工确认：工具名、参数、写入目录、文件名、是否联网、失败时是否允许重试。Server 只写 `published-report.json`，不执行 shell、PowerShell、下载、Git push、外部消息或未知代码。
+
+然后运行官方 Inspector 的 CLI 检查器：
+
+```powershell
+node .\labs\mcp-call\inspect.mjs
+```
+
+Inspector 2.2.0 会以真实 stdio 子进程连接并检查 `tools/list`；它不是网页截图，也不是进程内 mock。Inspector 的 Web、CLI、TUI 入口和 CLI 约束见 [官方 Inspector 仓库](https://github.com/modelcontextprotocol/inspector)。
+
+## 故障注入与恢复
+
+四类故障都只使用合成 server 和已知的本地命令：
+
+```powershell
+node .\labs\mcp-call\client.mjs --live --approve --fault transport
+node .\labs\mcp-call\client.mjs --live --approve --fault tool
+node .\labs\mcp-call\client.mjs --live --approve --fault data
+node .\labs\mcp-call\client.mjs --live --approve --fault protocol
+```
+
+- `transport`：Server 子进程在第一次读调用时退出；恢复是关闭旧 Client，重新启动同一份已知 Server，并重做 discovery 与 read-only call。
+- `tool`：Server 返回 `isError: true`；恢复是把业务工具错误与 transport 错误分开，再用无故障 Server 重试。
+- `data`：返回不符合声明 output schema 的 `structuredContent`；恢复是把它归类为数据契约错误，不能把残缺数据当成功。
+- `protocol`：先发送缺少必需 `deviceId` 的参数；恢复是根据已发现 schema 修正参数后重试。
+
+恢复记录只保留 fault ID、`observed`/`recovered` 布尔值和最终状态。不要复制异常正文、命令行、环境变量、绝对路径、token 或原始 payload。
+
+## 迁移挑战：换 Host，保留安全边界
+
+任选 Codex 或 Claude Code，把本实验的合成 `tools/list` 结果和四类故障表交给它。要求它写出一份“调用前检查单”，但不要让它启动 server、读取本仓库之外的文件或联网。检查单必须包含：
+
+- 只读工具与写入工具的权限差异；
+- 人工确认发生在何处、确认哪些具体事实；
+- 连接错误、参数/协议错误、工具错误、数据契约错误的不同恢复动作；
+- 为什么离线 fixture、进程内替身或自然语言“调用成功”不能替代真实 transport 证据。
+
+这不是复制另一工具的命令，而是把同一能力目标迁移到另一 Host。任何 live Coding Agent 调用都需要学习者自己的账号和额度，本课不代为调用。
+
+## 可核验成果：匿名 evidence
+
+使用 `course_check` 检查正式证据：
+
+```powershell
+$checker = Join-Path (Get-Location) 'checker'
+python -m course_check check t20-mcp-call --root . --evidence-file $evidence --json
+```
+
+正式通过要求同时满足：真实 `stdio` transport、T19 discovery 接缝、人工批准的 bounded local write、至少一种故障已观察且恢复、Inspector 检查通过、匿名输出无敏感字段。`--offline` 输出可以用于熟悉 JSON 形状，但 checker 会保留 `formal_mcp: false` 并拒绝把它分类为 `passed`。
+
+<details>
+<summary>离线 fallback（明确的替代路径）</summary>
+
+```powershell
+node .\labs\mcp-call\client.mjs --offline
+```
+
+此路径不启动 MCP Server、不创建 transport、不调用 Inspector，也不写报告。它只返回固定 tool catalog 和 evidence 字段，适合没有 Node 依赖或暂时不能运行本地进程时练习数据结构；它的 `mode` 是 `offline-fallback`，不能作为模块 9 的正式完成证据。
+</details>
+
+## 风险、版本与来源卡片
+
+- **账号与成本**：本实验不需要模型账号、API key、OAuth、付费 API 或外部服务；npm 安装会访问公开 registry，依赖安装本身可能受网络策略影响。
+- **权限**：Client 默认只调用 read-only Tool；`--approve` 才允许 Server 在显式临时目录中创建一个合成 JSON 文件。不要把输出目录指向真实项目或共享数据目录。
+- **副作用**：只创建临时目录与 `published-report.json`；不联网、不执行未知代码、不读凭据、不发送外部消息。不要在未知 MCP Server 上复用本课的 `--approve` 直觉。
+- **成功证据**：`formal_mcp`、`protocol`、`transport`、固定 Tool 名称、权限状态、fault 枚举、Inspector 状态和 checker 输出；证据不包含路径或 payload。
+- **版本与日期**：官方 MCP 规范 `2026-07-28`、TypeScript SDK v2.0.0、Inspector 2.2.0，现场核验日期 2026-08-13；SDK 与 Inspector 的产品行为是工具适配层，发布前必须再次核验。
+- **验证边界**：本轮验证真实本地 stdio transport、SDK client/server、Inspector CLI、checker、Node/Python/Playwright 接缝；未验证远程 Streamable HTTP、OAuth issuer、真实第三方 MCP Server、Codex/Claude Code live tool call、macOS/Linux 路径或付费 API。
+- **来源与许可**：规范与官方 SDK/Inspector 只作事实引用；本页、server/client、检查器和测试为课程原创，正文 CC BY 4.0，代码 MIT。来源账本记录了固定版本、用途和许可证边界。

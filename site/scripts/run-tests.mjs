@@ -14,6 +14,7 @@ const testCommands = [
   ["--test", "scripts/test-context-recovery.mjs"],
   ["--test", "scripts/test-skill.mjs"],
   ["--test", "scripts/test-plugin-audit.mjs"],
+  ["../labs/mcp-call/test-mcp-call.mjs"],
   ["--test", "scripts/test-evidence-record.mjs"],
   ["--test", "scripts/test-project-rules.mjs"],
   ["--test", "scripts/test-mcp-discovery.mjs"],

@@ -231,6 +231,24 @@ HOOKS_TASKS_CHECK_IDS = (
     "explicit-task-recorded",
     "offline-deterministic",
 )
+
+MCP_CALL_LESSON_ID = "t20-mcp-call"
+MCP_CALL_EXPERIMENT_VERSION = "1"
+MCP_CALL_PROTOCOL_VERSION = "2026-07-28"
+MCP_CALL_TOOL_NAMES = ("telemetry.read", "report.publish")
+MCP_CALL_FAULT_IDS = frozenset({"transport", "tool", "data", "protocol"})
+MCP_CALL_CHECK_IDS = (
+    "transport-connected",
+    "discovery-bridge",
+    "permission-confirmed",
+    "tool-called",
+    "side-effect-bounded",
+    "fault-observed",
+    "fault-recovered",
+    "no-sensitive-output",
+    "inspector-checked",
+    "fallback-explicit",
+)
 CODEX_TASK_LESSON_ID = "t04-codex-repository-task"
 CODEX_TASK_TRACE_VERSION = "1"
 CODEX_TASK_ID = "telemetry-report-v1"
@@ -2507,6 +2525,203 @@ def validate_mcp_discovery(
         "inspector": {"verified": inspector["verified"], "methods": sorted(methods)},
     }
 
+def validate_t20_evidence_checks(value: Any) -> list[dict[str, Any]]:
+    """Validate the fixed, status-only public checks for the MCP call lab."""
+
+    if not isinstance(value, list) or len(value) != len(MCP_CALL_CHECK_IDS):
+        raise EvidenceError("T20 evidence checks must contain the complete fixed check list")
+    normalized: list[dict[str, str]] = []
+    actual_ids: list[str] = []
+    for index, check in enumerate(value):
+        if not isinstance(check, dict):
+            raise EvidenceError(f"T20 evidence check {index} must be an object")
+        _reject_sensitive_unknown_fields(check, f"T20 evidence check {index}")
+        if set(check) != {"id", "result"}:
+            raise EvidenceError(f"T20 evidence check {index} must contain only id and result")
+        check_id = check.get("id")
+        if not isinstance(check_id, str) or not check_id:
+            raise EvidenceError(f"T20 evidence check {index} needs an id")
+        if check.get("result") not in {"passed", "failed", "alternative"}:
+            raise EvidenceError(f"T20 evidence check {check_id}.result is not supported")
+        actual_ids.append(check_id)
+        normalized.append({"id": check_id, "result": check["result"]})
+    if actual_ids != list(MCP_CALL_CHECK_IDS):
+        raise EvidenceError(
+            "T20 evidence IDs must be exactly " + ", ".join(MCP_CALL_CHECK_IDS)
+        )
+    return normalized
+
+
+def validate_t20_experiment(
+    value: Any,
+    *,
+    document_result: str,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Validate MCP call evidence without exporting tool payloads or paths.
+
+    A live completion is deliberately stricter than the offline fallback: it
+    must carry the pinned protocol, a real stdio transport, a T19 catalog
+    bridge, a human-confirmed bounded write, an Inspector result, and at least
+    one observed-and-recovered fault. The offline fixture remains useful for
+    rehearsal but can never be classified as formal MCP completion.
+    """
+
+    if not isinstance(value, dict):
+        raise EvidenceError("T20 evidence requires an experiment object")
+    # ``discovery_source`` is a deliberately bounded catalog identifier that
+    # names the T19 seam; the generic privacy guard treats the word ``source``
+    # as sensitive, so exclude only this exact public key from that name scan.
+    _reject_sensitive_unknown_fields(
+        {key: item for key, item in value.items() if key != "discovery_source"},
+        "T20 experiment",
+    )
+    expected_fields = {
+        "version",
+        "mode",
+        "formal_mcp",
+        "protocol",
+        "transport",
+        "discovery_source",
+        "tools_observed",
+        "permission",
+        "call_completed",
+        "side_effect",
+        "faults",
+        "inspector",
+        "no_sensitive_output",
+    }
+    unexpected = sorted(set(value) - expected_fields)
+    if unexpected:
+        raise EvidenceError("T20 experiment contains unsupported fields: " + ", ".join(unexpected))
+    if value.get("version") != MCP_CALL_EXPERIMENT_VERSION:
+        raise EvidenceError("Unsupported T20 MCP experiment version")
+
+    mode = value.get("mode")
+    if mode not in {"live", "offline-fallback"}:
+        raise EvidenceError("T20 experiment mode is unsupported")
+    formal_mcp = value.get("formal_mcp")
+    if not isinstance(formal_mcp, bool) or formal_mcp != (mode == "live"):
+        raise EvidenceError("T20 formal_mcp must agree with the experiment mode")
+    protocol = value.get("protocol")
+    if not isinstance(protocol, str) or not protocol:
+        raise EvidenceError("T20 experiment protocol must be a non-empty string")
+    if mode == "live" and protocol != MCP_CALL_PROTOCOL_VERSION:
+        raise EvidenceError("T20 live evidence must pin MCP 2026-07-28")
+    if mode == "offline-fallback" and protocol != "offline-fixture-v1":
+        raise EvidenceError("T20 offline evidence must identify its fixture protocol")
+
+    transport = value.get("transport")
+    if transport not in {"stdio", "not-used"}:
+        raise EvidenceError("T20 transport must be stdio or not-used")
+    discovery_source = value.get("discovery_source")
+    if discovery_source not in {"t19-tool-catalog-v1", "offline-tool-catalog"}:
+        raise EvidenceError("T20 discovery source is unsupported")
+    tools_observed = value.get("tools_observed")
+    if (
+        not isinstance(tools_observed, list)
+        or any(item not in MCP_CALL_TOOL_NAMES for item in tools_observed)
+        or len(tools_observed) != len(set(tools_observed))
+    ):
+        raise EvidenceError("T20 tools_observed must contain unique known tool names")
+    if mode == "live" and discovery_source != "t19-tool-catalog-v1":
+        raise EvidenceError("T20 live evidence must identify the T19 discovery seam")
+    if mode == "offline-fallback" and discovery_source != "offline-tool-catalog":
+        raise EvidenceError("T20 offline evidence must identify its fallback catalog")
+
+    permission = value.get("permission")
+    if permission not in {"confirmed", "blocked", "not-requested"}:
+        raise EvidenceError("T20 permission state is unsupported")
+    call_completed = value.get("call_completed")
+    no_sensitive_output = value.get("no_sensitive_output")
+    if not isinstance(call_completed, bool) or not isinstance(no_sensitive_output, bool):
+        raise EvidenceError("T20 call_completed and no_sensitive_output must be boolean")
+    side_effect = value.get("side_effect")
+    if side_effect not in {"bounded-local-write", "none", "blocked"}:
+        raise EvidenceError("T20 side_effect is unsupported")
+    inspector = value.get("inspector")
+    if inspector not in {"passed", "not-run"}:
+        raise EvidenceError("T20 inspector state is unsupported")
+
+    raw_faults = value.get("faults")
+    if not isinstance(raw_faults, list):
+        raise EvidenceError("T20 faults must be a list")
+    faults: list[dict[str, Any]] = []
+    seen_faults: set[str] = set()
+    for index, raw_fault in enumerate(raw_faults):
+        if not isinstance(raw_fault, dict):
+            raise EvidenceError(f"T20 fault {index} must be an object")
+        _reject_sensitive_unknown_fields(raw_fault, f"T20 fault {index}")
+        if set(raw_fault) != {"id", "observed", "recovered"}:
+            raise EvidenceError(f"T20 fault {index} must contain only id, observed and recovered")
+        fault_id = raw_fault.get("id")
+        if fault_id not in MCP_CALL_FAULT_IDS or fault_id in seen_faults:
+            raise EvidenceError(f"T20 fault {index} has an unknown or repeated id")
+        observed = raw_fault.get("observed")
+        recovered = raw_fault.get("recovered")
+        if not isinstance(observed, bool) or not isinstance(recovered, bool):
+            raise EvidenceError(f"T20 fault {fault_id} states must be boolean")
+        if recovered and not observed:
+            raise EvidenceError(f"T20 fault {fault_id} cannot recover without observation")
+        seen_faults.add(fault_id)
+        faults.append({"id": fault_id, "observed": observed, "recovered": recovered})
+
+    has_complete_fault = any(item["observed"] and item["recovered"] for item in faults)
+    all_tools = set(tools_observed) == set(MCP_CALL_TOOL_NAMES)
+    if mode == "offline-fallback":
+        if formal_mcp or transport != "not-used" or inspector != "not-run":
+            raise EvidenceError("Offline fallback must not claim formal transport or Inspector evidence")
+        if document_result == "passed":
+            raise EvidenceError("Offline fallback can never be formal MCP completion")
+        expected_checks = [
+            {"id": "transport-connected", "result": "alternative"},
+            {"id": "discovery-bridge", "result": "alternative"},
+            {"id": "permission-confirmed", "result": "passed"},
+            {"id": "tool-called", "result": "alternative"},
+            {"id": "side-effect-bounded", "result": "passed" if side_effect == "none" else "failed"},
+            {"id": "fault-observed", "result": "alternative"},
+            {"id": "fault-recovered", "result": "alternative"},
+            {"id": "no-sensitive-output", "result": "passed" if no_sensitive_output else "failed"},
+            {"id": "inspector-checked", "result": "failed"},
+            {"id": "fallback-explicit", "result": "passed"},
+        ]
+    else:
+        expected_checks = [
+            {"id": "transport-connected", "result": "passed" if transport == "stdio" else "failed"},
+            {"id": "discovery-bridge", "result": "passed" if discovery_source == "t19-tool-catalog-v1" and all_tools else "failed"},
+            {"id": "permission-confirmed", "result": "passed" if permission == "confirmed" else "failed"},
+            {"id": "tool-called", "result": "passed" if call_completed else "failed"},
+            {"id": "side-effect-bounded", "result": "passed" if side_effect == "bounded-local-write" else "failed"},
+            {"id": "fault-observed", "result": "passed" if any(item["observed"] for item in faults) else "failed"},
+            {"id": "fault-recovered", "result": "passed" if has_complete_fault else "failed"},
+            {"id": "no-sensitive-output", "result": "passed" if no_sensitive_output else "failed"},
+            {"id": "inspector-checked", "result": "passed" if inspector == "passed" else "failed"},
+            {"id": "fallback-explicit", "result": "passed"},
+        ]
+        if document_result == "passed" and not has_complete_fault:
+            raise EvidenceError("Completed T20 evidence must include an observed and recovered fault")
+
+    supplied_checks = value.get("checks", value.get("evidence", expected_checks))
+    normalized_checks = validate_t20_evidence_checks(supplied_checks)
+    if normalized_checks != expected_checks:
+        raise EvidenceError("T20 evidence checks do not match the recorded MCP experiment")
+    if classify_checks([check["result"] for check in expected_checks]) != document_result:
+        raise EvidenceError("T20 evidence result does not match its checks")
+    return normalized_checks, {
+        "version": MCP_CALL_EXPERIMENT_VERSION,
+        "mode": mode,
+        "formal_mcp": formal_mcp,
+        "protocol": protocol,
+        "transport": transport,
+        "discovery_source": discovery_source,
+        "tools_observed": list(tools_observed),
+        "permission": permission,
+        "call_completed": call_completed,
+        "side_effect": side_effect,
+        "faults": faults,
+        "inspector": inspector,
+        "no_sensitive_output": no_sensitive_output,
+    }
+
 
 def load_evidence_checks(
     evidence_file: Path,
@@ -2645,6 +2860,11 @@ def load_evidence_checks(
             if checks != expected_checks:
                 raise EvidenceError("T18 evidence checks do not match the recorded audit")
             return checks, audit
+        if expected_lesson_id == MCP_CALL_LESSON_ID:
+            checks, experiment = validate_t20_experiment(
+                value.get("experiment"), document_result=document["result"]
+            )
+            return checks, experiment
         return document["evidence"], None
     if expected_lesson_id == MCP_DISCOVERY_LESSON_ID:
         return validate_mcp_discovery(value)
@@ -2725,6 +2945,9 @@ def load_evidence_checks(
         if checks != expected_checks:
             raise EvidenceError("T18 evidence checks do not match the recorded audit")
         return checks, audit
+    if expected_lesson_id == MCP_CALL_LESSON_ID:
+        result = classify_checks([check["result"] for check in checks])
+        return validate_t20_experiment(value.get("experiment"), document_result=result)
     return checks, None
 
 
@@ -3162,6 +3385,7 @@ def check_lesson(
         SKILL_LESSON_ID,
         PLUGIN_AUDIT_LESSON_ID,
         MCP_DISCOVERY_LESSON_ID,
+        MCP_CALL_LESSON_ID,
     }:
         raise ContractError(f"Unsupported evidence lesson: {lesson_id}")
     course_version = validate_foundation(root)
@@ -3479,6 +3703,47 @@ def check_lesson(
                 expected_lesson_id=lesson_id,
                 expected_course_version=course_version,
             )
+    elif lesson_id == MCP_CALL_LESSON_ID:
+        if evidence_file is None:
+            checks = [
+                {
+                    "id": "mcp-call-page",
+                    "result": "passed"
+                    if (root / "site/src/content/docs/module-9b-mcp-call.mdx").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "mcp-call-server",
+                    "result": "passed"
+                    if (root / "labs/mcp-call/server.mjs").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "mcp-call-client",
+                    "result": "passed"
+                    if (root / "labs/mcp-call/client.mjs").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "mcp-call-inspector",
+                    "result": "passed"
+                    if (root / "labs/mcp-call/inspect.mjs").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "mcp-call-contract",
+                    "result": "passed"
+                    if (root / "checker/tests/test_mcp_call.py").is_file()
+                    else "failed",
+                },
+                {"id": "mcp-call-evidence", "result": "failed"},
+            ]
+        else:
+            checks, trace = load_evidence_checks(
+                evidence_file,
+                expected_lesson_id=lesson_id,
+                expected_course_version=course_version,
+            )
     elif lesson_id == "t03-agent-instruction":
         checks = [
             {
@@ -3623,6 +3888,8 @@ def check_lesson(
             document["audit"] = trace
         elif lesson_id == MCP_DISCOVERY_LESSON_ID:
             document["mcp"] = trace
+        elif lesson_id == MCP_CALL_LESSON_ID:
+            document["experiment"] = trace
         elif lesson_id == HOOKS_TASKS_LESSON_ID:
             document["experiment"] = trace
         else:

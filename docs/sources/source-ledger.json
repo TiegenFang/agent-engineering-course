@@ -791,6 +791,36 @@
       "usage": "合成 telemetry server、真实 stdio/Inspector 证据、故障恢复、匿名 checker、离线 fallback 分离与权限边界",
       "license_or_terms": "project-original; code MIT and prose CC-BY-4.0; no copied assets",
       "copied_assets": false
+    },
+    {
+      "id": "mcp-typescript-sdk-v2",
+      "title": "MCP TypeScript SDK v2",
+      "url": "https://ts.sdk.modelcontextprotocol.io/v2/",
+      "source_role": "official-sdk-fact-source",
+      "pinned_version": "@modelcontextprotocol/server@2.0.0 and @modelcontextprotocol/client@2.0.0; npm metadata and v2 docs observed 2026-08-13",
+      "usage": "核验 McpServer/registerTool、serveStdio、Client versionNegotiation pin、StdioClientTransport 和 callTool/listTools API；代码为课程原创",
+      "license_or_terms": "Apache-2.0/MIT as marked by the official SDK repository; reference and dependency only",
+      "copied_assets": false
+    },
+    {
+      "id": "mcp-inspector-v2",
+      "title": "MCP Inspector",
+      "url": "https://github.com/modelcontextprotocol/inspector",
+      "source_role": "official-inspector-fact-source",
+      "pinned_version": "@modelcontextprotocol/inspector@2.2.0; npm metadata and repository observed 2026-08-13",
+      "usage": "核验 mcp-inspector Web/CLI/TUI 入口、stdio target、--method tools/list 和 --format json；本课只调用本地合成 server",
+      "license_or_terms": "MIT; dependency and reference only",
+      "copied_assets": false
+    },
+    {
+      "id": "course-mcp-call-original-t20",
+      "title": "模块 9B MCP 调用、权限与故障恢复原创实验设计",
+      "url": "docs/course-plan.md",
+      "source_role": "course-original",
+      "pinned_version": "T20 implementation v1; verified 2026-08-13",
+      "usage": "合成 telemetry server/client、T19 discovery 接缝、调用前人工确认、bounded side effect、四类 fault 注入、恢复和匿名 evidence 边界",
+      "license_or_terms": "project-original; no copied assets",
+      "copied_assets": false
     }
   ]
 }
