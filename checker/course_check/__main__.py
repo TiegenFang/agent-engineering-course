@@ -211,6 +211,39 @@ CONTEXT_BUDGET_CHECK_IDS = (
     "boundary-tested",
     "offline-deterministic",
 )
+CODEX_TASK_LESSON_ID = "t04-codex-repository-task"
+CODEX_TASK_TRACE_VERSION = "1"
+CODEX_TASK_ID = "telemetry-report-v1"
+CODEX_TASK_STAGE_IDS = (
+    "baseline",
+    "clarify",
+    "plan",
+    "failure-observed",
+    "change",
+    "recovery",
+    "review",
+    "delivery",
+)
+CODEX_TASK_STAGE_OBSERVATIONS = {
+    "baseline": frozenset({"repo", "clean", "head", "branch"}),
+    "clarify": frozenset({"goal", "non_goal", "acceptance"}),
+    "plan": frozenset({"files", "commands", "permissions", "stop", "approval"}),
+    "failure-observed": frozenset({"expected_failure", "error_classified"}),
+    "change": frozenset({"source_changed", "diff", "approval"}),
+    "recovery": frozenset({"tests_passed", "report_generated"}),
+    "review": frozenset({"diff_reviewed", "scope_clean", "no_secrets"}),
+    "delivery": frozenset({"handoff", "evidence_ready", "human_approved"}),
+}
+CODEX_TASK_CHECK_IDS = (
+    "clarification-recorded",
+    "plan-recorded",
+    "failure-recovered",
+    "scoped-change",
+    "tests-passed",
+    "diff-reviewed",
+    "report-generated",
+    "delivery-recorded",
+)
 
 
 class ContractError(ValueError):
@@ -1320,6 +1353,176 @@ def load_git_safety_checks(
     return derived_checks
 
 
+def load_codex_task_checks(
+    evidence_file: Path,
+    *,
+    expected_course_version: str,
+) -> list[dict[str, Any]]:
+    """Validate the ordered, status-only evidence for the Codex repository lab.
+
+    The fixture records the learner's local checkpoint journey, but the public
+    checker output keeps only stable check IDs and result states.  In
+    particular, paths, hashes, command output, report contents, and any
+    account or credential fields are never copied into the browser contract.
+    """
+
+    try:
+        value = json.loads(evidence_file.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise EvidenceError(f"Evidence fixture not found: {evidence_file.name}") from exc
+    except json.JSONDecodeError as exc:
+        raise EvidenceError(f"Invalid evidence fixture JSON: {exc.msg}") from exc
+    if not isinstance(value, dict):
+        raise EvidenceError("Codex task fixture must be a JSON object")
+
+    document = validate_evidence_document(value)
+    if document["lesson_id"] != CODEX_TASK_LESSON_ID:
+        raise EvidenceError("Codex task fixture lesson_id does not match the requested lesson")
+    if document["course_version"] != expected_course_version:
+        raise EvidenceError("Codex task fixture course_version does not match the current course")
+
+    if value.get("task_id") != CODEX_TASK_ID:
+        raise EvidenceError("Codex task fixture task_id is unsupported")
+    if value.get("platform") != "windows" or value.get("shell") != "powershell":
+        raise EvidenceError("Codex task fixture must identify the Windows PowerShell path")
+
+    journey = value.get("journey")
+    if not isinstance(journey, dict):
+        raise EvidenceError("Codex task fixture requires a checkpoint journey")
+    _reject_sensitive_unknown_fields(journey, "Codex task journey")
+    required_journey_fields = {"trace_version", "trace_id", "stages"}
+    missing_journey_fields = sorted(required_journey_fields - set(journey))
+    if missing_journey_fields:
+        raise EvidenceError(
+            "Codex task journey is missing: " + ", ".join(missing_journey_fields)
+        )
+    if journey["trace_version"] != CODEX_TASK_TRACE_VERSION:
+        raise EvidenceError("Unsupported Codex task journey version")
+    _require_identifier(journey["trace_id"], "Codex task journey.trace_id")
+
+    stages = journey["stages"]
+    if not isinstance(stages, list) or len(stages) != len(CODEX_TASK_STAGE_IDS):
+        raise EvidenceError("Codex task journey must contain the complete ordered stage sequence")
+    stage_results: dict[str, bool] = {}
+    for expected_sequence, (expected_id, raw_stage) in enumerate(
+        zip(CODEX_TASK_STAGE_IDS, stages, strict=True), start=1
+    ):
+        if not isinstance(raw_stage, dict):
+            raise EvidenceError("Codex task journey stages must contain objects")
+        _reject_sensitive_unknown_fields(raw_stage, f"Codex task stage {expected_id}")
+        required_stage_fields = {"id", "sequence", "result", "observations"}
+        missing_stage_fields = sorted(required_stage_fields - set(raw_stage))
+        if missing_stage_fields:
+            raise EvidenceError(
+                f"Codex task stage {expected_id} is missing: "
+                + ", ".join(missing_stage_fields)
+            )
+        if raw_stage["id"] != expected_id:
+            raise EvidenceError("Codex task journey stages are out of order")
+        if raw_stage["sequence"] != expected_sequence:
+            raise EvidenceError("Codex task journey stage sequence is invalid")
+        result = raw_stage["result"]
+        if result not in {"passed", "failed"}:
+            raise EvidenceError("Codex task stage result must be passed or failed")
+        observations = raw_stage["observations"]
+        if not isinstance(observations, dict):
+            raise EvidenceError(f"Codex task stage {expected_id}.observations must be an object")
+        expected_observations = CODEX_TASK_STAGE_OBSERVATIONS[expected_id]
+        actual_observations = set(observations)
+        if actual_observations != expected_observations:
+            missing = sorted(expected_observations - actual_observations)
+            unknown = sorted(actual_observations - expected_observations)
+            details = []
+            if missing:
+                details.append("missing: " + ", ".join(missing))
+            if unknown:
+                details.append("unknown: " + ", ".join(unknown))
+            raise EvidenceError(
+                f"Codex task stage {expected_id}.observations are incomplete or unexpected ("
+                + "; ".join(details)
+                + ")"
+            )
+        if any(not isinstance(item, bool) for item in observations.values()):
+            raise EvidenceError(f"Codex task stage {expected_id}.observations must be booleans")
+        computed_result = "passed" if all(observations.values()) else "failed"
+        if result != computed_result:
+            raise EvidenceError(f"Codex task stage {expected_id}.result does not match observations")
+        stage_results[expected_id] = result == "passed"
+
+    artifact = value.get("artifact")
+    if not isinstance(artifact, dict):
+        raise EvidenceError("Codex task fixture requires an artifact status object")
+    _reject_sensitive_unknown_fields(artifact, "Codex task artifact")
+    required_artifact_fields = {"version", "report", "tests", "delivery"}
+    missing_artifact_fields = sorted(required_artifact_fields - set(artifact))
+    if missing_artifact_fields:
+        raise EvidenceError(
+            "Codex task artifact is missing: " + ", ".join(missing_artifact_fields)
+        )
+    if artifact["version"] != "1":
+        raise EvidenceError("Unsupported Codex task artifact version")
+    expected_artifact = {
+        "report": "passed" if stage_results["recovery"] else "failed",
+        "tests": "passed" if stage_results["recovery"] else "failed",
+        "delivery": "passed" if stage_results["delivery"] else "failed",
+    }
+    for field, expected in expected_artifact.items():
+        if artifact[field] != expected:
+            raise EvidenceError(f"Codex task artifact.{field} does not match the journey")
+
+    derived_checks = [
+        {
+            "id": "clarification-recorded",
+            "result": "passed" if stage_results["clarify"] else "failed",
+        },
+        {
+            "id": "plan-recorded",
+            "result": "passed" if stage_results["plan"] else "failed",
+        },
+        {
+            "id": "failure-recovered",
+            "result": (
+                "passed"
+                if stage_results["failure-observed"] and stage_results["recovery"]
+                else "failed"
+            ),
+        },
+        {
+            "id": "scoped-change",
+            "result": "passed" if stage_results["change"] and stage_results["review"] else "failed",
+        },
+        {
+            "id": "tests-passed",
+            "result": "passed" if stage_results["recovery"] else "failed",
+        },
+        {
+            "id": "diff-reviewed",
+            "result": "passed" if stage_results["review"] else "failed",
+        },
+        {
+            "id": "report-generated",
+            "result": (
+                "passed"
+                if stage_results["recovery"] and stage_results["delivery"]
+                else "failed"
+            ),
+        },
+        {
+            "id": "delivery-recorded",
+            "result": "passed" if stage_results["delivery"] else "failed",
+        },
+    ]
+    supplied_checks = document["evidence"]
+    actual_ids = [check["id"] for check in supplied_checks]
+    if actual_ids != list(CODEX_TASK_CHECK_IDS):
+        raise EvidenceError(
+            "Codex task evidence IDs must be exactly " + ", ".join(CODEX_TASK_CHECK_IDS)
+        )
+    if supplied_checks != derived_checks:
+        raise EvidenceError("Codex task checks do not match the recorded checkpoint journey")
+    return derived_checks
+
+
 def check_lesson(
     root: Path,
     lesson_id: str,
@@ -1336,6 +1539,7 @@ def check_lesson(
         "t03-agent-instruction",
         PROJECT_RULES_LESSON_ID,
         CONTEXT_BUDGET_LESSON_ID,
+        CODEX_TASK_LESSON_ID,
     }:
         raise ContractError(f"Unsupported evidence lesson: {lesson_id}")
     course_version = validate_foundation(root)
@@ -1357,6 +1561,33 @@ def check_lesson(
                 "t06-git-safety requires --evidence-file with the local Git safety JSON"
             )
         checks = load_git_safety_checks(evidence_file)
+    elif lesson_id == CODEX_TASK_LESSON_ID:
+        checks = [
+            {
+                "id": "codex-task-page",
+                "result": "passed"
+                if (root / "site/src/content/docs/module-3-codex-task.mdx").is_file()
+                else "failed",
+            },
+            {
+                "id": "codex-task-powershell",
+                "result": "passed"
+                if (root / "labs/module-3/codex-task.ps1").is_file()
+                else "failed",
+            },
+            {
+                "id": "codex-task-starter",
+                "result": "passed"
+                if (root / "labs/module-3/starter/TASK.md").is_file()
+                else "failed",
+            },
+            {"id": "codex-task-evidence-executed", "result": "failed"},
+        ]
+        if evidence_file is not None:
+            checks = load_codex_task_checks(
+                evidence_file,
+                expected_course_version=course_version,
+            )
     elif lesson_id == "t02-agent-loop":
         checks = [
             {

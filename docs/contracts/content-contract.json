@@ -337,6 +337,66 @@
         "CC-BY-4.0",
         "MIT"
       ]
+    },
+    {
+      "id": "t04-codex-repository-task",
+      "title": "模块 3：Codex 安全仓库任务",
+      "stage": "alpha",
+      "duration_minutes": 90,
+      "prerequisites": [
+        "t03-agent-instruction"
+      ],
+      "outcomes": [
+        "在一次性合成设备遥测仓库中完成澄清、计划、最小修改、diff 审阅、验证和交付",
+        "用 Codex 的权限、sandbox 与人工审批边界解释读、写、执行、网络和凭据风险",
+        "观察基线测试失败，完成单位归一化修复和报告生成，并记录可恢复路径",
+        "生成不含路径、源码、原始遥测、账号或密钥的匿名 t04-codex-repository-task evidence JSON"
+      ],
+      "artifacts": [
+        "一次性 telemetry-report-v1 Git 仓库及基线提交",
+        "worklog/clarification.md、worklog/plan.md、worklog/recovery.md、worklog/handoff.md",
+        "artifacts/report.json（只含统计摘要）",
+        "t04-codex-repository-task-evidence.json（匿名证据）"
+      ],
+      "primary_tool": "Codex CLI (现场路径) + PowerShell 7 local checker seam",
+      "migration_tool": "Claude Code（变化输入迁移挑战；页面不发起 live call）",
+      "platforms": {
+        "primary": "Windows 11 + PowerShell 7",
+        "secondary": [
+          "macOS/Linux：仅复核 Python 仓库任务语义，Codex 权限路径未在本轮验证"
+        ]
+      },
+      "versions": {
+        "client": "Codex CLI installation and operation page observed 2026-08-13; example v0.143.0, not pinned",
+        "sdk": "not-applicable",
+        "model": "Codex model/account selected by learner; no live model call in offline path",
+        "protocol": "agent-engineering-course/evidence v1; codex-task trace v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [
+          "Codex account only for optional live path; offline path needs none"
+        ],
+        "cost": "offline path free; live Codex usage, account plan and model limits are learner/provider dependent",
+        "network": "offline path does not call network; official installation/login and any live Codex turn may require network"
+      },
+      "risk": {
+        "permissions": "仅在显式指定的一次性目录中运行；Codex 先 read-only/Plan，再按官方 sandbox 与 on-request 审批边界允许 workspace 写入；不授予 danger-full-access",
+        "side_effects": "初始化会创建本地 Git 元数据和基线提交；任务会修改一次性目录并生成被忽略的报告/阶段 JSON；脚本不 push、不连接远程、不读取凭据或真实设备",
+        "staleness": "Codex 安装、权限 profile、sandbox、模型、账号和价格易变；发布前必须重新核验官方页面和现场客户端，页面明确本轮未完成 live Codex 验收"
+      },
+      "sources": [
+        "openai-codex-cli-docs-t09",
+        "openai-codex-permissions-t09",
+        "openai-codex-sandbox-t09",
+        "openai-codex-approvals-t09",
+        "openai-codex-best-practices-t09",
+        "course-codex-task-original-t09"
+      ],
+      "licenses": [
+        "CC-BY-4.0",
+        "MIT"
+      ]
     }
   ]
 }

@@ -311,6 +311,66 @@
       "usage": "课程的 Context/History/Memory 边界、离线优先级分配夹具、三类风险与匿名证据合同",
       "license_or_terms": "project-original; no copied assets",
       "copied_assets": false
+    },
+    {
+      "id": "openai-codex-cli-docs-t09",
+      "title": "Codex CLI 官方文档",
+      "url": "https://developers.openai.com/codex/cli/",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "page observed 2026-08-13; CLI page displayed v0.143.0 example; install tab remains version-sensitive",
+      "usage": "核验从项目目录启动 Codex、登录、澄清任务、计划、修改、运行本地工具和审阅 diff 的操作边界；不把页面示例版本当作课程固定客户端",
+      "license_or_terms": "reference-only; OpenAI documentation terms apply",
+      "copied_assets": false
+    },
+    {
+      "id": "openai-codex-permissions-t09",
+      "title": "Codex Permissions 官方文档",
+      "url": "https://developers.openai.com/codex/permissions",
+      "source_role": "official-security-fact-source",
+      "pinned_version": "page observed 2026-08-13; permission profiles beta",
+      "usage": "核验 read-only、workspace 和按需审批的最小权限解释；页面明确 native Windows 支持，课程实验不写入用户全局配置",
+      "license_or_terms": "reference-only; OpenAI documentation terms apply",
+      "copied_assets": false
+    },
+    {
+      "id": "openai-codex-sandbox-t09",
+      "title": "Codex Sandboxing 官方文档",
+      "url": "https://developers.openai.com/codex/sandboxing",
+      "source_role": "official-security-fact-source",
+      "pinned_version": "page observed 2026-08-13",
+      "usage": "核验 sandbox 是技术边界、approval 是人工确认边界，以及 Windows PowerShell 使用 native Windows sandbox 的事实",
+      "license_or_terms": "reference-only; OpenAI documentation terms apply",
+      "copied_assets": false
+    },
+    {
+      "id": "openai-codex-approvals-t09",
+      "title": "Codex Agent approvals and security 官方文档",
+      "url": "https://developers.openai.com/codex/agent-approvals-security",
+      "source_role": "official-security-fact-source",
+      "pinned_version": "page observed 2026-08-13",
+      "usage": "核验默认关闭网络、workspace write/on-request 的安全语义、越界写入与联网需审批；正文按离线练习降级",
+      "license_or_terms": "reference-only; OpenAI documentation terms apply",
+      "copied_assets": false
+    },
+    {
+      "id": "openai-codex-best-practices-t09",
+      "title": "Codex Best practices 官方文档",
+      "url": "https://developers.openai.com/codex/learn/best-practices",
+      "source_role": "official-teaching-fact-source",
+      "pinned_version": "page observed 2026-08-13",
+      "usage": "核验 goal/context/constraints/done prompt 字段、复杂任务先计划、AGENTS.md 与 Git checkpoint 建议；课程任务和记录为原创",
+      "license_or_terms": "reference-only; OpenAI documentation terms apply",
+      "copied_assets": false
+    },
+    {
+      "id": "course-codex-task-original-t09",
+      "title": "模块 3 Codex 安全仓库任务原创实验",
+      "url": "docs/course-plan.md",
+      "source_role": "course-original",
+      "pinned_version": "workspace baseline c139d37; telemetry-report-v1 task v1",
+      "usage": "合成设备遥测仓库、澄清—计划—修改—diff—验证—交付阶段、失败恢复和匿名 evidence 边界",
+      "license_or_terms": "project-original; no copied assets",
+      "copied_assets": false
     }
   ]
 }

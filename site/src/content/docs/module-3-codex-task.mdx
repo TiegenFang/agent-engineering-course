@@ -1,0 +1,187 @@
+---
+title: 模块 3：Codex 安全仓库任务
+description: 在一次性合成设备遥测仓库中完成澄清、计划、修改、diff、验证、恢复和交付。
+sidebar:
+  order: 4
+---
+
+import EvidenceLoop from '../../components/EvidenceLoop.astro';
+
+# 模块 3：Codex 安全仓库任务
+
+> 本课把 Codex 的现场操作与本地可复现验收分开。页面和脚本不伪造 Codex、模型、账号或 API 结果；有账号时按官方入口完成真实仓库任务，没有凭据时仍可完成离线仓库、测试和 checker 路径。
+
+## 你要解决的真实问题
+
+“帮我修一下遥测报告”没有说明允许哪些文件、什么时候需要确认、测试失败是否预期，也没有交付证据。你将在一个一次性、合成的设备遥测仓库中，把一个模糊任务变成可执行的安全工作流：澄清目标，先计划，再让 Codex 做最小修改，查看 diff，运行测试和报告命令，最后交付一份可复核记录。
+
+本仓库只包含合成数据。它不连接设备、数据库、远程 Git、MCP 或外部服务，也不要求把真实科研数据、个人信息或密钥粘贴进任务。
+
+完成本课后，你应能：
+
+- 在真实 Coding Agent 任务开始前写出目标、非目标、文件范围、验收标准和停手条件；
+- 解释 Codex 的 sandbox 与 approval 是不同的控制面，并在 Windows PowerShell 7 中选择最小可用权限；
+- 观察基线测试的真实失败，完成 `F → C` 归一化和异常记录过滤，生成不含原始行的 JSON 报告；
+- 用 `git diff`、`git diff --check`、测试、报告和 handoff 记录判断“完成”，而不是相信 Agent 的一句总结；
+- 通过 `course_check` 生成匿名 `t04-codex-repository-task` evidence，并知道它没有证明真实 Codex 调用发生过。
+
+## 心智模型：一个可暂停的仓库任务环
+
+把这次任务看成八个可停下来的检查点：
+
+| 检查点 | 必须留下的证据 | 默认边界 |
+| --- | --- | --- |
+| `baseline` | 仓库、分支、HEAD 和干净状态 | 只读；一次性目录 |
+| `clarify` | 目标、非目标、验收标准 | 不修改源代码 |
+| `plan` | 文件、命令、权限、停手条件和人工确认 | 先计划再写入 |
+| `failure-observed` | 基线测试失败和错误分类 | 失败是证据，不是“通过” |
+| `change` | 允许范围内的源文件 diff | 只写 workspace |
+| `recovery` | 测试通过和摘要报告生成 | 不联网、不接设备 |
+| `review` | diff 检查、范围检查、无密钥 | 人工看 diff |
+| `delivery` | handoff、报告和人工交付决定 | 不自动 commit/push |
+
+Codex 的 sandbox 决定命令在技术上能触碰什么，approval 决定何时必须停下来问人；一个不能代替另一个。课程脚本只检查结果状态，绝不把本地路径、commit hash、命令输出或报告原文跨到网页。
+
+## 操作前预测
+
+在执行任何写入前，先在 `worklog/clarification.md` 和 `worklog/plan.md` 写下预测：
+
+1. 如果先运行基线测试，是否应该全部通过？为什么？
+2. 若 Codex 只被允许在一次性 workspace 内写入，它是否应能修改真实课程仓库或访问网络？
+3. 如果报告通过但 diff 同时修改了测试，是否算交付完成？
+
+把预测变成可观察的判断：第一次测试应失败；修复后只允许 `src/telemetry_report.py` 和 `worklog/` 改变；报告应只有统计摘要。预测错了就保留失败证据并恢复，不要删掉失败记录。
+
+## 主工具演示：按官方资料启动 Codex
+
+当前操作先以 [Codex CLI 官方文档](https://developers.openai.com/codex/cli/) 为准。官方页面说明从项目目录运行 `codex`，首次运行登录，然后描述任务；它也提供 `/plan`、`/permissions`、`/review` 等入口。安装命令属于易变适配层，请打开页面当天的 **Windows** 安装选项，不要把页面的 macOS/Linux `curl` 命令复制到 PowerShell。
+
+官方安全资料（[Permissions](https://developers.openai.com/codex/permissions)、[Sandboxing](https://developers.openai.com/codex/sandboxing)、[Agent approvals and security](https://developers.openai.com/codex/agent-approvals-security)）还明确区分 sandbox 和 approval：默认本地路径关闭网络，写入通常限制在活动 workspace；越出 workspace 或需要网络时应停下请求批准。课堂演示使用一次性目录，先只读/Plan，再由人确认 workspace 写入；不使用 `--yolo`、`danger-full-access`、远程仓库或真实数据。
+
+## 本地实验：设备遥测仓库的完整任务
+
+以下命令只创建一个显式指定的一次性目录。`$lab` 不要指向课程仓库、用户目录根、研究数据目录或任何正在工作的项目：
+
+```powershell
+$courseRoot = (Get-Location).Path
+$lab = Join-Path $env:TEMP "agent-course-t04-telemetry"
+pwsh -NoProfile -File .\labs\module-3\initialize-codex-task.ps1 `
+  -WorkspacePath $lab -ConfirmTarget
+Set-Location -LiteralPath $lab
+```
+
+初始化脚本会复制合成 starter、创建本地 Git baseline commit，并创建被忽略的 `artifacts` 目录。它不会联网、登录、调用 Codex 或删除已有文件；目标不为空时会停止。
+
+### 1. 澄清和计划
+
+先只记录基线状态；在写好并审阅澄清和计划后，再注入预期失败：
+
+```powershell
+pwsh -NoProfile -File (Join-Path $courseRoot "labs\module-3\codex-task.ps1") `
+  -RepoPath $lab -Stage baseline
+```
+
+在 `$lab` 中启动你已按官方资料准备好的 Codex。先要求它只读检查 `AGENTS.md`、`TASK.md`、测试和数据，提出需要澄清的问题；确认范围后，让它把结论写入 `worklog/clarification.md` 和 `worklog/plan.md`，但暂时不要修改 `src/`：
+
+```text
+请先只读检查这个一次性合成仓库。先复述目标、非目标、允许修改的文件、需要运行的命令、权限边界、停手条件和成功证据；如果信息不足先提问。不要联网、不要读取仓库外文件、不要修改测试或数据、不要提交或推送。确认计划后只更新 worklog/clarification.md 和 worklog/plan.md，等我人工确认再改源代码。
+```
+
+审阅计划后再记录阶段：
+
+```powershell
+pwsh -NoProfile -File (Join-Path $courseRoot "labs\module-3\codex-task.ps1") `
+  -RepoPath $lab -Stage clarify
+pwsh -NoProfile -File (Join-Path $courseRoot "labs\module-3\codex-task.ps1") `
+  -RepoPath $lab -Stage plan -HumanApproved
+pwsh -NoProfile -File (Join-Path $courseRoot "labs\module-3\codex-task.ps1") `
+  -RepoPath $lab -Stage failure-observed
+```
+
+### 2. 修改、diff 和验证
+
+在人工确认计划后，让 Codex 只修改 `src/telemetry_report.py`，完成 `F → C` 转换和异常行过滤；保持报告 schema，不动测试和 CSV。发生越界请求、要联网、出现凭据或 Codex 不能解释测试时，选择拒绝并停下。
+
+```powershell
+pwsh -NoProfile -File (Join-Path $courseRoot "labs\module-3\codex-task.ps1") `
+  -RepoPath $lab -Stage change -HumanApproved
+pwsh -NoProfile -File (Join-Path $courseRoot "labs\module-3\codex-task.ps1") `
+  -RepoPath $lab -Stage recovery
+```
+
+`recovery` 会重新运行 `python -m unittest discover -s tests -v`，再生成 `artifacts/report.json`。报告只应包含 `schema`、`valid_count`、`mean_celsius` 和 `unit`；成功结果应为 3 条有效记录、平均值 `20.333` 摄氏度。
+
+### 3. 审阅和交付
+
+先人工执行或查看：
+
+```powershell
+git diff --check
+git diff -- src/telemetry_report.py worklog
+```
+
+在 `worklog/recovery.md` 写清基线失败、错误分类、最小修复和恢复命令；在 `worklog/handoff.md` 写清 diff、测试、报告、隐私边界和是否提交。然后记录审阅和交付：
+
+```powershell
+pwsh -NoProfile -File (Join-Path $courseRoot "labs\module-3\codex-task.ps1") `
+  -RepoPath $lab -Stage review
+pwsh -NoProfile -File (Join-Path $courseRoot "labs\module-3\codex-task.ps1") `
+  -RepoPath $lab -Stage delivery -HumanApproved `
+  -OutputPath (Join-Path $lab "artifacts\t04-codex-repository-task-evidence.json")
+```
+
+脚本只会在 `artifacts\codex-task-stages` 和 `artifacts\` 下写状态/报告文件；这些文件被一次性仓库的 `.gitignore` 排除。它不会替你提交或推送。将生成的 JSON 交给课程 checker：
+
+```powershell
+Set-Location -LiteralPath (Join-Path $courseRoot "checker")
+python -m course_check check t04-codex-repository-task `
+  --root .. `
+  --evidence-file (Join-Path $lab "artifacts\t04-codex-repository-task-evidence.json") `
+  --output (Join-Path $lab "artifacts\t04-codex-repository-task-checked.json") `
+  --json
+```
+
+如果没有 Codex 账号，仍可在不伪造 live 结果的前提下手工完成同一目录和测试路径；checker 通过只表示本地阶段、产物和安全不变量满足，不表示发生过真实 Codex 调用，因此这条离线路径仍未完成 live Codex 验收。若有 Codex 账号，把真实会话的客户端版本、模型/账号类型、审批选择和成本人工写入自己的交付记录，但不要放入匿名 JSON。
+
+## 故障注入与恢复
+
+### 基线测试失败
+
+starter 故意把 `F` 当成 `C`。`failure-observed` 必须看到非零测试结果和可解释的断言失败；它不是要你删测试或把失败改写成“通过”。恢复是：只修正转换逻辑，保留异常记录过滤和报告 schema，重新运行测试与报告命令。
+
+### 越界权限请求
+
+如果 Codex 要读取 `$lab` 之外的文件、访问网络、使用凭据、修改测试/数据或执行 `git push`，拒绝请求，保留停手原因，回到计划阶段。不要使用 `--yolo` 或为了“让测试通过”扩大 workspace。必要时新建一个干净一次性目录重新开始；不要对真实仓库使用恢复命令。
+
+### checker 拒绝证据
+
+`failed` 或 `partial` 表示某个阶段的观察仍未满足。先看人类可读的阶段输出和本地 diff，再补写记录或恢复代码；不要直接编辑最终 evidence 的 `result`。若报版本不匹配，确认网页、`course-version.json`、checker 和实验脚本来自同一课程版本。
+
+## 迁移挑战：改变输入，不复制 Codex 步骤
+
+完成主实验后，把 `TASK.md` 的输入约束改写为“压力报告”：单位换成 `kPa`、只保留最近 3 条有效记录，并让另一种可用工具（例如 Claude Code）只读解释哪些是厂商无关的任务环，哪些是 Codex 的权限/审批入口。不要把主实验命令逐字复制，也不要在没有现场调用时声称完成了 Claude Code 验收。迁移挑战的结果只写个人记录，不进入本课的匿名 checker contract。
+
+## 可核验成果：匿名 evidence
+
+`course_check` 会从固定八阶段中重新推导以下检查，而不是信任学员手写的总状态：
+
+- `clarification-recorded`、`plan-recorded`：目标和计划字段齐全；
+- `failure-recovered`：看见基线失败并在修复后测试通过；
+- `scoped-change`、`diff-reviewed`：源文件范围、`git diff --check` 和无密钥检查通过；
+- `tests-passed`、`report-generated`：测试通过且报告 schema/统计满足合同；
+- `delivery-recorded`：handoff、证据和人工交付决定已留下。
+
+脚本和 checker 会拒绝路径、源码、原始遥测、凭据或额外敏感字段进入公开证据；网页只保存课程版本、课节身份、结果和稳定证据 ID。网页本地记录仍由你主动导入，不上传服务器。
+
+<EvidenceLoop lessonId="t04-codex-repository-task" />
+
+## 风险、版本与来源卡片
+
+- **账号与成本**：离线初始化、Python 测试、报告和 checker 免费且不需要账号；真实 Codex CLI 需要按官方页面登录和可用额度，模型、套餐、限额与价格随账户/产品变化，本课不把任何价格写成固定事实。
+- **权限与副作用**：只在一次性目录操作；初始化创建本地 Git 元数据和 baseline commit，Codex 写入限定 workspace，报告和阶段记录写入被忽略的 `artifacts`；不访问网络、设备、远程 Git、MCP、凭据或课程仓库，不自动 commit/push。
+- **人工确认点**：阅读 `AGENTS.md` 和 `TASK.md`；先只读/Plan；批准前检查文件范围和命令；拒绝越界路径、联网、凭据、测试篡改和推送；最后人工查看 diff、测试和报告后再决定是否提交。
+- **失败与恢复**：保留基线失败；最小修复后重跑测试和报告；越界时停下并恢复到一次性目录或新建干净目录；checker 拒绝时按阶段修复，不编辑总结果。
+- **版本与验证边界**：OpenAI 官方 CLI、权限和 sandbox 页面于 2026-08-13 现场打开核验；CLI 页面展示 `v0.143.0` 示例但不作为固定客户端。本地 PowerShell/Node/Python/checker 路径可复现；真实 Codex 登录、账号、模型、计费、Windows sandbox enforcement、Claude Code 迁移、跨平台浏览器和设备均未在本课程仓库现场验收。
+- **来源与许可**：正文、合成仓库、脚本、测试和 checker 契约为本课程原创（正文 CC BY 4.0；代码/实验脚手架/checker MIT）；Codex 产品和安全事实只链接官方 OpenAI 文档，不复制 UI、商标图像或第三方代码。
+
+下一步是模块 4：把本课写下的仓库规则扩展成 AGENTS.md、CLAUDE.md 和分层作用域实验。
