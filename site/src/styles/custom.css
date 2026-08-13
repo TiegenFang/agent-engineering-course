@@ -104,6 +104,8 @@
 
 .hooks-tasks-lab__form select,
 .hooks-tasks-lab__form input[type="number"] {
+  box-sizing: border-box;
+  width: 100%;
   min-height: 44px;
   border: 1px solid var(--hooks-line);
   padding: 0.45rem 0.6rem;

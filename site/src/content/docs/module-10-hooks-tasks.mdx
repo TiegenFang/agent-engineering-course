@@ -62,13 +62,15 @@ import HooksTasksLab from '../../components/HooksTasksLab.astro';
 浏览器夹具不执行真实客户端。完成观察后点击“导出匿名证据”，把下载文件放在课程工作区外的临时位置，再用 Windows 11 + PowerShell 7 的本地 checker：
 
 ```powershell
+$evidence = Join-Path $env:TEMP "t21-hooks-tasks-evidence.json"
+$checked = Join-Path $env:TEMP "t21-hooks-tasks-checked.json"
 Push-Location .\checker
 python -m course_check check t21-hooks-tasks `
   --root .. `
-  --evidence-file $env:TEMP\t21-hooks-tasks-evidence.json `
-  --output $env:TEMP\t21-hooks-tasks-checked.json `
+  --evidence-file $evidence `
+  --output $checked `
   --json
-Get-Content -LiteralPath $env:TEMP\t21-hooks-tasks-checked.json
+Get-Content -LiteralPath $checked
 Pop-Location
 ```
 
