@@ -1,40 +1,57 @@
 import { chromium } from "playwright";
-import { spawn } from "node:child_process";
-import { createServer } from "node:net";
+import { access, readFile } from "node:fs/promises";
+import { createServer } from "node:http";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const siteRoot = fileURLToPath(new URL("..", import.meta.url));
-const port = await new Promise((resolve, reject) => {
-  const server = createServer();
-  server.listen(0, "127.0.0.1", () => {
-    const address = server.address();
-    const value = typeof address === "object" && address ? address.port : 0;
-    server.close(() => resolve(value));
-  });
-  server.on("error", reject);
+const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
+const siteRoot = path.resolve(scriptDirectory, "..");
+const distRoot = path.join(siteRoot, "dist");
+const basePath = "/agent-engineering-course";
+const routePath = `${basePath}/module-12-enterprise-api/`;
+const contentTypes = {
+  ".css": "text/css; charset=utf-8",
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".svg": "image/svg+xml",
+};
+
+await access(path.join(distRoot, "module-12-enterprise-api", "index.html"));
+const server = createServer(async (request, response) => {
+  try {
+    const requestUrl = new URL(request.url || "/", "http://127.0.0.1");
+    if (requestUrl.pathname !== basePath && !requestUrl.pathname.startsWith(`${basePath}/`)) {
+      response.writeHead(404).end();
+      return;
+    }
+    let relativePath = decodeURIComponent(requestUrl.pathname.slice(basePath.length) || "/");
+    if (relativePath.endsWith("/")) relativePath += "index.html";
+    const filePath = path.resolve(distRoot, `.${relativePath}`);
+    if (!filePath.startsWith(`${distRoot}${path.sep}`)) {
+      response.writeHead(403).end();
+      return;
+    }
+    const body = await readFile(filePath);
+    response.writeHead(200, { "Content-Type": contentTypes[path.extname(filePath)] || "application/octet-stream" });
+    response.end(body);
+  } catch {
+    response.writeHead(404).end();
+  }
 });
 
-const npmExecutable = process.platform === "win32" ? "npm.cmd" : "npm";
-const preview = spawn(npmExecutable, ["run", "preview", "--", "--host", "127.0.0.1", "--port", String(port)], {
-  cwd: siteRoot,
-  shell: false,
-  stdio: "ignore",
-});
+let browser;
 try {
-  let ready = false;
-  for (let attempt = 0; attempt < 30 && !ready; attempt += 1) {
-    try {
-      const response = await fetch(`http://127.0.0.1:${port}/module-12-enterprise-api/`);
-      ready = response.ok;
-      if (!ready) await new Promise((resolve) => setTimeout(resolve, 250));
-    } catch {
-      await new Promise((resolve) => setTimeout(resolve, 250));
-    }
-  }
-  if (!ready) throw new Error("T31 preview did not become ready");
-  const browser = await chromium.launch({ headless: true });
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("T31 static server did not expose a port");
+  const pageUrl = `http://127.0.0.1:${address.port}${routePath}`;
+  browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-  await page.goto(`http://127.0.0.1:${port}/module-12-enterprise-api/`, { waitUntil: "networkidle" });
+  await page.goto(pageUrl, { waitUntil: "networkidle" });
   await page.locator("[data-enterprise-api-lab]").scrollIntoViewIfNeeded();
   await page.locator("[data-enterprise-api-run]").click();
   await page.locator("[data-enterprise-api-result]").waitFor();
@@ -45,7 +62,7 @@ try {
     throw new Error("T31 browser lab did not prove bounded offline approval state");
   }
   await page.screenshot({ path: "artifacts/t31-enterprise-api-desktop.png", fullPage: true });
-  await browser.close();
 } finally {
-  preview.kill();
+  await browser?.close();
+  await new Promise((resolve) => server.close(resolve));
 }
