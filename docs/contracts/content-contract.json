@@ -203,9 +203,7 @@
       "title": "Agent 指令工程对照实验",
       "stage": "alpha",
       "duration_minutes": 45,
-      "prerequisites": [
-        "t02-agent-loop"
-      ],
+      "prerequisites": ["t02-agent-loop"],
       "outcomes": [
         "使用目标、上下文、约束、非目标、工具边界、输出契约、验收标准和失败证据组织工程化指令",
         "在同一合成任务上比较模糊请求与工程化指令，并解释差异来自哪些字段",
@@ -221,12 +219,10 @@
       "migration_tool": "Codex or Claude Code (conceptual migration challenge; no live call from page)",
       "platforms": {
         "primary": "Desktop browser; Windows 11 + PowerShell 7 for course_check",
-        "secondary": [
-          "macOS/Linux browser; checker path not yet cross-platform verified"
-        ]
+        "secondary": ["macOS/Linux browser; checker path not yet cross-platform verified"]
       },
       "versions": {
-        "client": "Astro/Starlight course page @ workspace baseline 8534dee; T08 instruction experiment v2",
+        "client": "Astro/Starlight course page @ workspace baseline 442eda0; T08 instruction experiment v2",
         "sdk": "not-applicable",
         "model": "deterministic instruction fixture v2; no model call",
         "protocol": "agent-engineering-course/evidence v1"
@@ -242,13 +238,55 @@
         "side_effects": "fixture 不调用模型、API、真实 Coding Agent、设备、文件系统或网络；导出由用户主动触发",
         "staleness": "课程交互、证据契约和浏览器兼容性需随课程版本复核；真实 Codex/Claude Code 适配内容需按官方文档重新核验"
       },
-      "sources": [
-        "course-agent-instruction-original"
+      "sources": ["course-agent-instruction-original"],
+      "licenses": ["CC-BY-4.0", "MIT"]
+    },
+    {
+      "id": "t04-project-rules",
+      "title": "模块 4：项目指令与规则作用域",
+      "stage": "core-beta",
+      "duration_minutes": 55,
+      "prerequisites": ["t02-agent-loop"],
+      "outcomes": [
+        "根据官方机制说明预测 Codex 的 AGENTS.md 与 Claude Code 的 CLAUDE.md 规则作用域和加载顺序",
+        "在一次性目录中观察嵌套规则冲突，区分发现问题、诊断来源和恢复动作",
+        "用不含路径、规则正文、凭据或原始数据的匿名行为证据证明两类工具的差异和恢复复核"
       ],
-      "licenses": [
-        "CC-BY-4.0",
-        "MIT"
-      ]
+      "artifacts": [
+        "一次性 project-rules-practice 规则实验目录",
+        "t04-project-rules-diagnostic.json（仅含阶段状态）",
+        "t04-project-rules-evidence.json（匿名 evidence contract）",
+        "一份记录预测、冲突诊断与恢复复核的迁移说明"
+      ],
+      "primary_tool": "PowerShell 7 deterministic project-rules fixture",
+      "migration_tool": "Codex or Claude Code (official rule-mechanism comparison; live client optional)",
+      "platforms": {
+        "primary": "Windows 11 + PowerShell 7",
+        "secondary": ["macOS/Linux shell path is a conceptual migration only"]
+      },
+      "versions": {
+        "client": "Codex and Claude Code official rule docs observed 2026-08-13; live client versions not asserted",
+        "sdk": "not-applicable",
+        "model": "not-applicable; offline fixture only",
+        "protocol": "agent-engineering-course/evidence v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free for the offline fixture and checker; optional live tools may require an account or paid quota",
+        "network": "offline lab and checker need no network; official documentation links need network when refreshed"
+      },
+      "risk": {
+        "permissions": "The script writes only to a new, explicitly named directory outside the course repository and reads no credentials",
+        "side_effects": "It creates synthetic rule files, removes only its own conflicting override, and writes an anonymous JSON output; it never runs a real agent or remote command",
+        "staleness": "Codex and Claude Code rule discovery is a fast-changing product layer; recheck the official docs before each release and do not infer hard enforcement from markdown instructions"
+      },
+      "sources": [
+        "codex-agents-md-current",
+        "claude-code-memory-current",
+        "course-project-rules-original"
+      ],
+      "licenses": ["CC-BY-4.0", "MIT"]
     }
   ]
 }

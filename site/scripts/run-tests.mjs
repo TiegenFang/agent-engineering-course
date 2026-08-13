@@ -8,8 +8,10 @@ const testCommands = [
   ["--test", "scripts/test-agent-loop.mjs"],
   ["--test", "scripts/test-agent-instruction.mjs"],
   ["--test", "scripts/test-evidence-record.mjs"],
+  ["--test", "scripts/test-project-rules.mjs"],
   ["scripts/assert-homepage.mjs"],
   ["scripts/assert-module-zero.mjs"],
+  ["scripts/assert-module-four.mjs"],
 ];
 
 for (const args of testCommands) {

@@ -15,3 +15,7 @@ pwsh -NoProfile -File .\labs\module-0\diagnose-environment.ps1
 
 这里不得加入真实敏感科研数据、企业数据、密钥或个人信息。
 
+模块 4 的项目规则实验位于 `labs/project-rules/`。它只允许在课程仓库之外的
+一次性目录中创建合成 `AGENTS.md`/`CLAUDE.md` 文件，并输出匿名状态证据；不要把
+实验规则复制到真实仓库，也不要把真实规则正文或客户端日志提交到课程仓库。
+

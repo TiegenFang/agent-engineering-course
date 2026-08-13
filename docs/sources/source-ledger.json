@@ -237,8 +237,38 @@
       "title": "模块 2 Agent 指令工程原创实验设计",
       "url": "docs/course-plan.md",
       "source_role": "course-original",
-      "pinned_version": "workspace baseline 8534dee; instruction experiment v2",
+      "pinned_version": "workspace baseline 442eda0; instruction experiment v2",
       "usage": "模块 2 的模糊/工程化指令同基线对照、规则冲突、提示注入、过长预算、变化输入迁移和匿名证据边界",
+      "license_or_terms": "project-original; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "codex-agents-md-current",
+      "title": "Custom instructions with AGENTS.md",
+      "url": "https://learn.chatgpt.com/docs/agent-configuration/agents-md",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "page observed 2026-08-13; current docs page; no Codex client version asserted",
+      "usage": "核验 AGENTS.override.md/AGENTS.md 的 global/project discovery、每目录选择、根到当前目录合并、近目录后加载和 project_doc_max_bytes；正文为原创改写",
+      "license_or_terms": "reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "claude-code-memory-current",
+      "title": "How Claude remembers your project",
+      "url": "https://code.claude.com/docs/en/memory",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "page observed 2026-08-13; current docs page; no Claude Code client version asserted",
+      "usage": "核验 CLAUDE.md 层级、@AGENTS.md 导入、祖先/嵌套加载、.claude/rules 路径规则及冲突不保证确定优先级；正文为原创改写",
+      "license_or_terms": "reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "course-project-rules-original",
+      "title": "模块 4 项目规则作用域原创实验设计",
+      "url": "docs/course-plan.md",
+      "source_role": "course-original",
+      "pinned_version": "workspace baseline 442eda0; T13 implementation",
+      "usage": "一次性规则目录、安全边界、嵌套冲突诊断/恢复、跨工具迁移与匿名行为 evidence 设计",
       "license_or_terms": "project-original; no copied assets",
       "copied_assets": false
     }

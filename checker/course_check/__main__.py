@@ -17,6 +17,7 @@ from .evidence import (
     classify_checks,
     validate_evidence_document,
 )
+from .project_rules import PROJECT_RULES_LESSON_ID, load_project_rules_checks
 
 
 EXPECTED_BOUNDARIES = {
@@ -1177,6 +1178,7 @@ def check_lesson(
         GIT_SAFETY_LESSON_ID,
         "t02-agent-loop",
         "t03-agent-instruction",
+        PROJECT_RULES_LESSON_ID,
     }:
         raise ContractError(f"Unsupported evidence lesson: {lesson_id}")
     course_version = validate_foundation(root)
@@ -1227,6 +1229,41 @@ def check_lesson(
             checks, trace = load_evidence_checks(
                 evidence_file,
                 expected_lesson_id=lesson_id,
+                expected_course_version=course_version,
+            )
+    elif lesson_id == PROJECT_RULES_LESSON_ID:
+        if evidence_file is None:
+            checks = [
+                {
+                    "id": "project-rules-page",
+                    "result": "passed"
+                    if (root / "site/src/content/docs/module-4-project-rules.mdx").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "project-rules-lab",
+                    "result": "passed"
+                    if (root / "labs/project-rules/project-rules.ps1").is_file()
+                    and (root / "labs/project-rules/README.md").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "project-rules-contract",
+                    "result": "passed"
+                    if (root / "checker/course_check/project_rules.py").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "project-rules-sources",
+                    "result": "passed"
+                    if (root / "docs/sources/source-ledger.json").is_file()
+                    else "failed",
+                },
+                {"id": "project-rules-evidence-executed", "result": "failed"},
+            ]
+        else:
+            checks = load_project_rules_checks(
+                evidence_file,
                 expected_course_version=course_version,
             )
     else:

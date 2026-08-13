@@ -1,0 +1,167 @@
+---
+title: 模块 4：项目指令与规则作用域
+description: 在一次性目录中预测、观察并恢复 AGENTS.md、CLAUDE.md 与嵌套规则冲突
+sidebar:
+  order: 5
+---
+
+import EvidenceLoop from '../../components/EvidenceLoop.astro';
+
+# 模块 4：项目指令与规则作用域
+
+> 本课把“Agent 为什么读到了这条规则”变成可以预测、观察、诊断和恢复的证据。主实验是离线 PowerShell 7 fixture，不会调用真实模型、Codex、Claude Code、API 或网络服务；真实客户端差异只在迁移挑战中按官方资料核对。
+
+## 你要解决的真实问题
+
+仓库里同时存在根目录规范、服务目录约定和个人临时规则时，Agent 的行为可能看起来像“随机”。如果不知道启动目录、发现范围、同目录选择和加载顺序，维护者很容易把一条只适用于子目录的规则误当成全仓库规则，也可能用一条覆盖文件把团队规则悄悄遮住。
+
+完成本课后，你应能：
+
+- 预测 Codex 的 `AGENTS.md`、`AGENTS.override.md` 与可配置 fallback 文件在一个目录链中的作用域和优先级。
+- 预测 Claude Code 的 `CLAUDE.md`、`CLAUDE.local.md`、`@AGENTS.md` 导入和 `.claude/rules/` 路径规则何时进入上下文。
+- 区分“发现了哪条规则”“冲突如何解释”和“设置/Hook 是否真正阻止操作”；不把 Markdown 指令当成硬权限。
+- 在不触碰真实仓库的前提下，留下阶段型行为证据，并从本地诊断 JSON 生成匿名 `t04-project-rules` evidence。
+
+## 心智模型：作用域不是一张全局开关
+
+把每条规则拆成四个问题：
+
+1. **发现（discovery）**：从哪个全局/项目根/当前目录开始寻找文件？
+2. **选择（selection）**：同一目录出现普通文件和 override 时，工具选哪一个？
+3. **合并（merge）**：多个目录的内容按什么顺序进入上下文？“更近”通常意味着更晚读到，但不自动等于硬覆盖。
+4. **执行边界（enforcement）**：规则文本只是上下文提示，还是由设置、权限或 Hook 在客户端层面阻止操作？
+
+| 机制 | 当前官方资料核验到的稳定事实 | 本课的安全解释 |
+| --- | --- | --- |
+| Codex `AGENTS.md` | 从 global scope 和 Git project root 逐层走到当前目录；每个目录最多纳入一个文件，优先 `AGENTS.override.md`，然后 `AGENTS.md` 和已配置 fallback；根到当前目录拼接，靠近当前目录的内容后出现。 | 先固定启动目录，再列出每层候选；不要把“普通文件存在”误写成“普通文件一定被纳入”。 |
+| Claude Code `CLAUDE.md` | Claude Code 读取 `CLAUDE.md`，不会因文件名是 `AGENTS.md` 就自动读取；可用 `@AGENTS.md` 导入。祖先层级的 `CLAUDE.md`/`CLAUDE.local.md` 参与启动，上下文按根到当前目录拼接；子目录文件可在访问该目录文件时加载。 | “更近”是加载顺序线索，不是确定的冲突裁决；官方文档明确冲突可能任意选择，应删重复冲突或改成可验证的单一规则。 |
+| Claude `.claude/rules/` | 无 `paths` 的规则可在启动时加载；带 `paths` 的规则只在匹配路径被处理时相关。 | 把路径条件记录为实验观察，不把它泛化成 Codex 的 `AGENTS.md` 机制。 |
+| 设置与 Hook | Claude 文档区分 `CLAUDE.md` 的行为指导和 managed settings 的工具/路径阻断；真正需要硬阻止时使用客户端权限或 Hook。 | 如果行为越过安全边界，先停下检查设置与人工确认，不用改写一段 Markdown 来“授权”。 |
+
+这张表是“官方事实 + 课程边界”的组合：Codex 和 Claude Code 的安装、客户端版本、界面和命令参数属于易变工具适配层；本页只保留在核验日能从官方资料支持的机制，并明确没有把 live client 运行结果伪装成实验结果。
+
+## 操作前预测
+
+运行脚本前，在自己的笔记中只写状态和理由，不写用户名、邮箱、绝对路径、规则全文、密钥或会话日志。预测以下问题：
+
+1. 从一次性目录的 `src` 工作目录开始时，Codex 会同时纳入 `src/AGENTS.md` 和 `src/AGENTS.override.md`，还是同目录只选一个？根目录 `AGENTS.md` 的位置会怎样影响顺序？
+2. Claude Code 会直接读取名为 `AGENTS.md` 的文件，还是需要 `CLAUDE.md` 中的 `@AGENTS.md` 导入？带 `paths: ["src/**/*.ps1"]` 的规则在打开其他文件时是否应当出现？
+3. 根 `CLAUDE.md` 和 `src/CLAUDE.md` 都说了相互冲突的标签时，应该先猜“最近规则必胜”，还是先记录来源、启动目录和冲突，再决定恢复动作？
+4. 如果规则文件要求“不要执行某命令”，这是否等价于客户端设置中的 deny/sandbox？为什么？
+
+## 主工具演示：PowerShell 7 离线 fixture
+
+本课主路径只使用 PowerShell 7 和本仓库内的原创脚本。脚本会在仓库之外创建一个新目录，写入合成规则文件，记录六个阶段，删除它自己创建的冲突 override，并输出状态型诊断。它不读取或修改当前仓库的 `AGENTS.md`，也不要求账号、API key、模型或网络。
+
+先确认 `$env:TEMP\agent-engineering-course` 下的实验目录和输出文件不存在，再运行：
+
+```powershell
+$labParent = Join-Path $env:TEMP "agent-engineering-course"
+if (-not (Test-Path -LiteralPath $labParent -PathType Container)) {
+  New-Item -ItemType Directory -Path $labParent | Out-Null
+}
+$labRoot = Join-Path $labParent "t04-project-rules-practice"
+$output = Join-Path $labParent "t04-project-rules-diagnostic.json"
+if ((Test-Path -LiteralPath $labRoot) -or (Test-Path -LiteralPath $output)) {
+  throw "目标已存在；请先人工审阅或换一个一次性目录。"
+}
+pwsh -NoProfile -File .\labs\project-rules\project-rules.ps1 `
+  -LabPath $labRoot `
+  -OutputPath $output
+```
+
+如果确实审阅过旧输出，需要覆盖时，必须明确追加 `-AllowOverwrite`；不要用它复用一个含有未知文件的实验目录。脚本的安全拒绝是课程成果的一部分：它应当拒绝课程仓库本身、已有目标和输出父目录以外的模糊路径。
+
+## 本地实验：从文件层级到行为证据
+
+用文本编辑器查看一次性目录中的合成结构（不要把正文复制回课程仓库）：
+
+```text
+t04-project-rules-practice/
+├── AGENTS.md
+├── CLAUDE.md              # 通过 @AGENTS.md 导入共享规则
+├── src/
+│   ├── AGENTS.md
+│   ├── AGENTS.override.md # 故意制造 Codex 同目录冲突
+│   └── CLAUDE.md
+└── .claude/
+    └── rules/
+        └── powershell.md  # paths: src/**/*.ps1
+```
+
+对照 `t04-project-rules-diagnostic.json` 的 `journey.stages`：
+
+- `safe-boundary`：目标是新目录，不是 Git 仓库，输出文件尚不存在。
+- `codex-observation`：根规则、嵌套 override 和“普通文件被同目录 override 取代”的观察成立。
+- `claude-observation`：根/嵌套 `CLAUDE.md`、`@AGENTS.md` 导入和路径规则的观察成立。
+- `conflict-diagnosis`：两种机制都留下冲突来源，且冲突被限制在一次性 fixture 内。
+- `recovery`：只删除故意制造的 override，并重新检查普通规则和项目规则仍然存在。
+- `migration`：将主实验目标迁移到另一工具时，保持“预测—记录来源—诊断冲突—恢复—复核”的不变量。
+
+检查器会重新计算每个阶段的 `result`：所有布尔观察为真才是 `passed`。因此只把六个公开检查写成 `passed`，但阶段中有一项为假，不能生成通过证据。
+
+## 故障注入与恢复：先诊断作用域，再改规则
+
+| 观察到的证据 | 可能诊断 | 安全恢复 | 再次验证 |
+| --- | --- | --- | --- |
+| 规则只在 `src` 行为出现 | 当前工作目录或文件访问路径没有进入该规则作用域 | 回到一次性目录，记录启动目录；不要把规则复制到根目录来掩盖发现问题 | 重新运行 fixture，检查 `codex-observation`/`claude-observation` |
+| 同目录普通文件和 override 意外并存 | Codex 每目录选择规则的预测错误，或实验目录没有按预期创建 | 只在一次性目录内移走冲突 override，保留副本；重新检查普通 `AGENTS.md` | `recovery` 的 `override_removed`、`regular_rechecked` |
+| 根与嵌套 Claude 规则互相矛盾 | 多个 `CLAUDE.md` 被拼接，模型面对相互冲突的自然语言约束 | 把全局不变量留在根规则，把子目录细节写成非冲突的附加规则；必要时检查 `CLAUDE.md`/`.claude/rules/` 和 `claudeMdExcludes` | 重新启动会话或重新访问匹配文件；记录加载来源，不声称固定胜负 |
+| 文字规则没有阻止危险操作 | `CLAUDE.md` 是行为指导，不是硬权限 | 停止操作，检查 managed settings、deny/sandbox、Hook 和人工审批 | 用安全的只读检查复核权限边界；不以“模型答应了”作为通过证据 |
+| checker 拒绝证据 | 阶段缺失、顺序错误、布尔观察与结果不一致、课程版本不匹配或包含敏感字段 | 修复本地一次性实验并重新生成，不手改最终 JSON | 重新运行 `course_check`，只导入匿名输出 |
+
+故障注入不需要改动真实仓库，也不需要删除任何用户文件。不要对课程仓库或科研/企业仓库执行 `Remove-Item -Recurse`、`git clean`、`git reset --hard`，不要覆盖已有根 `AGENTS.md`/`CLAUDE.md`。
+
+## 迁移挑战：换工具，保留验收目标
+
+如果你有 Codex，任选一次性目录中的 `src` 作为工作目录，按官方文档检查实际加载来源；如果你有 Claude Code，使用 `/context` 或等价的官方检查入口，确认 `CLAUDE.md` 和导入文件。把客户端名称、版本和核验日期记录在本地迁移说明中，但不要把会话日志、规则全文或绝对路径放进 evidence。
+
+迁移时只改变工具和变化输入，不改变下列目标：
+
+- 能指出规则来自全局、项目根、祖先目录、当前目录还是路径限定文件。
+- 能解释同目录选择和根到当前目录加载顺序，而不把不同产品机制强行对齐。
+- 能识别冲突、暂停危险操作、在一次性目录中恢复，再次检查状态。
+- 没有账号时仍可以完成离线 fixture；不得伪造真实 Codex/Claude Code 运行结果。
+
+截至 2026-08-13，本课已核对官方 AGENTS.md 与 Claude Code memory/rules 文档；未在本次制作中执行真实客户端现场验收。产品行为、设置键、版本、加载上限和 UI 可能变化，发布前需重新核验。
+
+## 可核验成果：生成匿名 evidence
+
+在 `checker` 目录运行：
+
+```powershell
+Push-Location .\checker
+python -m course_check check t04-project-rules `
+  --root .. `
+  --evidence-file $output `
+  --output $labParent\t04-project-rules-evidence.json `
+  --json
+Pop-Location
+```
+
+成功输出遵循 `agent-engineering-course/evidence` v1，只包含课程版本、课节 ID、结果、检查 ID 和 `passed`/`failed` 状态。网页导入也只保存匿名 JSON 的本地记录：
+
+<EvidenceLoop lessonId="t04-project-rules" />
+
+没有 `--evidence-file` 时 checker 只验证页面、实验脚本、合同和来源账本，结果是 `partial`；这表示“结构接缝存在”，不是“真实客户端已经执行”。如果实验只完成部分阶段，导入 `partial` 结果也有价值，恢复后重新运行可覆盖同一课节的本地记录。
+
+## 风险、版本与来源卡片
+
+**版本与平台（最后核验：2026-08-13）**
+
+- Windows 11 + PowerShell 7 是正式主路径；fixture 使用 PowerShell 原生命令和显式 `-LiteralPath`，不依赖 POSIX shell。
+- Codex 与 Claude Code 的规则发现属于当前工具适配层，不是跨工具协议；本页的官方事实分别来自 [Codex AGENTS.md 文档](https://learn.chatgpt.com/docs/agent-configuration/agents-md) 与 [Claude Code 项目记忆/规则文档](https://code.claude.com/docs/en/memory)。
+- 课程实验版本是 `project-rules` journey v1 和 `agent-engineering-course/evidence` v1；真实客户端版本未声称已现场验证。
+
+**账号、成本、权限与副作用**
+
+- 离线实验、checker 和网页导入不需要账号、API key、模型、远程 MCP 或付费额度；阅读官方文档和可选的 live migration 可能需要网络/账号。
+- 脚本只在一个新目录内创建合成规则文件，删除它自己创建的冲突 override，并在用户指定的新输出文件中写入状态；它不读环境变量中的凭据，不连接远端，不修改课程仓库。
+- 规则正文、路径、用户名、凭据、会话日志和原始研究/企业数据都不能进入 evidence。checker 会在边界拒绝敏感字段，并从阶段观察重建公开检查。
+- `AGENTS.md`/`CLAUDE.md` 不是安全沙箱。需要阻止工具、命令或路径时，依赖客户端权限、managed settings、Hook 和人工审批，并在执行前明确副作用。
+
+**事实与原创内容**
+
+官方事实：[Codex AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md)、[Claude Code memory and rules](https://code.claude.com/docs/en/memory)。规则场景、一次性 fixture、故障路径、诊断字段和匿名 evidence 是本课程原创设计；正文按 CC BY 4.0，脚本、测试和 checker 按 MIT。来源账本中的官方页面只作参考，不复制页面资产。
+
+下一步是模块 5 的上下文工程：规则文件是进入上下文的一个来源，但不是 Memory，也不是客户端硬权限。
