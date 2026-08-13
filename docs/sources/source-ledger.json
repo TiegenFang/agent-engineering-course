@@ -115,9 +115,9 @@
     {
       "id": "powershell-install-windows",
       "title": "Install PowerShell on Windows",
-      "url": "https://learn.microsoft.com/powershell/scripting/install/install-powershell-on-windows",
+      "url": "https://github.com/MicrosoftDocs/PowerShell-Docs/blob/fbaca072ae7b77e2064ed10104e0ffd47f1c52aa/reference/docs-conceptual/install/install-powershell-on-windows.md",
       "source_role": "fact-source",
-      "pinned_version": "PowerShell 7.x; reviewed 2026-08-13",
+      "pinned_version": "PowerShell-Docs commit fbaca072ae7b77e2064ed10104e0ffd47f1c52aa; page date 2026-07-20",
       "usage": "确认 Windows 主路径使用 PowerShell 7 及官方安装入口；正文为原创改写",
       "license_or_terms": "reference-only; no copied assets",
       "copied_assets": false
@@ -125,9 +125,9 @@
     {
       "id": "python-using-windows",
       "title": "Python Using Python on Windows",
-      "url": "https://docs.python.org/3/using/windows.html",
+      "url": "https://github.com/python/cpython/blob/dccefbc14adf6cd13693f3b6b2802945c4e23e01/Doc/using/windows.rst",
       "source_role": "fact-source",
-      "pinned_version": "Python 3 documentation; reviewed 2026-08-13",
+      "pinned_version": "CPython tag v3.14.7 commit dccefbc14adf6cd13693f3b6b2802945c4e23e01",
       "usage": "确认 Python Windows 安装与命令行入口；版本下限是课程判断",
       "license_or_terms": "reference-only; no copied assets",
       "copied_assets": false
@@ -137,7 +137,7 @@
       "title": "Git Book: Getting Started Installing Git",
       "url": "https://git-scm.com/book/en/v2/Getting-Started-Installing-Git",
       "source_role": "fact-source",
-      "pinned_version": "Git Book installation chapter; reviewed 2026-08-13",
+      "pinned_version": "Pro Git 2nd edition (2014), chapter 1.5 Installing Git",
       "usage": "确认 Git 安装与版本检查入口；正文为原创安全分支",
       "license_or_terms": "reference-only; no copied assets",
       "copied_assets": false
@@ -145,9 +145,9 @@
     {
       "id": "vscode-command-line",
       "title": "Visual Studio Code Command Line Interface",
-      "url": "https://code.visualstudio.com/docs/configure/command-line",
+      "url": "https://github.com/microsoft/vscode-docs/blob/f79dab1253ae2c4f88686ffa07339c9dffd86035/docs/configure/command-line.md",
       "source_role": "fact-source",
-      "pinned_version": "VS Code command-line documentation; reviewed 2026-08-13",
+      "pinned_version": "vscode-docs commit f79dab1253ae2c4f88686ffa07339c9dffd86035",
       "usage": "说明 code 命令是可选编辑器 CLI 信号，不把某个编辑器作为课程强制依赖",
       "license_or_terms": "reference-only; no copied assets",
       "copied_assets": false
@@ -155,9 +155,9 @@
     {
       "id": "github-account-basics",
       "title": "GitHub: Creating an account",
-      "url": "https://docs.github.com/en/account-and-profile/how-tos/account-management/creating-an-account-on-github",
+      "url": "https://github.com/github/docs/blob/729fe5d6b03b2c9a01e91a8d203b4b4c349d300b/content/account-and-profile/how-tos/account-management/creating-an-account-on-github.md",
       "source_role": "fact-source",
-      "pinned_version": "GitHub documentation; reviewed 2026-08-13",
+      "pinned_version": "github/docs commit 729fe5d6b03b2c9a01e91a8d203b4b4c349d300b",
       "usage": "提供账号准备的官方入口；课程只要求学员自查，不读取身份信息",
       "license_or_terms": "reference-only; no copied assets",
       "copied_assets": false

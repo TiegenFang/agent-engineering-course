@@ -19,6 +19,23 @@ EXPECTED_BOUNDARIES = {
     "docs": "docs",
 }
 ENVIRONMENT_LESSON_ID = "t05-environment"
+ENVIRONMENT_CHECK_IDS = frozenset(
+    {
+        "powershell-7",
+        "editor-command",
+        "python-on-path",
+        "python-version",
+        "git-on-path",
+        "git-version",
+        "github-account",
+        "coding-agent-account",
+    }
+)
+ENVIRONMENT_PLATFORM_SHELLS = {
+    "windows": frozenset({"powershell"}),
+    "macos": frozenset({"powershell", "zsh"}),
+    "linux": frozenset({"powershell", "bash"}),
+}
 
 LESSON_REQUIRED_FIELDS = {
     "id",
@@ -306,6 +323,52 @@ def load_evidence_checks(
     return checks
 
 
+def load_environment_checks(
+    evidence_file: Path,
+) -> list[dict[str, Any]]:
+    """Validate the complete, status-only environment diagnostic shape."""
+
+    try:
+        value = json.loads(evidence_file.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise EvidenceError(f"Evidence fixture not found: {evidence_file.name}") from exc
+    except json.JSONDecodeError as exc:
+        raise EvidenceError(f"Invalid evidence fixture JSON: {exc.msg}") from exc
+    if not isinstance(value, dict):
+        raise EvidenceError("Evidence fixture must be a JSON object")
+
+    if value.get("lesson_id") != ENVIRONMENT_LESSON_ID:
+        raise EvidenceError("Environment fixture lesson_id does not match the requested lesson")
+    platform = value.get("platform")
+    shell = value.get("shell")
+    if not isinstance(platform, str) or platform not in ENVIRONMENT_PLATFORM_SHELLS:
+        raise EvidenceError("Environment fixture platform must be windows, macos, or linux")
+    if not isinstance(shell, str) or shell not in ENVIRONMENT_PLATFORM_SHELLS[platform]:
+        raise EvidenceError("Environment fixture shell does not match its platform")
+
+    checks = value.get("checks")
+    if not isinstance(checks, list):
+        raise EvidenceError("Environment fixture checks must be a list")
+    if any(not isinstance(check, dict) for check in checks):
+        raise EvidenceError("Environment fixture checks must contain objects")
+    check_ids = [check.get("id") for check in checks]
+    if any(not isinstance(check_id, str) or not check_id for check_id in check_ids):
+        raise EvidenceError("Environment fixture check ids must be non-empty strings")
+    if len(check_ids) != len(set(check_ids)):
+        raise EvidenceError("Environment fixture checks must not repeat an id")
+    actual_ids = set(check_ids)
+    missing = sorted(ENVIRONMENT_CHECK_IDS - actual_ids)
+    unknown = sorted(actual_ids - ENVIRONMENT_CHECK_IDS)
+    if missing or unknown or len(checks) != len(ENVIRONMENT_CHECK_IDS):
+        details = []
+        if missing:
+            details.append("missing: " + ", ".join(missing))
+        if unknown:
+            details.append("unknown: " + ", ".join(str(item) for item in unknown))
+        raise EvidenceError("Environment fixture checks are incomplete or unexpected (" + "; ".join(details) + ")")
+    return checks
+
+
 def check_lesson(
     root: Path,
     lesson_id: str,
@@ -329,7 +392,7 @@ def check_lesson(
             raise EvidenceError(
                 "t05-environment requires --environment-file with the local diagnostic JSON"
             )
-        checks = load_evidence_checks(evidence_file, expected_lesson_id=lesson_id)
+        checks = load_environment_checks(evidence_file)
     return build_evidence_document(
         course_version=course_version,
         lesson_id=lesson_id,

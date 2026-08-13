@@ -17,7 +17,7 @@ import {
   serializeLearningRecord,
 } from "../src/lib/evidence-record.mjs";
 
-const COURSE_VERSION = "0.1.0-foundation";
+const COURSE_VERSION = "0.1.0-alpha";
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const workspaceRoot = resolve(siteRoot, "..");
 const checkerRoot = join(workspaceRoot, "checker");
@@ -61,13 +61,19 @@ function evidence(result = "passed", lessonId = "t01-foundation") {
   };
 }
 
-function runPythonChecker(checks) {
+function runPythonChecker(
+  checks,
+  lessonId = "t01-foundation",
+  evidenceFlag = "--evidence-file",
+  metadata = {},
+) {
   const temporaryRoot = mkdtempSync(join(tmpdir(), "agent-course-evidence-"));
   const fixturePath = join(temporaryRoot, "fixture.json");
   writeFileSync(
     fixturePath,
     JSON.stringify({
-      lesson_id: "t01-foundation",
+      lesson_id: lessonId,
+      ...metadata,
       checks,
       source_path: "C:\\Users\\Ada\\private.py",
       api_key: "sk-test-only",
@@ -82,10 +88,10 @@ function runPythonChecker(checks) {
         "-m",
         "course_check",
         "check",
-        "t01-foundation",
+        lessonId,
         "--root",
         "..",
-        "--evidence-file",
+        evidenceFlag,
         fixturePath,
         "--json",
       ],
@@ -174,7 +180,7 @@ test("localStorage 适配器可以持久化、恢复和清除本地记录", () =
     setItem: (key, value) => values.set(key, value),
     removeItem: (key) => values.delete(key),
   };
-  const key = "agent-engineering-course:learning-record:0.1.0-foundation";
+  const key = "agent-engineering-course:learning-record:0.1.0-alpha";
   const original = mergeEvidence(
     emptyLearningRecord(COURSE_VERSION),
     parseLearningInput(evidence(), COURSE_VERSION),
@@ -209,4 +215,29 @@ test("Python checker 的原样 JSON 可导入网页并覆盖四种结果状态",
       assert.equal(serializeLearningRecord(record).includes(forbidden), false, `persisted ${forbidden}`);
     }
   }
+});
+
+test("模块 0 的完整环境证据可以原样导入网页", () => {
+  const checks = [
+    "powershell-7",
+    "editor-command",
+    "python-on-path",
+    "python-version",
+    "git-on-path",
+    "git-version",
+    "github-account",
+    "coding-agent-account",
+  ].map((id) => ({ id, result: "passed" }));
+  const checkerJson = runPythonChecker(
+    checks,
+    "t05-environment",
+    "--environment-file",
+    { platform: "windows", shell: "powershell" },
+  );
+  const record = parseLearningInput(checkerJson, COURSE_VERSION);
+
+  assert.equal(record.results.length, 1);
+  assert.equal(record.results[0].lesson_id, "t05-environment");
+  assert.equal(record.results[0].result, "passed");
+  assert.deepEqual(record.results[0].evidence, checks);
 });

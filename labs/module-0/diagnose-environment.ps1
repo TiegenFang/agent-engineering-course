@@ -8,6 +8,8 @@
   source files, calls the network, or inspects identity-bearing variables.
   The resulting JSON is an input fixture for the existing course_check
   evidence command; course_check emits the browser-facing anonymous contract.
+  Reusing -OutputPath replaces the previous diagnostic through a temporary
+  file, so the documented repair-and-rerun command is safe to repeat.
 #>
 [CmdletBinding()]
 param(
@@ -50,7 +52,8 @@ function Get-VersionState {
   param(
     [Parameter(Mandatory)] [string]$Name,
     [Parameter(Mandatory)] [int]$MinimumMajor,
-    [int]$MinimumMinor = 0
+    [int]$MinimumMinor = 0,
+    [int]$MaximumMajor = 0
   )
 
   $command = Get-Command -Name $Name -ErrorAction SilentlyContinue
@@ -78,15 +81,15 @@ function Get-VersionState {
 
   $major = [int]$match.Groups[1].Value
   $minor = [int]$match.Groups[2].Value
-  $meets = ($major -gt $MinimumMajor) -or (
-    $major -eq $MinimumMajor -and $minor -ge $MinimumMinor
-  )
+  $meets = ($major -ge $MinimumMajor) -and (
+    $MaximumMajor -eq 0 -or $major -le $MaximumMajor
+  ) -and ($major -gt $MinimumMajor -or $minor -ge $MinimumMinor)
   return [ordered]@{ available = $true; meets = $meets }
 }
 
 $checks = [System.Collections.Generic.List[object]]::new()
 $powerShellVersion = $PSVersionTable.PSVersion
-$checks.Add((New-Check -Id "powershell-7" -Passed ($powerShellVersion.Major -ge 7)))
+$checks.Add((New-Check -Id "powershell-7" -Passed ($powerShellVersion.Major -eq 7)))
 
 $editorVisible = @("code", "code-insiders", "notepad++") |
   Where-Object { Test-CommandVisible -Name $_ } |
@@ -97,7 +100,7 @@ $pythonState = Get-VersionState -Name "python" -MinimumMajor $MinimumPythonMajor
 $checks.Add((New-Check -Id "python-on-path" -Passed $pythonState.available))
 $checks.Add((New-Check -Id "python-version" -Passed $pythonState.meets))
 
-$gitState = Get-VersionState -Name "git" -MinimumMajor 2
+$gitState = Get-VersionState -Name "git" -MinimumMajor 2 -MaximumMajor 2
 $checks.Add((New-Check -Id "git-on-path" -Passed $gitState.available))
 $checks.Add((New-Check -Id "git-version" -Passed $gitState.meets))
 
@@ -132,15 +135,21 @@ if ([string]::IsNullOrWhiteSpace($OutputPath)) {
 
 try {
   $target = [System.IO.Path]::GetFullPath($OutputPath)
-  if ([System.IO.File]::Exists($target)) {
-    throw "Output file already exists; choose another name."
-  }
   $parent = [System.IO.Path]::GetDirectoryName($target)
   if ([string]::IsNullOrWhiteSpace($parent) -or -not (Test-Path -LiteralPath $parent -PathType Container)) {
     throw "Output directory does not exist."
   }
+  $temporaryTarget = Join-Path $parent ("." + [System.IO.Path]::GetRandomFileName())
   $utf8 = [System.Text.UTF8Encoding]::new($false)
-  [System.IO.File]::WriteAllText($target, $encoded, $utf8)
+  try {
+    [System.IO.File]::WriteAllText($temporaryTarget, $encoded, $utf8)
+    [System.IO.File]::Move($temporaryTarget, $target, $true)
+  }
+  finally {
+    if ([System.IO.File]::Exists($temporaryTarget)) {
+      [System.IO.File]::Delete($temporaryTarget)
+    }
+  }
 }
 catch {
   Write-Error $_.Exception.Message

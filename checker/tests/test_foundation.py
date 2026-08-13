@@ -56,7 +56,7 @@ class FoundationContractTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("Foundation validation passed", result.stdout)
-        self.assertIn("0.1.0-foundation", result.stdout)
+        self.assertIn("0.1.0-alpha", result.stdout)
 
     def test_public_contract_contains_unified_version_content_and_sources(self) -> None:
         contract = json.loads((ROOT / "course-version.json").read_text(encoding="utf-8"))
@@ -71,7 +71,7 @@ class FoundationContractTests(unittest.TestCase):
             contract["boundaries"],
             {"site": "site", "labs": "labs", "checker": "checker", "docs": "docs"},
         )
-        self.assertEqual(contract["course_version"], "0.1.0-foundation")
+        self.assertEqual(contract["course_version"], "0.1.0-alpha")
         self.assertEqual(content["contract_version"], "1")
         self.assertEqual(content["lessons"][0]["id"], "t01-foundation")
         self.assertGreaterEqual(len(sources["entries"]), 1)

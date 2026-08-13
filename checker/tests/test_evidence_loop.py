@@ -28,7 +28,7 @@ from course_check.evidence import (
 )
 
 
-COURSE_VERSION = "0.1.0-foundation"
+COURSE_VERSION = "0.1.0-alpha"
 
 
 class EvidenceDocumentTests(unittest.TestCase):

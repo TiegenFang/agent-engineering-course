@@ -82,7 +82,7 @@ Pop-Location
 }
 ```
 
-把 `environment-evidence.json` 导入本页或课程首页的“导入可核验成果”控件。网页只在浏览器本地保存课程版本、课节身份、结果和证据 ID；刷新、导出和清除都不需要账号。
+把 `environment-evidence.json` 导入课程首页的“导入可核验成果”控件。网页只在浏览器本地保存课程版本、课节身份、结果和证据 ID；刷新、导出和清除都不需要账号。
 
 ## 故障注入与恢复
 
@@ -139,8 +139,8 @@ pwsh -NoProfile -File .\labs\module-0\diagnose-environment.ps1 -MinimumPythonMaj
 
 **权限、副作用与隐私**
 
-- 脚本默认只读查询；只有明确提供 `-OutputPath` 才新建一个 JSON 文件，不覆盖同名文件。
+- 脚本默认只读查询；只有明确提供 `-OutputPath` 才写入一个 JSON 文件，并通过临时文件替换同名旧结果，因此修复后可以原样重跑命令。
 - 诊断结果不收集用户名、邮箱、绝对路径、源码、原始研究数据、凭据或 token。账号开关只记录你是否自行确认，不证明服务端登录状态。
 - `course_check` 会把本地诊断缩减为既有 evidence contract 的课节身份、结果和证据 ID；网页导入后只写浏览器本地记录，不上传任何文件。
 
-事实来源：[Microsoft PowerShell 安装文档](https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell-on-windows)、[Python Windows 文档](https://docs.python.org/3/using/windows.html)、[Git 安装章节](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)、[VS Code 命令行文档](https://code.visualstudio.com/docs/configure/command-line) 和 [GitHub 账号文档](https://docs.github.com/en/account-and-profile/how-tos/account-management/creating-an-account-on-github)。正文与脚本为本课程原创；代码按仓库 MIT，正文按 CC BY 4.0。
+事实来源：[Microsoft PowerShell 安装文档（固定 commit）](https://github.com/MicrosoftDocs/PowerShell-Docs/blob/fbaca072ae7b77e2064ed10104e0ffd47f1c52aa/reference/docs-conceptual/install/install-powershell-on-windows.md)、[Python 3.14 Windows 文档](https://docs.python.org/3.14/using/windows.html)、[Git 安装章节](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)、[VS Code 命令行文档（固定 commit）](https://github.com/microsoft/vscode-docs/blob/f79dab1253ae2c4f88686ffa07339c9dffd86035/docs/configure/command-line.md) 和 [GitHub 账号文档（固定 commit）](https://github.com/github/docs/blob/729fe5d6b03b2c9a01e91a8d203b4b4c349d300b/content/account-and-profile/how-tos/account-management/creating-an-account-on-github.md)。正文与脚本为本课程原创；代码按仓库 MIT，正文按 CC BY 4.0。
