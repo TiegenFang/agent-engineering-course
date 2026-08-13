@@ -471,6 +471,76 @@
       "usage": "核验 Claude Code 检查点/回退的产品语境；本课只抽象恢复证据，不声称页面复现真实产品",
       "license_or_terms": "reference-only; no copied assets",
       "copied_assets": false
+    },
+    {
+      "id": "openai-chatgpt-codex-memories-t16",
+      "title": "OpenAI: Memories",
+      "url": "https://learn.chatgpt.com/docs/customization/memories",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "page observed 2026-08-13; current docs page; no client version asserted",
+      "usage": "核验 ChatGPT Memory 与本地 Codex memory 的区分、AGENTS.md 规则边界、秘密排除和用户控制入口；正文为原创改写",
+      "license_or_terms": "reference-only; OpenAI documentation terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "openai-conversation-state-t16",
+      "title": "OpenAI API: Conversation state",
+      "url": "https://developers.openai.com/api/docs/guides/conversation-state",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "page observed 2026-08-13; current docs page; no model or SDK version asserted",
+      "usage": "核验 API 会话状态、Responses/Conversations 与调用方状态所有权的区别；不把 conversation state 当作产品 Memory",
+      "license_or_terms": "reference-only; OpenAI documentation terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "openai-compaction-t16",
+      "title": "OpenAI API: Compaction",
+      "url": "https://developers.openai.com/api/docs/guides/compaction",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "page observed 2026-08-13; current docs page; no model or SDK version asserted",
+      "usage": "核验长对话压缩和新 Context window 的 API 行为；正文明确这是工具适配层，不是 Memory 删除或持久化标准",
+      "license_or_terms": "reference-only; OpenAI documentation terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-code-memory-t16",
+      "title": "Claude Code: How Claude remembers your project",
+      "url": "https://code.claude.com/docs/en/memory",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "page observed 2026-08-13; current docs page; auto memory requires Claude Code v2.1.59 or later per page",
+      "usage": "核验 CLAUDE.md 与 auto memory 的写入者、范围、加载和本地删除边界；不把产品行为泛化为跨厂商 Memory 标准",
+      "license_or_terms": "reference-only; Anthropic product and trademark terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-memory-tool-t16",
+      "title": "Anthropic API: Memory tool",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "page observed 2026-08-13; current docs page; no model or SDK version asserted",
+      "usage": "核验 Memory tool 是客户端执行、应用控制 /memories 存储和范围的工具；课程用它支持外部 Memory 所有权判断",
+      "license_or_terms": "reference-only; Anthropic documentation terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-context-windows-t16",
+      "title": "Anthropic API: Context windows",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/context-windows",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "page observed 2026-08-13; current docs page; model limits are version-sensitive",
+      "usage": "核验 Context window 是本轮工作集、输入/输出/工具结果都会计入且存在 context rot；本课不复制其模型数字",
+      "license_or_terms": "reference-only; Anthropic documentation terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "course-memory-original-t16",
+      "title": "模块 6 受控 Memory 原创实验设计",
+      "url": "docs/course-plan.md",
+      "source_role": "course-original",
+      "pinned_version": "workspace baseline 42b6ccb; memory-ledger-v1; t16 implementation",
+      "usage": "短期/长期/外部 Memory 边界、生命周期合同、摘要—检索—注入、陈旧更新、污染隔离、删除复核、离线 fixture 和匿名 evidence 设计",
+      "license_or_terms": "project-original; no copied assets",
+      "copied_assets": false
     }
   ]
 }

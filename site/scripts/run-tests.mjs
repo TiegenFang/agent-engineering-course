@@ -16,6 +16,8 @@ const testCommands = [
   ["scripts/assert-homepage.mjs"],
   ["scripts/assert-module-zero.mjs"],
   ["scripts/assert-module-four.mjs"],
+  ["--test", "scripts/test-memory.mjs"],
+  ["scripts/assert-module-six.mjs"],
 ];
 
 for (const args of testCommands) {

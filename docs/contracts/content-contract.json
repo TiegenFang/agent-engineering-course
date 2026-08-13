@@ -511,6 +511,70 @@
         "CC-BY-4.0",
         "MIT"
       ]
+    },
+    {
+      "id": "t16-memory",
+      "title": "模块 6：受控 Memory",
+      "stage": "core-beta",
+      "duration_minutes": 70,
+      "prerequisites": [
+        "t03-agent-instruction",
+        "t14-context-budget",
+        "t04-codex-repository-task"
+      ],
+      "outcomes": [
+        "区分短期 Memory、长期 Memory、外部 Memory、当前 Context 与会话 History",
+        "为受控记录定义目的、所有者、寿命、来源、复核时间和删除条件",
+        "用摘要、检索和显式注入管理上下文窗口，并完成正确回忆与陈旧记忆纠错",
+        "识别污染备注、完成隔离恢复和删除复核，同时排除敏感信息",
+        "在 Codex 与 Claude Code 的变化输入迁移挑战中保留权限、隐私和证据边界"
+      ],
+      "artifacts": [
+        "Memory 设计记录（目的、所有者、寿命、来源和删除条件）",
+        "六步离线 Memory ledger 观察与污染恢复记录",
+        "匿名 t16-memory evidence JSON",
+        "一份标注 T03、T09、T10 依赖锚点和真实产品未验证边界的迁移说明"
+      ],
+      "primary_tool": "Deterministic browser Memory ledger fixture (no model call)",
+      "migration_tool": "Codex or Claude Code (conceptual migration challenge; no live call)",
+      "platforms": {
+        "primary": "Desktop or mobile browser; Windows 11 + PowerShell 7 for course_check",
+        "secondary": [
+          "macOS/Linux browser; checker path not yet cross-platform verified"
+        ]
+      },
+      "versions": {
+        "client": "Astro/Starlight course page @ workspace baseline; T03/T09/T10 dependency anchors recorded in page",
+        "sdk": "not-applicable",
+        "model": "mock/deterministic Memory ledger v1; model_calls=0",
+        "protocol": "agent-engineering-course/evidence v1; memory-ledger-v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free for the offline fixture, Node/Python/Playwright tests and checker; optional live migration may require provider accounts or paid quota",
+        "network": "offline page, tests and checker need no network after dependencies are installed; official links need network when refreshed"
+      },
+      "risk": {
+        "permissions": "页面和 checker 只读合成状态与用户显式指定的 evidence 文件；不写真实 Memory、不执行外部动作",
+        "side_effects": "浏览器实验只下载用户主动导出的匿名 JSON；真实迁移挑战的工具权限、缓存、日志和供应商保留需人工确认",
+        "staleness": "OpenAI Memory/Conversation state/Compaction、Codex local memory、Claude Code Memory/Memory tool 和 Context window 属于易变产品适配层；发布前重新核验官方页面和删除边界"
+      },
+      "sources": [
+        "openai-chatgpt-codex-memories-t16",
+        "openai-conversation-state-t16",
+        "openai-compaction-t16",
+        "anthropic-claude-code-memory-t16",
+        "anthropic-memory-tool-t16",
+        "anthropic-context-windows-t16",
+        "course-memory-original-t16",
+        "course-agent-instruction-original",
+        "course-codex-task-original-t09"
+      ],
+      "licenses": [
+        "CC-BY-4.0",
+        "MIT"
+      ]
     }
   ]
 }

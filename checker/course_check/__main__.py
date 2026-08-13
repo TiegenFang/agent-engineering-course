@@ -331,6 +331,43 @@ T15_CONTEXT_RECOVERY_RISKS = {
     "memory-promotion-requires-owner-and-lifetime",
 }
 
+MEMORY_LESSON_ID = "t16-memory"
+MEMORY_EXPERIMENT_VERSION = "1"
+MEMORY_BASELINE_ID = "memory-ledger-v1"
+MEMORY_STAGE_IDS = (
+    "design",
+    "write",
+    "recall",
+    "stale-update",
+    "pollution",
+    "delete",
+)
+MEMORY_STAGE_OBSERVATIONS = {
+    "design": frozenset({"purpose", "owner", "lifetime", "deletion", "types"}),
+    "write": frozenset({"record_created", "metadata_complete", "sensitive_excluded"}),
+    "recall": frozenset({"context_window", "summary", "retrieval", "injection", "correct_recall"}),
+    "stale-update": frozenset({"stale_detected", "replacement_confirmed", "old_not_retrieved"}),
+    "pollution": frozenset({"untrusted_quarantined", "trusted_boundary_restored", "revalidated"}),
+    "delete": frozenset({"deletion_requested", "deletion_confirmed", "record_absent"}),
+}
+MEMORY_TYPES = ("short-term", "long-term", "external")
+MEMORY_CONTEXT_MODES = ("window-budget", "summary", "retrieval", "injection")
+MEMORY_CHECK_IDS = (
+    "purpose-defined",
+    "owner-defined",
+    "lifetime-defined",
+    "deletion-defined",
+    "memory-types-separated",
+    "context-window-managed",
+    "summary-retrieval-injection",
+    "correct-recall",
+    "stale-memory-corrected",
+    "pollution-contained",
+    "sensitive-excluded",
+    "deletion-confirmed",
+    "offline-deterministic",
+)
+
 
 class ContractError(ValueError):
     """Raised when the public Foundation contract is incomplete."""
@@ -1381,6 +1418,211 @@ def validate_t15_experiment(
     }
 
 
+def validate_t16_evidence_checks(value: Any) -> list[dict[str, str]]:
+    """Validate the fixed learner-facing checks for controlled Memory."""
+
+    if not isinstance(value, list) or len(value) != len(MEMORY_CHECK_IDS):
+        raise EvidenceError("T16 evidence checks must contain the complete fixed check list")
+    actual_ids: list[str] = []
+    normalized: list[dict[str, str]] = []
+    for index, check in enumerate(value):
+        if not isinstance(check, dict):
+            raise EvidenceError(f"T16 evidence check {index} must be an object")
+        _reject_sensitive_unknown_fields(check, f"T16 evidence check {index}")
+        check_id = check.get("id")
+        if not isinstance(check_id, str) or not check_id:
+            raise EvidenceError(f"T16 evidence check {index} needs an id")
+        result = check.get("result")
+        if result not in {"passed", "failed", "alternative"}:
+            raise EvidenceError(f"T16 evidence check {check_id}.result is not supported")
+        actual_ids.append(check_id)
+        normalized.append({"id": check_id, "result": result})
+    if actual_ids != list(MEMORY_CHECK_IDS):
+        raise EvidenceError(
+            "T16 evidence IDs must be exactly " + ", ".join(MEMORY_CHECK_IDS)
+        )
+    return normalized
+
+
+def validate_t16_experiment(
+    value: Any,
+    *,
+    document_result: str,
+) -> tuple[list[dict[str, str]], dict[str, Any]]:
+    """Validate and reduce the status-only controlled Memory experiment.
+
+    The browser fixture may contain local explanatory text while it runs, but
+    the public contract accepts only stage IDs, booleans, and fixed enums. The
+    check results are derived from stage observations rather than trusted from
+    a caller-supplied summary.
+    """
+
+    if not isinstance(value, dict):
+        raise EvidenceError("T16 evidence requires an experiment object")
+    _reject_sensitive_unknown_fields(value, "T16 experiment")
+    expected_fields = {
+        "version",
+        "baseline_id",
+        "stages",
+        "memory_types",
+        "context_modes",
+        "pollution_injected",
+        "pollution_recovered",
+        "model_calls",
+        "network_calls",
+    }
+    missing = sorted(expected_fields - set(value))
+    unexpected = sorted(set(value) - expected_fields)
+    if missing or unexpected:
+        details = []
+        if missing:
+            details.append("missing: " + ", ".join(missing))
+        if unexpected:
+            details.append("unknown: " + ", ".join(unexpected))
+        raise EvidenceError(
+            "T16 experiment fields are incomplete or unexpected ("
+            + "; ".join(details)
+            + ")"
+        )
+    if value["version"] != MEMORY_EXPERIMENT_VERSION:
+        raise EvidenceError("Unsupported T16 Memory experiment version")
+    if value["baseline_id"] != MEMORY_BASELINE_ID:
+        raise EvidenceError("T16 Memory evidence has an unknown baseline")
+
+    for field, expected in (
+        ("memory_types", list(MEMORY_TYPES)),
+        ("context_modes", list(MEMORY_CONTEXT_MODES)),
+    ):
+        actual = value[field]
+        if actual != expected:
+            raise EvidenceError(f"T16 experiment {field} must match the fixed contract")
+
+    for field in ("pollution_injected", "pollution_recovered"):
+        if not isinstance(value[field], bool):
+            raise EvidenceError(f"T16 experiment {field} must be boolean")
+    for field in ("model_calls", "network_calls"):
+        count = value[field]
+        if isinstance(count, bool) or not isinstance(count, int) or count != 0:
+            raise EvidenceError(
+                f"T16 experiment {field} must be the integer 0 for the offline lab"
+            )
+
+    stages = value["stages"]
+    if not isinstance(stages, list) or len(stages) > len(MEMORY_STAGE_IDS):
+        raise EvidenceError("T16 experiment stages must be an ordered prefix of the fixed journey")
+    normalized_stages: list[dict[str, Any]] = []
+    stage_results: dict[str, bool] = {}
+    for sequence, (expected_id, raw_stage) in enumerate(
+        zip(MEMORY_STAGE_IDS, stages), start=1
+    ):
+        if not isinstance(raw_stage, dict):
+            raise EvidenceError(f"T16 stage {expected_id} must be an object")
+        _reject_sensitive_unknown_fields(raw_stage, f"T16 stage {expected_id}")
+        expected_stage_fields = {"id", "sequence", "result", "observations"}
+        if set(raw_stage) != expected_stage_fields:
+            raise EvidenceError(
+                f"T16 stage {expected_id} must contain only id, sequence, result and observations"
+            )
+        if raw_stage["id"] != expected_id or raw_stage["sequence"] != sequence:
+            raise EvidenceError("T16 Memory stages are out of order")
+        result = raw_stage["result"]
+        if result not in {"passed", "failed"}:
+            raise EvidenceError(f"T16 stage {expected_id}.result is not supported")
+        observations = raw_stage["observations"]
+        if not isinstance(observations, dict):
+            raise EvidenceError(f"T16 stage {expected_id}.observations must be an object")
+        expected_observations = MEMORY_STAGE_OBSERVATIONS[expected_id]
+        if set(observations) != expected_observations:
+            missing_observations = sorted(expected_observations - set(observations))
+            unknown_observations = sorted(set(observations) - expected_observations)
+            details = []
+            if missing_observations:
+                details.append("missing: " + ", ".join(missing_observations))
+            if unknown_observations:
+                details.append("unknown: " + ", ".join(unknown_observations))
+            raise EvidenceError(
+                f"T16 stage {expected_id}.observations are incomplete or unexpected ("
+                + "; ".join(details)
+                + ")"
+            )
+        if any(not isinstance(item, bool) for item in observations.values()):
+            raise EvidenceError(f"T16 stage {expected_id}.observations must be booleans")
+        computed_result = "passed" if all(observations.values()) else "failed"
+        if result != computed_result:
+            raise EvidenceError(f"T16 stage {expected_id}.result does not match observations")
+        stage_results[expected_id] = result == "passed"
+        normalized_stages.append(
+            {
+                "id": expected_id,
+                "sequence": sequence,
+                "result": result,
+                "observations": {key: observations[key] for key in sorted(observations)},
+            }
+        )
+
+    if any(stage["id"] == "pollution" for stage in normalized_stages) and not value[
+        "pollution_injected"
+    ]:
+        raise EvidenceError("T16 pollution stage requires pollution_injected")
+    pollution_recovered = bool(
+        value["pollution_recovered"] and stage_results.get("pollution", False)
+    )
+
+    def passed(stage_id: str, *keys: str) -> bool:
+        stage = next((item for item in normalized_stages if item["id"] == stage_id), None)
+        return bool(stage and all(stage["observations"][key] for key in keys))
+
+    expected_checks = [
+        {"id": "purpose-defined", "result": "passed" if passed("design", "purpose") else "failed"},
+        {"id": "owner-defined", "result": "passed" if passed("design", "owner") else "failed"},
+        {"id": "lifetime-defined", "result": "passed" if passed("design", "lifetime") else "failed"},
+        {"id": "deletion-defined", "result": "passed" if passed("design", "deletion") else "failed"},
+        {"id": "memory-types-separated", "result": "passed" if passed("design", "types") else "failed"},
+        {"id": "context-window-managed", "result": "passed" if passed("recall", "context_window") else "failed"},
+        {
+            "id": "summary-retrieval-injection",
+            "result": "passed" if passed("recall", "summary", "retrieval", "injection") else "failed",
+        },
+        {"id": "correct-recall", "result": "passed" if passed("recall", "correct_recall") else "failed"},
+        {
+            "id": "stale-memory-corrected",
+            "result": "passed"
+            if passed("stale-update", "stale_detected", "replacement_confirmed", "old_not_retrieved")
+            else "failed",
+        },
+        {
+            "id": "pollution-contained",
+            "result": "passed"
+            if pollution_recovered
+            and passed("pollution", "untrusted_quarantined", "trusted_boundary_restored", "revalidated")
+            else "failed",
+        },
+        {"id": "sensitive-excluded", "result": "passed" if passed("write", "sensitive_excluded") else "failed"},
+        {
+            "id": "deletion-confirmed",
+            "result": "passed"
+            if passed("delete", "deletion_requested", "deletion_confirmed", "record_absent")
+            else "failed",
+        },
+        {"id": "offline-deterministic", "result": "passed"},
+    ]
+    if document_result in {"passed", "alternative"}:
+        if len(normalized_stages) != len(MEMORY_STAGE_IDS) or any(
+            check["result"] != "passed" for check in expected_checks
+        ):
+            raise EvidenceError("Completed T16 evidence is missing a required Memory observation")
+    return expected_checks, {
+        "version": MEMORY_EXPERIMENT_VERSION,
+        "baseline_id": MEMORY_BASELINE_ID,
+        "memory_types": list(MEMORY_TYPES),
+        "context_modes": list(MEMORY_CONTEXT_MODES),
+        "pollution_injected": value["pollution_injected"],
+        "pollution_recovered": pollution_recovered,
+        "model_calls": 0,
+        "network_calls": 0,
+    }
+
+
 def validate_claude_migration_checks(value: Any) -> list[dict[str, Any]]:
     """Validate the stable public checks for the Claude migration journey."""
 
@@ -1701,7 +1943,36 @@ def load_evidence_checks(
     if "course_version" in value and value["course_version"] != expected_course_version:
         raise EvidenceError("Evidence fixture course_version does not match the current course")
     if value.get("contract") == "agent-engineering-course/evidence":
-        document = validate_evidence_document(value)
+        if expected_lesson_id == MEMORY_LESSON_ID:
+            # A learner may accidentally leave private fields beside the
+            # public document.  T16 drops those unknown top-level fields
+            # before the shared validator; experiment fields still pass
+            # through the dedicated status-only validator below.
+            public_value = {
+                field: value[field]
+                for field in (
+                    "contract",
+                    "contract_version",
+                    "course_version",
+                    "lesson_id",
+                    "result",
+                    "anonymous",
+                    "checked_on",
+                    "summary",
+                    "evidence",
+                )
+                if field in value
+            }
+            try:
+                document = validate_evidence_document(public_value)
+            except EvidenceError as exc:
+                if str(exc) == "Evidence result does not match its checks":
+                    raise EvidenceError(
+                        "T16 evidence checks do not match the recorded Memory experiment"
+                    ) from exc
+                raise
+        else:
+            document = validate_evidence_document(value)
         if expected_lesson_id == "t02-agent-loop":
             checks = validate_t02_evidence_checks(document["evidence"])
             trace = validate_t02_trace(value.get("trace"), document_result=document["result"])
@@ -1735,6 +2006,14 @@ def load_evidence_checks(
                 checks=checks,
                 document_result=document["result"],
             )
+            return checks, experiment
+        if expected_lesson_id == MEMORY_LESSON_ID:
+            checks = validate_t16_evidence_checks(document["evidence"])
+            expected_checks, experiment = validate_t16_experiment(
+                value.get("experiment"), document_result=document["result"]
+            )
+            if checks != expected_checks:
+                raise EvidenceError("T16 evidence checks do not match the recorded Memory experiment")
             return checks, experiment
         return document["evidence"], None
     checks = value.get("checks")
@@ -1776,6 +2055,15 @@ def load_evidence_checks(
             checks=checks,
             document_result=result,
         )
+    if expected_lesson_id == MEMORY_LESSON_ID:
+        checks = validate_t16_evidence_checks(checks)
+        result = classify_checks([check["result"] for check in checks])
+        expected_checks, experiment = validate_t16_experiment(
+            value.get("experiment"), document_result=result
+        )
+        if checks != expected_checks:
+            raise EvidenceError("T16 evidence checks do not match the recorded Memory experiment")
+        return checks, experiment
     return checks, None
 
 
@@ -2208,6 +2496,7 @@ def check_lesson(
         CODEX_TASK_LESSON_ID,
         CLAUDE_MIGRATION_LESSON_ID,
         T15_CONTEXT_RECOVERY_LESSON_ID,
+        MEMORY_LESSON_ID,
     }:
         raise ContractError(f"Unsupported evidence lesson: {lesson_id}")
     course_version = validate_foundation(root)
@@ -2474,6 +2763,43 @@ def check_lesson(
             },
             {"id": "context-recovery-evidence-executed", "result": "failed"},
             {"id": "context-recovery-handoff-executed", "result": "failed"},
+        ]
+        if evidence_file is not None:
+            checks, trace = load_evidence_checks(
+                evidence_file,
+                expected_lesson_id=lesson_id,
+                expected_course_version=course_version,
+            )
+    elif lesson_id == MEMORY_LESSON_ID:
+        checks = [
+            {
+                "id": "memory-page",
+                "result": "passed"
+                if (root / "site/src/content/docs/module-6-memory.mdx").is_file()
+                else "failed",
+            },
+            {
+                "id": "memory-simulator",
+                "result": "passed"
+                if (root / "site/src/lib/memory-engine.mjs").is_file()
+                else "failed",
+            },
+            {
+                "id": "memory-contract",
+                "result": "passed"
+                if (root / "labs/memory/README.md").is_file()
+                else "failed",
+            },
+            {
+                "id": "memory-sources",
+                "result": "passed"
+                if (root / "docs/sources/source-ledger.json").is_file()
+                else "failed",
+            },
+            {
+                "id": "memory-evidence-executed",
+                "result": "failed",
+            },
         ]
         if evidence_file is not None:
             checks, trace = load_evidence_checks(
