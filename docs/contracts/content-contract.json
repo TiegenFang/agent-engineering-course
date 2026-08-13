@@ -575,6 +575,59 @@
         "CC-BY-4.0",
         "MIT"
       ]
+    },
+    {
+      "id": "t17-skill",
+      "title": "模块 7：自定义 Skill",
+      "stage": "core-beta",
+      "duration_minutes": 60,
+      "prerequisites": ["t14-context-budget", "t15-context-recovery", "t16-memory"],
+      "outcomes": [
+        "区分 Prompt、Skill、脚本、Tool 与 Plugin 的责任边界",
+        "依据 Agent Skills 开放规范创建带 SKILL.md、资源、脚本和验证的可复用 Skill",
+        "用固定正负触发、缺来源、证据冲突和不可信输入夹具验证完成标准与安全边界",
+        "在不调用真实模型或客户端的前提下导出结构化匿名 Skill evidence，并写出跨工具迁移说明"
+      ],
+      "artifacts": [
+        "labs/skill/evidence-research/（SKILL.md、references、assets、scripts）",
+        "四类 Skill 场景与一组正负触发边界观察",
+        "t17-skill-evidence.json（匿名 evidence contract）",
+        "一份 Codex/Claude Code 迁移与产品扩展边界说明"
+      ],
+      "primary_tool": "Deterministic browser Skill lab and local Python normalizer",
+      "migration_tool": "Codex or Claude Code (conceptual Skill migration; live client optional)",
+      "platforms": {
+        "primary": "Windows 11 + PowerShell 7; desktop browser for the lab",
+        "secondary": ["macOS/Linux browser and shell path are not release-gate verified"]
+      },
+      "versions": {
+        "client": "Agent Skills open specification and Claude Code Skills docs observed 2026-08-13; live client version not asserted",
+        "sdk": "not-applicable",
+        "model": "mock/deterministic Skill evidence fixture v1; no model call",
+        "protocol": "agent-engineering-course/evidence v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free for the offline Skill package, browser lab and checker; optional live migration may require an account or paid usage",
+        "network": "offline lab, local normalizer and checker need no network; official source links need network when refreshed"
+      },
+      "risk": {
+        "permissions": "页面只运行固定浏览器函数；Python normalizer 读取显式合成 JSON 并写入显式输出路径",
+        "side_effects": "不调用真实模型、客户端、Tool、MCP、网络或外部上传；用户主动导出匿名 evidence，脚本只处理 synthetic fixture",
+        "staleness": "Agent Skills frontmatter、渐进披露、Claude Code 扩展和安装位置是易变产品/规范层；发布前按官方文档重核，不能从离线夹具推断真实触发行为"
+      },
+      "sources": [
+        "agentskills-specification",
+        "agentskills-repository",
+        "anthropic-skills-skill-creator",
+        "claude-code-skills-current",
+        "course-skill-original"
+      ],
+      "licenses": [
+        "CC-BY-4.0",
+        "MIT"
+      ]
     }
   ]
 }

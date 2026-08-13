@@ -509,7 +509,7 @@
       "source_role": "official-product-fact-source",
       "pinned_version": "page observed 2026-08-13; current docs page; auto memory requires Claude Code v2.1.59 or later per page",
       "usage": "核验 CLAUDE.md 与 auto memory 的写入者、范围、加载和本地删除边界；不把产品行为泛化为跨厂商 Memory 标准",
-      "license_or_terms": "reference-only; Anthropic product and trademark terms apply; no copied assets",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply; no copied assets",
       "copied_assets": false
     },
     {
@@ -540,6 +540,56 @@
       "pinned_version": "workspace baseline 42b6ccb; memory-ledger-v1; t16 implementation",
       "usage": "短期/长期/外部 Memory 边界、生命周期合同、摘要—检索—注入、陈旧更新、污染隔离、删除复核、离线 fixture 和匿名 evidence 设计",
       "license_or_terms": "project-original; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "agentskills-specification",
+      "title": "Agent Skills Specification",
+      "url": "https://github.com/agentskills/agentskills/blob/main/docs/specification.mdx",
+      "source_role": "official-standard-fact-source",
+      "pinned_version": "main; page observed 2026-08-13; no client version asserted",
+      "usage": "核验 SKILL.md 必需 frontmatter、目录约定、references/assets/scripts、相对链接和 progressive disclosure；正文为原创中文改写",
+      "license_or_terms": "documentation CC-BY-4.0; reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "agentskills-repository",
+      "title": "Agent Skills specification and documentation repository",
+      "url": "https://github.com/agentskills/agentskills",
+      "source_role": "official-standard-fact-source",
+      "pinned_version": "main; repository page observed 2026-08-13",
+      "usage": "核验开放格式由 Anthropic 发起、跨 Agent 产品采用，以及代码/文档许可证边界；不复制仓库资产",
+      "license_or_terms": "code Apache-2.0; documentation CC-BY-4.0; reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-skills-skill-creator",
+      "title": "Anthropic Skills: skill-creator example",
+      "url": "https://github.com/anthropics/skills/blob/main/skills/skill-creator/SKILL.md",
+      "source_role": "official-example-teaching-source",
+      "pinned_version": "main; page observed 2026-08-13; repository has mixed per-directory terms",
+      "usage": "借鉴 Skill 描述触发评测、正负样例和迭代流程；只做实例校准，不复制正文、代码或把它当开放规范",
+      "license_or_terms": "reference-only; inspect the file/repository terms before reuse; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "claude-code-skills-current",
+      "title": "Claude Code: Extend Claude with skills",
+      "url": "https://code.claude.com/docs/en/skills",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "current docs page observed 2026-08-13; client version not asserted",
+      "usage": "核验 Claude Code 的项目/个人 Skill 位置、自动/手动调用和产品扩展字段；正文明确不把扩展泛化为开放规范",
+      "license_or_terms": "reference-only; Anthropic product and trademark terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "course-skill-original",
+      "title": "模块 7 自定义 Skill 原创实验与证据合同",
+      "url": "docs/course-plan.md",
+      "source_role": "course-original",
+      "pinned_version": "workspace baseline 42b6ccb; T17 implementation; verified 2026-08-13",
+      "usage": "Prompt/Skill/脚本/Tool/Plugin 边界、evidence-research 目录、四类离线场景、正负触发夹具、安全状态和匿名 evidence 设计",
+      "license_or_terms": "project-original; code MIT and content CC-BY-4.0; no copied assets",
       "copied_assets": false
     }
   ]

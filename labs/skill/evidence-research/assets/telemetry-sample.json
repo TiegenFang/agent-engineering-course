@@ -1,0 +1,35 @@
+{
+  "fixture_version": "1",
+  "claims": [
+    {
+      "id": "claim-temperature-mean",
+      "metric": "temperature",
+      "value": 21.4,
+      "unit": "C"
+    },
+    {
+      "id": "claim-pressure-p95",
+      "metric": "pressure",
+      "value": 101.8,
+      "unit": "kPa"
+    },
+    {
+      "id": "claim-flow-rate",
+      "metric": "flow",
+      "value": 3.2,
+      "unit": "L/min"
+    }
+  ],
+  "sources": [
+    {
+      "id": "source-sensor-log",
+      "kind": "synthetic-primary",
+      "supports": ["claim-temperature-mean", "claim-pressure-p95"]
+    },
+    {
+      "id": "source-calibration-note",
+      "kind": "synthetic-secondary",
+      "supports": ["claim-flow-rate"]
+    }
+  ]
+}

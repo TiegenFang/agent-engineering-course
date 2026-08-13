@@ -18,6 +18,12 @@ from .evidence import (
     validate_evidence_document,
 )
 from .project_rules import PROJECT_RULES_LESSON_ID, load_project_rules_checks
+from .skill import (
+    SKILL_LESSON_ID,
+    skill_package_result,
+    validate_skill_evidence_checks,
+    validate_skill_simulation,
+)
 
 
 EXPECTED_BOUNDARIES = {
@@ -1920,7 +1926,11 @@ def load_claude_migration_checks(
 
 
 def load_evidence_checks(
-    evidence_file: Path, *, expected_lesson_id: str, expected_course_version: str
+    evidence_file: Path,
+    *,
+    expected_lesson_id: str,
+    expected_course_version: str,
+    skill_package_check: str = "passed",
 ) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
     """Read only public check states from a local evidence fixture.
 
@@ -2015,6 +2025,16 @@ def load_evidence_checks(
             if checks != expected_checks:
                 raise EvidenceError("T16 evidence checks do not match the recorded Memory experiment")
             return checks, experiment
+        if expected_lesson_id == SKILL_LESSON_ID:
+            checks = validate_skill_evidence_checks(document["evidence"])
+            expected_checks, simulation = validate_skill_simulation(
+                value.get("simulation"),
+                document_result=document["result"],
+                package_result=skill_package_check,
+            )
+            if checks != expected_checks:
+                raise EvidenceError("T17 Skill evidence checks do not match the recorded simulation")
+            return checks, simulation
         return document["evidence"], None
     checks = value.get("checks")
     if not isinstance(checks, list):
@@ -2064,6 +2084,17 @@ def load_evidence_checks(
         if checks != expected_checks:
             raise EvidenceError("T16 evidence checks do not match the recorded Memory experiment")
         return checks, experiment
+    if expected_lesson_id == SKILL_LESSON_ID:
+        checks = validate_skill_evidence_checks(checks)
+        result = classify_checks([check["result"] for check in checks])
+        expected_checks, simulation = validate_skill_simulation(
+            value.get("simulation"),
+            document_result=result,
+            package_result=skill_package_check,
+        )
+        if checks != expected_checks:
+            raise EvidenceError("T17 Skill evidence checks do not match the recorded simulation")
+        return checks, simulation
     return checks, None
 
 
@@ -2497,6 +2528,7 @@ def check_lesson(
         CLAUDE_MIGRATION_LESSON_ID,
         T15_CONTEXT_RECOVERY_LESSON_ID,
         MEMORY_LESSON_ID,
+        SKILL_LESSON_ID,
     }:
         raise ContractError(f"Unsupported evidence lesson: {lesson_id}")
     course_version = validate_foundation(root)
@@ -2680,10 +2712,27 @@ def check_lesson(
             {"id": "claude-migration-evidence-executed", "result": "failed"},
         ]
         if evidence_file is not None:
+            checks, trace = load_claude_migration_checks(
+                evidence_file,
+                expected_course_version=course_version,
+            )
+    elif lesson_id == SKILL_LESSON_ID:
+        package_check = skill_package_result(root)
+        if evidence_file is None:
+            checks = [
+                {"id": "skill-package-shaped", "result": package_check},
+                {"id": "trigger-boundary-tested", "result": "failed"},
+                {"id": "evidence-scenarios-covered", "result": "failed"},
+                {"id": "validation-script-passed", "result": "failed"},
+                {"id": "security-boundary-tested", "result": "failed"},
+                {"id": "offline-deterministic", "result": "failed"},
+            ]
+        else:
             checks, trace = load_evidence_checks(
                 evidence_file,
                 expected_lesson_id=lesson_id,
                 expected_course_version=course_version,
+                skill_package_check=package_check,
             )
     elif lesson_id == "t03-agent-instruction":
         checks = [
@@ -2822,6 +2871,8 @@ def check_lesson(
         if lesson_id == "t02-agent-loop":
             document["trace"] = trace
         elif lesson_id == CONTEXT_BUDGET_LESSON_ID:
+            document["simulation"] = trace
+        elif lesson_id == SKILL_LESSON_ID:
             document["simulation"] = trace
         else:
             document["experiment"] = trace

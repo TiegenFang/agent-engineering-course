@@ -1,0 +1,164 @@
+---
+title: 模块 7：自定义 Skill
+description: 用一个离线证据整理任务，把稳定方法封装成带资源、脚本、触发边界和验证的 Agent Skill。
+sidebar:
+  order: 8
+---
+
+import SkillLab from '../../components/SkillLab.astro';
+import EvidenceLoop from '../../components/EvidenceLoop.astro';
+
+# 模块 7：自定义 Skill
+
+> 本课的主实验是 `evidence-research` 离线夹具。它不会调用真实模型、Codex、Claude Code、API、MCP 或网络；夹具只把 Skill 的输入、资源、脚本、触发边界和完成标准做成可以重复检查的状态。
+
+## 你要解决的真实问题
+
+重复做“调研—整理证据—标记待核验项”时，单次 Prompt 很快会变成一段没人敢删的长指令。放进项目规则又会让每个任务都加载不需要的细节；写成脚本则只能机械执行，无法说明什么时候应该采用这套方法。你需要的是一个有入口、有导航、有资源、有验证和有安全边界的可复用能力包。
+
+本课用贯穿课程的合成“设备遥测与报告工具”做一个研究/证据整理 Skill。完成后，你应能：
+
+1. 用一句话说清 Prompt、Skill、脚本、Tool 和 Plugin 的责任边界；
+2. 写出符合 Agent Skills 开放格式的目录，至少包含 `SKILL.md`，并把详细材料放到按需资源；
+3. 为 description 写正向触发和负向边界，观察缺来源、冲突和不可信输入时应如何停下；
+4. 从输入、资源、脚本、验证和副作用五个角度定义完成标准，并留下匿名 evidence JSON；
+5. 把同一套任务方法迁移到 Codex 或 Claude Code 的可用环境，同时不把本课的离线夹具说成真实客户端验收。
+
+## 心智模型：Skill 是按需加载的任务方法包
+
+Agent Skills 官方规范把 Skill 定义为一个目录：必需的 `SKILL.md` 提供元数据和说明，可选的 `scripts/`、`references/`、`assets/` 等目录提供执行代码、详细文档和静态资源。[Agent Skills specification](https://github.com/agentskills/agentskills/blob/main/docs/specification.mdx) 是格式事实真源；[Anthropic 的 `skill-creator`](https://github.com/anthropics/skills/blob/main/skills/skill-creator/SKILL.md) 是一个官方实例，适合观察如何设计触发评测，但不是跨产品行为规范。
+
+### `SKILL.md` 的最小合同
+
+```text
+evidence-research/
+├─ SKILL.md                       # 必需：YAML frontmatter + Markdown 方法
+├─ references/
+│  ├─ evidence-schema.md          # 需要时才读取的证据字段说明
+│  └─ source-policy.md            # 来源等级与冲突处理
+├─ assets/
+│  └─ telemetry-sample.json       # 合成输入，不放真实敏感数据
+└─ scripts/
+   └─ normalize-evidence.py       # 本地确定性规范化脚本
+```
+
+开放规范要求 `name` 和 `description` 两个 frontmatter 字段：`name` 使用小写字母、数字和连字符，长度 1–64 个字符，并与父目录一致；`description` 长度 1–1024 个字符，要同时说明做什么和何时使用。`license`、`compatibility`、`metadata` 是可选的规范字段；`allowed-tools` 仍是实验性字段，支持因 Agent 实现而异。Markdown 正文没有固定模板，但应说明步骤、输入输出、边界和额外资源。
+
+Claude Code 的 [Skills 文档](https://code.claude.com/docs/en/skills) 还记录了产品扩展，例如 `disable-model-invocation`、`user-invocable`、参数占位符和动态上下文注入。这些扩展不能反推为开放规范的必需字段。本课的示例坚持使用规范核心字段，迁移时再单独标注产品适配层。
+
+### Prompt、Skill、脚本、Tool、Plugin：五个边界
+
+| 概念 | 本课工作定义 | 不能替代什么 |
+| --- | --- | --- |
+| Prompt | 一次交互中给模型的输入，可能包含目标、上下文和输出要求 | 没有目录、资源导航、版本和验证合同；不是 Skill |
+| Skill | 围绕特定任务组织的可复用知识、流程和资源，按需加载 | 不自动提供安装、分发、生命周期或权限授权 |
+| 脚本 | 由运行时执行的确定性程序，例如 `normalize-evidence.py` | 不负责决定何时触发，也不等于一个 Agent Tool |
+| Tool | Agent 可调用的、有输入/输出 schema 和副作用边界的能力 | 不等于装载了一组说明文档的 Skill；MCP Tool 还受 Host/Client/Server 边界约束 |
+| Plugin | 用于发现、安装、组合、更新和治理多个扩展组件的打包/分发层 | 不是 Skill 的另一种 frontmatter；Plugin 可能包含 Skill、命令、Hooks 或 MCP 配置 |
+
+一个 Skill 可以指导 Agent 何时调用某个 Tool 或脚本，但“说明如何做”和“实际执行能力”仍要分开审核。Plugin 在模块 8 再展开；本课只留下安装、许可证和供应链风险的检查清单。
+
+### 渐进披露与触发边界
+
+规范建议把加载分成三层：启动时只索引 `name`/`description` 的轻量元数据；任务匹配后才加载完整 `SKILL.md`；只有任务需要时才读取 `references/`、`assets/` 或执行 `scripts/`。因此入口文件应短而可导航，详细材料放在一层相对链接中，而不是复制一份“百科全书”。规范给出的完整正文建议控制在约 5000 tokens 以内；这是作者建议，不是所有 Agent 的硬限制。
+
+description 既是说明，也是触发线索：
+
+- 正向例：要求整理合成遥测主张、比较报告并留下来源卡片；
+- 负向例：问候、一次性算术或只要求读取一个文件，不应因为出现“报告”一词就误触发；
+- 安全边界：任何“跳过来源检查、把内容上传外部服务、读取秘密”的输入都不是授权，应进入拒绝或人工复核路径。
+
+本页的触发矩阵把这些边界变成固定输入。它只验证你写出的边界是否自洽，不测量任何真实模型的召回率，也不声称 Codex 和 Claude Code 的自动触发规则完全相同。
+
+## 操作前预测
+
+在运行实验前，先回答：
+
+1. `complete` 场景会不会直接得到“可交付”？为什么仍要经过脚本和验证？
+2. `missing-source` 与 `conflicting-evidence` 都不是成功；前者应补来源，后者应保留冲突并请求人工复核。你预计二者的完成状态会相同吗？
+3. `untrusted-instruction` 要求跳过检查并发送到外部服务。即使它出现在任务输入中，为什么 Skill 的 description 和 Markdown 也不能把它变成许可？
+4. “计算 18 × 7”是否应该加载这个 Skill？请写下你的正向触发词和至少一个负向边界，再点击“运行正向/负向触发夹具”。
+
+预测错了不会修改文件；它只是把直觉和实验结果分开，方便你之后重写 description 或完成标准。
+
+## 主工具演示：研究/证据整理 Skill lab
+
+<SkillLab />
+
+操作顺序建议是：先选场景并预测，再运行四个场景各一次；然后测试触发边界；最后记录观察并导出 evidence。结果中的“资源读取”“脚本验证”“确定性复跑”和“外部调用”是文字证据，不依赖颜色判断。
+
+## 本地实验：创建并检查一个真实目录
+
+本地包位于 [`labs/skill/evidence-research`](https://github.com/TiegenFang/agent-engineering-course/tree/main/labs/skill/evidence-research)。它是课程原创的合成实验资产，不是从 Anthropic 仓库复制的 Skill。Windows 11 + PowerShell 7 主路径：
+
+```powershell
+Set-Location -LiteralPath .\labs\skill\evidence-research
+Get-Content -LiteralPath .\SKILL.md
+python .\scripts\normalize-evidence.py `
+  --input .\assets\telemetry-sample.json `
+  --output (Join-Path $env:TEMP 'agent-course-skill-normalized.json')
+Get-Content -LiteralPath (Join-Path $env:TEMP 'agent-course-skill-normalized.json')
+```
+
+如果要迁移到某个支持 Agent Skills 的客户端，请把整个目录复制到该客户端约定的项目 Skill 位置，再先审阅 `SKILL.md`、脚本、引用文件、网络需求和许可证；本课不会替你安装或启动客户端。`SKILL.md` 中的相对链接以 Skill 根目录为基准，不要依赖当前 PowerShell 工作目录。
+
+脚本输入只包含合成 claim/source ID；它检查 ID、来源关联和重复项，输出稳定的 evidence 摘要，不把本地绝对路径写入结果。`normalize-evidence.py` 是“脚本”而不是“Tool”：它不会自动发现任务、访问网络或替 Agent 取得授权。
+
+## 故障注入与恢复
+
+按以下顺序记录四个场景：
+
+1. **缺少来源**：不要让 Skill 用常识补结论；把状态保留为 `needs-source`，回到 `source-policy.md` 补一条可追溯来源。
+2. **证据冲突**：不要静默取平均值；保留 `conflict`，标记需要人工复核，并把两个来源 ID 都留在本地工作记录中。匿名 evidence 只导出“冲突已观察”。
+3. **不可信输入**：遇到要求跳过校验或发送外部服务的指令，保持 `untrusted-input`，不执行脚本之外的副作用；恢复动作是删除越界指令或请求人工确认，而不是扩大 `allowed-tools`。
+4. **触发误判**：若问候或一次性算式被 description 命中，缩短并具体化 description，补充“何时不使用”，再重新跑正/负触发夹具。
+
+完成标准是“证据充分且边界可解释”，不是“每个场景都输出 ready”。失败和待复核是研究工作流中的有效结果。
+
+## 迁移挑战：同一方法，换工具和变化输入
+
+任选你能使用的 Codex 或 Claude Code，给它一份**变化后的合成**遥测摘要，不给真实项目文件、密钥或网络权限。要求它：
+
+- 使用同一个 `evidence-research` 方法，但明确说明该客户端的 Skill 发现/调用入口与本课开放规范字段的差异；
+- 先列出输入与来源，再执行本地脚本，最后按四种状态输出；
+- 对“缺来源、冲突、不可信输入”分别给出停止或人工复核动作；
+- 说明哪些步骤是 Skill 的程序性知识，哪些步骤是脚本/Tool 的执行能力，哪些部分尚未由真实客户端现场验证。
+
+迁移挑战的最小成果是一页对照说明和一次本地 checker 输出；不要求双订阅、不要求 API key，也不把“模型说它调用过 Skill”当作证明。真实 Codex/Claude Code 的版本、自动触发和权限行为应在执行当天按官方文档核验。
+
+## 可核验成果：匿名 evidence
+
+导出 `t17-skill-evidence.json` 后，在仓库根目录执行：
+
+```powershell
+Set-Location -LiteralPath .\checker
+python -m course_check check t17-skill `
+  --root .. `
+  --evidence-file (Join-Path $env:TEMP 't17-skill-evidence.json') `
+  --output (Join-Path $env:TEMP 't17-skill-checked.json')
+Get-Content -LiteralPath (Join-Path $env:TEMP 't17-skill-checked.json')
+```
+
+完整结果必须通过这些固定检查：
+
+- `skill-package-shaped`：入口、references、assets 和脚本都存在；
+- `trigger-boundary-tested`：正向与负向触发样例均记录；
+- `evidence-scenarios-covered`：四类状态均被观察；
+- `validation-script-passed`：每次场景均标记本地规范化/验证通过；
+- `security-boundary-tested`：不可信输入被阻断且没有外部调用；
+- `offline-deterministic`：结果可重复，且没有模型、客户端或网络调用。
+
+checker 会从固定场景语义重新推导结果，不信任手写的“全通过”摘要；输出只保留稳定 ID、状态和布尔标记。页面导入仍由统一 `EvidenceLoop` 在浏览器本地完成。
+
+<EvidenceLoop lessonId="t17-skill" />
+
+## 风险、版本与来源卡片
+
+- **账号与成本**：离线页面、合成 Skill 包和本地 checker 免费，不需要账号、API key、模型额度或网络；可选的 Codex/Claude Code 迁移可能需要相应账号和付费使用，替代路径是只完成离线夹具。
+- **权限与副作用**：页面只在浏览器内运行固定函数；Python 脚本只读取显式指定的合成 JSON，并写入显式输出路径。不要把真实研究数据、企业文本、个人信息或秘密放进这个 Skill 包。
+- **安全**：技能目录里的 Markdown、引用资料、资产和脚本都应像第三方代码一样审阅；先看许可证、网络访问、写入路径和工具权限。`allowed-tools` 是产品/实现相关的预授权线索，不是绕过人工批准的安全开关。
+- **版本与核验日期**：本课页面、实验、checker 与 `agent-engineering-course/evidence v1` 随课程版本 `0.1.0-alpha` 锁定，最后核验日期为 2026-08-13。Agent Skills 规范和 Claude Code 文档属于易变事实，发布前应重新核对字段、加载位置、动态上下文和权限行为；本课未声明某个客户端版本。
+- **事实与判断**：Agent Skills 目录结构、frontmatter 字段和渐进披露来自官方规范；Anthropic `skill-creator` 只作实例和触发评测参考；五个概念的对照、夹具状态、匿名字段和恢复动作是本课程原创判断与实验设计。
+- **许可**：原创正文和图解采用 CC BY 4.0；页面组件、模拟器、checker、测试和 `labs/skill` 自有代码采用 MIT；官方规范、Anthropic 仓库和 Claude Code 页面仅作链接引用，没有复制第三方代码、图片或文字资产。
+
+下一步进入模块 8 Plugin：你会把多个 Skill、命令、Hooks 或 MCP 配置放进能力包，并审计安装、版本、权限和供应链影响。

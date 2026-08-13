@@ -1,0 +1,404 @@
+---
+import courseVersion from "../../../course-version.json";
+
+const expectedCourseVersion = courseVersion.course_version;
+---
+
+<section
+  class="skill-lab"
+  data-skill-lab
+  data-course-version={expectedCourseVersion}
+  aria-labelledby="skill-lab-title"
+>
+  <header class="skill-lab__heading">
+    <div>
+      <p class="skill-lab__eyebrow">模块 7 · Skill lab</p>
+      <h2 id="skill-lab-title">把证据整理方法装进一个 Skill</h2>
+    </div>
+    <span class="skill-lab__version">skill-evidence v1 · {expectedCourseVersion}</span>
+  </header>
+
+  <p class="skill-lab__lead">
+    这是一个离线、确定性的研究/证据整理夹具：你选择合成任务，观察 Skill 是否会保留来源边界、调用本地验证脚本并阻断越界输入。它不调用模型、Codex、Claude Code、API、MCP 或网络。
+  </p>
+
+  <noscript>
+    <section class="skill-lab__noscript" aria-labelledby="skill-lab-noscript-title">
+      <h3 id="skill-lab-noscript-title">交互控件需要 JavaScript</h3>
+      <p>
+        未启用 JavaScript 时不能运行夹具或导出证据，但 Skill 的固定判断仍然成立：完整输入才可交付，缺来源必须停下，冲突要人工复核，带有外部发送指令的不可信输入必须阻断。
+      </p>
+      <ul>
+        <li>SKILL.md 负责任务方法与导航；references、assets 和 scripts 是按需加载的配套资源。</li>
+        <li>Skill 的描述只能作为触发线索，不是权限批准；脚本仍应有独立输入校验与副作用边界。</li>
+        <li>本页的触发矩阵是教学夹具，不代表任何客户端的真实检索概率。</li>
+      </ul>
+    </section>
+  </noscript>
+
+  <div class="skill-lab__anatomy" aria-label="Skill 包的组成">
+    <article>
+      <span class="skill-lab__number">01</span>
+      <h3>SKILL.md</h3>
+      <p>必需入口：YAML 元数据 + 任务说明；description 同时说明做什么和何时使用。</p>
+    </article>
+    <article>
+      <span class="skill-lab__number">02</span>
+      <h3>references / assets</h3>
+      <p>按需读取的规则、模板和合成数据；不要把大段资料一次塞进入口文件。</p>
+    </article>
+    <article>
+      <span class="skill-lab__number">03</span>
+      <h3>scripts</h3>
+      <p>可执行但不等于 Tool；脚本必须自包含、报错清晰，并对输入和路径做验证。</p>
+    </article>
+    <article>
+      <span class="skill-lab__number">04</span>
+      <h3>验证与边界</h3>
+      <p>完成标准从输入、资源、运行结果和安全状态推导，不能只看一句“完成了”。</p>
+    </article>
+  </div>
+
+  <form class="skill-lab__controls" data-skill-form>
+    <fieldset>
+      <legend>1. 先预测这次任务的完成状态</legend>
+      <label for="skill-scenario">合成任务场景</label>
+      <select id="skill-scenario" name="scenario">
+        <option value="complete">完整证据链</option>
+        <option value="missing-source">缺少来源</option>
+        <option value="conflicting-evidence">证据冲突</option>
+        <option value="untrusted-instruction">不可信输入</option>
+      </select>
+      <label for="skill-prediction">你的预测</label>
+      <select id="skill-prediction" name="prediction">
+        <option value="ready">可交付</option>
+        <option value="needs-source">需要补来源</option>
+        <option value="conflict">需要人工复核</option>
+        <option value="untrusted-input">拒绝越界指令</option>
+      </select>
+      <button type="submit" data-run-skill>运行离线 Skill 夹具</button>
+    </fieldset>
+    <fieldset>
+      <legend>2. 测试触发边界</legend>
+      <p class="skill-lab__fieldset-note">两条研究任务应匹配；问候和一次性算式不应误触发。这里没有真实 Agent，只有固定的教学期望。</p>
+      <button type="button" data-test-skill-triggers>运行正向/负向触发夹具</button>
+      <ul class="skill-lab__trigger-list" data-skill-trigger-list>
+        <li>尚未测试触发边界。</li>
+      </ul>
+    </fieldset>
+  </form>
+
+  <div class="skill-lab__presets" aria-labelledby="skill-lab-presets-title">
+    <h3 id="skill-lab-presets-title">快速复现实验分支</h3>
+    <p>按钮只选择固定输入；结果来自本地函数，同一场景每次输出相同状态。</p>
+    <div class="skill-lab__preset-buttons">
+      <button type="button" data-skill-preset="complete">完整证据链</button>
+      <button type="button" data-skill-preset="missing-source">缺少来源</button>
+      <button type="button" data-skill-preset="conflicting-evidence">注入冲突</button>
+      <button type="button" data-skill-preset="untrusted-instruction">注入越界指令</button>
+    </div>
+  </div>
+
+  <p class="skill-lab__status" data-skill-status role="status" aria-live="polite">请先预测，再运行一个场景。</p>
+
+  <section class="skill-lab__result" aria-labelledby="skill-result-title">
+    <div class="skill-lab__result-heading">
+      <h3 id="skill-result-title">可解释结果</h3>
+      <span data-skill-primary>等待运行</span>
+    </div>
+    <dl class="skill-lab__metrics">
+      <div><dt>场景</dt><dd data-skill-metric="scenario">—</dd></div>
+      <div><dt>资源读取</dt><dd data-skill-metric="resources">—</dd></div>
+      <div><dt>脚本验证</dt><dd data-skill-metric="script">—</dd></div>
+      <div><dt>确定性复跑</dt><dd data-skill-metric="deterministic">—</dd></div>
+      <div><dt>外部调用</dt><dd data-skill-metric="external">—</dd></div>
+    </dl>
+    <div class="skill-lab__finding" data-skill-finding aria-live="polite">
+      运行后显示“可交付”“需要补来源”“需要人工复核”或“拒绝越界指令”的文字证据。
+    </div>
+    <div class="skill-lab__trace">
+      <h4>本轮方法追踪</h4>
+      <ul data-skill-trace>
+        <li>任务输入、references、assets、scripts 与完成标准会被分开观察。</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="skill-lab__record-controls">
+    <button type="button" data-record-skill>记录本次观察</button>
+    <button type="button" data-export-skill>导出匿名证据</button>
+  </div>
+  <p class="skill-lab__evidence" data-skill-evidence-status role="status" aria-live="polite">
+    已记录 0 次场景；需要覆盖四类场景、触发正负边界和不可信输入后再导出完整证据。
+  </p>
+  <p class="skill-lab__privacy">
+    evidence 只保留场景 ID、稳定状态、触发观察和布尔安全标记；不记录任务原文、路径、来源摘录、模型响应、账号、密钥或输入数据。
+  </p>
+</section>
+
+<script>
+  // @ts-nocheck
+  import {
+    SKILL_SCENARIOS,
+    SKILL_TRIGGER_CASES,
+    buildSkillEvidence,
+    createSkillSession,
+    describeSkillScenario,
+    recordSkillObservation,
+    runSkillScenario,
+    testSkillTriggerBoundary,
+  } from "../lib/skill-lab.mjs";
+
+  const root = document.querySelector("[data-skill-lab]");
+  if (root instanceof HTMLElement) {
+    const form = root.querySelector("[data-skill-form]");
+    const scenarioSelect = root.querySelector("#skill-scenario");
+    const prediction = root.querySelector("#skill-prediction");
+    const status = root.querySelector("[data-skill-status]");
+    const primary = root.querySelector("[data-skill-primary]");
+    const finding = root.querySelector("[data-skill-finding]");
+    const trace = root.querySelector("[data-skill-trace]");
+    const triggerList = root.querySelector("[data-skill-trigger-list]");
+    const evidenceStatus = root.querySelector("[data-skill-evidence-status]");
+    let session = createSkillSession();
+
+    const message = (element, value, kind = "") => {
+      if (!(element instanceof HTMLElement)) return;
+      element.textContent = value;
+      element.dataset.status = kind;
+    };
+
+    const currentScenario = () => scenarioSelect instanceof HTMLSelectElement ? scenarioSelect.value : "complete";
+
+    const renderTriggers = () => {
+      if (!(triggerList instanceof HTMLElement)) return;
+      triggerList.replaceChildren();
+      session.triggerCases.forEach((item, index) => {
+        const expected = SKILL_TRIGGER_CASES[index].expected;
+        const row = document.createElement("li");
+        row.dataset.trigger = item.id;
+        const label = document.createElement("span");
+        label.textContent = SKILL_TRIGGER_CASES[index].label;
+        const value = document.createElement("strong");
+        value.textContent = item.observed === "not-tested"
+          ? "未测试"
+          : `${item.observed === expected ? "通过" : "不匹配"} · ${item.observed}`;
+        row.append(label, value);
+        triggerList.append(row);
+      });
+    };
+
+    const renderSessionStatus = () => {
+      if (!(evidenceStatus instanceof HTMLElement)) return;
+      const scenarioCount = new Set(session.runs.map((run) => run.scenario)).size;
+      const triggerCount = session.triggerCases.filter((item, index) => item.observed === SKILL_TRIGGER_CASES[index].expected).length;
+      const security = session.runs.some((run) => run.scenario === "untrusted-instruction");
+      evidenceStatus.textContent = `已记录 ${session.runs.length} 次场景（覆盖 ${scenarioCount} / 4）；触发边界 ${triggerCount} / 4；不可信输入 ${security ? "已观察" : "未观察"}。`;
+    };
+
+    const renderResult = () => {
+      const result = session.lastRun;
+      if (!result) return;
+      if (primary instanceof HTMLElement) {
+        primary.textContent = result.findingLabel;
+        primary.dataset.finding = result.finding;
+      }
+      const metrics = {
+        scenario: result.label,
+        resources: `${result.resources.length} 个按需资源`,
+        script: result.script === "passed" ? "passed" : "未运行",
+        deterministic: result.deterministic ? "相同" : "不一致",
+        external: result.externalCall ? "有调用" : "无调用",
+      };
+      for (const [key, value] of Object.entries(metrics)) {
+        const element = root.querySelector(`[data-skill-metric="${key}"]`);
+        if (element) element.textContent = value;
+      }
+      message(finding, describeSkillScenario(result), result.finding === "ready" ? "success" : "warning");
+      if (trace instanceof HTMLElement) {
+        trace.replaceChildren();
+        [
+          `输入：${result.inputs.join("、")}`,
+          `按需资源：${result.resources.join("、")}`,
+          `脚本：normalize-evidence.py → ${result.script}`,
+          `完成标准：${result.validator}`,
+          result.externalCall ? "安全边界：检测到外部调用" : "安全边界：未调用外部服务",
+        ].forEach((text) => {
+          const item = document.createElement("li");
+          item.textContent = text;
+          trace.append(item);
+        });
+      }
+      renderSessionStatus();
+    };
+
+    const run = () => {
+      try {
+        session = runSkillScenario(session, currentScenario());
+        const expected = session.lastRun?.finding;
+        const selected = prediction instanceof HTMLSelectElement ? prediction.value : "ready";
+        const hit = selected === expected;
+        message(status, `${hit ? "预测命中" : `预测未命中，实际是“${session.lastRun.findingLabel}”`}。${session.lastRun.detail}`, hit ? "success" : "warning");
+        renderResult();
+      } catch (error) {
+        message(status, `无法运行夹具：${error instanceof Error ? error.message : "输入无效"}`, "error");
+      }
+    };
+
+    form?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      run();
+    });
+
+    root.querySelectorAll("[data-skill-preset]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const id = button.getAttribute("data-skill-preset");
+        if (!(scenarioSelect instanceof HTMLSelectElement) || !SKILL_SCENARIOS.some((scenario) => scenario.id === id)) return;
+        scenarioSelect.value = id;
+        const scenarioData = SKILL_SCENARIOS.find((scenario) => scenario.id === id);
+        if (prediction instanceof HTMLSelectElement && scenarioData) prediction.value = scenarioData.finding;
+        run();
+      });
+    });
+
+    root.querySelector("[data-test-skill-triggers]")?.addEventListener("click", () => {
+      session = testSkillTriggerBoundary(session);
+      renderTriggers();
+      message(status, "已运行正向/负向触发夹具；这只是描述边界测试，不是客户端调用。", "success");
+      renderSessionStatus();
+    });
+
+    root.querySelector("[data-record-skill]")?.addEventListener("click", () => {
+      try {
+        session = recordSkillObservation(session);
+        message(status, `已记录 ${session.lastRun?.findingLabel ?? "场景"} 观察；可以继续切换场景。`, "success");
+        renderSessionStatus();
+      } catch (error) {
+        message(status, `无法记录：${error instanceof Error ? error.message : "请先运行场景"}`, "error");
+      }
+    });
+
+    root.querySelector("[data-export-skill]")?.addEventListener("click", () => {
+      try {
+        const evidence = buildSkillEvidence(session, { courseVersion: root.dataset.courseVersion ?? "" });
+        const blob = new Blob([`${JSON.stringify(evidence, null, 2)}\n`], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "t17-skill-evidence.json";
+        link.click();
+        URL.revokeObjectURL(url);
+        window.dispatchEvent(new CustomEvent("skill:evidence", { detail: evidence }));
+        message(evidenceStatus, `已导出 ${evidence.result} 匿名证据；交给本地 course_check 检查。`, "success");
+      } catch (error) {
+        message(evidenceStatus, `无法导出证据：${error instanceof Error ? error.message : "证据生成失败"}`, "error");
+      }
+    });
+
+    renderTriggers();
+    renderSessionStatus();
+  }
+</script>
+
+<style>
+  .skill-lab {
+    --skill-ink: #18201c;
+    --skill-muted: #52615b;
+    --skill-line: #cbd5cf;
+    --skill-soft: #edf3ee;
+    --skill-paper: #f8faf7;
+    --skill-accent: #087f68;
+    --skill-warning: #9a5900;
+    margin: 2.5rem 0;
+    border: 1px solid var(--skill-line);
+    background: var(--skill-paper);
+    color: var(--skill-ink);
+  }
+
+  .skill-lab__heading,
+  .skill-lab__lead,
+  .skill-lab__anatomy,
+  .skill-lab__controls,
+  .skill-lab__presets,
+  .skill-lab__status,
+  .skill-lab__result,
+  .skill-lab__record-controls,
+  .skill-lab__evidence,
+  .skill-lab__privacy,
+  .skill-lab__noscript { margin-inline: clamp(1rem, 4vw, 2rem); }
+
+  .skill-lab__heading {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: end;
+    padding-top: clamp(1.2rem, 4vw, 2rem);
+    border-bottom: 1px solid var(--skill-ink);
+  }
+
+  .skill-lab__eyebrow { margin: 0 0 0.35rem; color: var(--skill-accent); font: 0.78rem/1.3 "Cascadia Mono", Consolas, monospace; letter-spacing: 0.05em; text-transform: uppercase; }
+  .skill-lab h2 { margin: 0 0 1rem; font-size: clamp(1.35rem, 3vw, 2rem); }
+  .skill-lab h3, .skill-lab h4 { margin-top: 0; }
+  .skill-lab__version { padding-bottom: 1rem; color: var(--skill-muted); font: 0.75rem/1.3 "Cascadia Mono", Consolas, monospace; white-space: nowrap; }
+  .skill-lab__lead { max-width: 68rem; color: var(--skill-muted); }
+
+  .skill-lab__anatomy { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--skill-line); border: 1px solid var(--skill-line); }
+  .skill-lab__anatomy article { min-height: 10rem; padding: 1rem; background: var(--skill-soft); }
+  .skill-lab__anatomy h3 { margin: 0.7rem 0 0.35rem; font-size: 1rem; }
+  .skill-lab__anatomy p { margin: 0; color: var(--skill-muted); font-size: 0.88rem; }
+  .skill-lab__number { color: var(--skill-accent); font: 0.78rem/1 "Cascadia Mono", Consolas, monospace; }
+
+  .skill-lab__controls { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.4rem; }
+  .skill-lab fieldset { min-width: 0; margin: 0; padding: 1rem; border: 1px solid var(--skill-line); background: #fff; }
+  .skill-lab legend { padding: 0 0.35rem; font-weight: 700; }
+  .skill-lab label { display: block; margin: 0.8rem 0 0.3rem; color: var(--skill-muted); font-size: 0.88rem; }
+  .skill-lab select, .skill-lab button { box-sizing: border-box; min-height: 44px; max-width: 100%; font: inherit; }
+  .skill-lab select { width: 100%; padding: 0.55rem 0.65rem; border: 1px solid var(--skill-line); background: #fff; color: var(--skill-ink); }
+  .skill-lab button { margin-top: 0.85rem; padding: 0.55rem 0.8rem; border: 1px solid var(--skill-ink); background: var(--skill-ink); color: #fff; cursor: pointer; }
+  .skill-lab button:hover { background: var(--skill-accent); border-color: var(--skill-accent); }
+  .skill-lab button:focus-visible, .skill-lab select:focus-visible { outline: 3px solid var(--skill-warning); outline-offset: 3px; }
+  .skill-lab__fieldset-note { margin: 0; color: var(--skill-muted); font-size: 0.88rem; }
+  .skill-lab__trigger-list { display: grid; gap: 0.35rem; margin: 0.85rem 0 0; padding: 0; list-style: none; }
+  .skill-lab__trigger-list li { display: flex; justify-content: space-between; gap: 0.75rem; padding: 0.45rem 0; border-bottom: 1px solid var(--skill-line); font-size: 0.82rem; }
+  .skill-lab__trigger-list strong { color: var(--skill-accent); white-space: nowrap; }
+
+  .skill-lab__presets { margin-top: 1.4rem; }
+  .skill-lab__presets h3 { margin-bottom: 0.25rem; }
+  .skill-lab__presets p { margin: 0; color: var(--skill-muted); font-size: 0.88rem; }
+  .skill-lab__preset-buttons { display: flex; flex-wrap: wrap; gap: 0.55rem; margin-top: 0.8rem; }
+  .skill-lab__preset-buttons button { margin-top: 0; background: transparent; color: var(--skill-ink); }
+  .skill-lab__status, .skill-lab__evidence { padding: 0.75rem 1rem; border-inline-start: 3px solid var(--skill-warning); background: #fff; }
+  .skill-lab__status[data-status="success"], .skill-lab__evidence[data-status="success"] { border-inline-start-color: var(--skill-accent); }
+  .skill-lab__status[data-status="error"], .skill-lab__evidence[data-status="error"] { border-inline-start-color: #a12622; }
+
+  .skill-lab__result { border-top: 1px solid var(--skill-ink); border-bottom: 1px solid var(--skill-line); }
+  .skill-lab__result-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+  .skill-lab__result-heading span { color: var(--skill-accent); font-weight: 700; }
+  .skill-lab__metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; margin: 1rem 0; background: var(--skill-line); }
+  .skill-lab__metrics div { min-width: 0; padding: 0.75rem; background: #fff; }
+  .skill-lab__metrics dt { color: var(--skill-muted); font-size: 0.76rem; }
+  .skill-lab__metrics dd { margin: 0.25rem 0 0; overflow-wrap: anywhere; font-weight: 700; }
+  .skill-lab__finding { padding: 0.8rem 1rem; border-inline-start: 3px solid var(--skill-accent); background: var(--skill-soft); }
+  .skill-lab__trace { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--skill-line); }
+  .skill-lab__trace ul { margin: 0; padding-left: 1.2rem; }
+  .skill-lab__trace li { margin: 0.3rem 0; color: var(--skill-muted); font-size: 0.88rem; }
+  .skill-lab__record-controls { display: flex; flex-wrap: wrap; gap: 0.65rem; margin-top: 1rem; }
+  .skill-lab__record-controls button { margin-top: 0; }
+  .skill-lab__record-controls button:last-child { background: var(--skill-accent); border-color: var(--skill-accent); }
+  .skill-lab__privacy { color: var(--skill-muted); font-size: 0.78rem; }
+  .skill-lab__noscript { margin-top: 1rem; padding: 1rem; border-inline-start: 3px solid var(--skill-warning); background: #fff; }
+  .skill-lab__noscript p { color: var(--skill-muted); }
+
+  @media (max-width: 720px) {
+    .skill-lab__heading { display: block; }
+    .skill-lab__version { display: block; padding-bottom: 0.8rem; white-space: normal; }
+    .skill-lab__anatomy, .skill-lab__controls { grid-template-columns: 1fr; }
+    .skill-lab__metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .skill-lab__trigger-list li { display: block; }
+    .skill-lab__trigger-list strong { display: block; margin-top: 0.25rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skill-lab *, .skill-lab *::before, .skill-lab *::after { scroll-behavior: auto !important; transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
+  }
+</style>

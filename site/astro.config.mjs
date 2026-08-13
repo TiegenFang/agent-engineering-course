@@ -28,6 +28,7 @@ export default defineConfig({
             { label: "环境诊断学习旅程", link: "/module-0-environment/" },
             { label: "Git 安全修改与恢复", link: "/module-0-git-safety/" },
             { label: "Agent、模型与 Harness", link: "/module-1-agent-loop/" },
+            { label: "自定义 Skill", link: "/module-7-skill/" },
           ],
         },
       ],
