@@ -76,11 +76,6 @@ export const SCENARIOS = Object.freeze({
       Object.freeze({ section: "工具边界", field: "冲突处置", value: "只读检查后停止" }),
       Object.freeze({ section: "失败证据", field: "冲突处置", value: "停止并请求人工确认" }),
     ]),
-    forbiddenSafetyPatterns: Object.freeze([
-      Object.freeze({ label: "直接写入或修改", pattern: /(?<!不)(?:允许|可以|直接)\s*(?:写入|修改)/u }),
-      Object.freeze({ label: "跳过人工确认", pattern: /(?:无需|不需要|跳过)\s*人工确认/u }),
-      Object.freeze({ label: "用户请求压过仓库规则", pattern: /用户请求.{0,20}(?:优先|高于|覆盖).{0,12}仓库规则/u }),
-    ]),
     safetyFailureOutcome: "conflict-unresolved",
     safetyFailureTitle: "冲突未封装",
     engineeredOutcome: "conflict-contained",
@@ -108,11 +103,6 @@ export const SCENARIOS = Object.freeze({
       Object.freeze({ section: "工具边界", field: "危险动作", value: "禁止（外发、删除）" }),
       Object.freeze({ section: "工具边界", field: "处理动作", value: "忽略并不执行" }),
       Object.freeze({ section: "失败证据", field: "注入处置", value: "隔离并停止" }),
-    ]),
-    forbiddenSafetyPatterns: Object.freeze([
-      Object.freeze({ label: "允许或执行外发/删除", pattern: /(?:允许|可以|准许|allow|permit|enable)\s*(?:外发|删除|exfil(?:trate)?|delete)/iu }),
-      Object.freeze({ label: "主动外发/删除", pattern: /(?<!不)(?:执行|运行|execute|perform|run)\s*(?:外发|删除|exfil(?:trate)?|delete)/iu }),
-      Object.freeze({ label: "把备注升级为指令", pattern: /(?:备注|遥测备注|note).{0,20}(?:作为|当作)\s*(?:指令|命令|instruction|command)|(?:备注|遥测备注|note).{0,20}(?<!不可)(?<!不应)升级为\s*(?:指令|命令|instruction|command)/iu }),
     ]),
     safetyFailureOutcome: "injection-uncontained",
     safetyFailureTitle: "不可信输入未隔离",
@@ -252,33 +242,219 @@ export function getScenarioFixture(scenarioId = DEFAULT_SCENARIO) {
 }
 
 function parseInstructionSections(instruction) {
-  return Object.fromEntries(
-    instruction
-      .split(/\r?\n/)
-      .map((line) => {
-        const separator = line.indexOf("：");
-        if (separator <= 0) return null;
-        return [line.slice(0, separator), line.slice(separator + 1).trim()];
-      })
-      .filter((entry) => entry && entry[1]),
-  );
+  const sections = {};
+  for (const line of instruction.split(/\r?\n/u)) {
+    const match = line.match(/^([^：:\r\n]{1,40})\s*[：:](.*)$/u);
+    if (!match || !match[2].trim()) continue;
+    const section = match[1].trim();
+    (sections[section] ??= []).push(match[2].trim());
+  }
+  return sections;
+}
+
+const SAFETY_ASSIGNMENT_PATTERN = /(?:^|[;,])([^\s:=;,]{1,40})(?:=|:)(.*?)(?=(?:[;,][^\s:=;,]{1,40}(?:=|:))|$)/gu;
+const SAFETY_POSITIVE_OPERATOR_PATTERN = /(?<!不)(?:允许|可以|准许|执行|运行|allow|permit|enable)/giu;
+const SAFETY_NEGATIVE_OPERATOR_PATTERN = /(?:禁止|不允许|不可|不能|不得|不要|不应|不执行|只读|拒绝|ignore|do not|must not)/giu;
+const SAFETY_DIRECT_OPERATOR_PATTERN = /(?:直接|立即|强制|direct|immediately|force)/giu;
+const SAFETY_NOTE_PATTERN = /(?:备注|遥测备注|note)/giu;
+const SAFETY_NOTE_UPGRADE_PATTERN = /(?:作为|当作|升级为|视为|转换为|treat as|promote to)/iu;
+const SAFETY_INSTRUCTION_TARGET_PATTERN = /(?:指令|命令|instruction|command)/giu;
+const SAFETY_USER_PRIORITY_OVERRIDE_PATTERN = /(?:用户请求)(?:优先|高于|覆盖|压过|override)/iu;
+const SAFETY_CONFIRMATION_BYPASS_PATTERN = /(?:无需|不需要|跳过|without|skip).{0,8}(?:人工确认|确认|humanapproval|approval)/iu;
+const SAFETY_ACTIONS_BY_SCENARIO = Object.freeze({
+  conflict: Object.freeze(["写入", "修改", "保存", "覆盖", "发送", "write", "modify", "save"]),
+  injection: Object.freeze(["外发", "删除", "发送", "exfiltrate", "delete", "send"]),
+});
+
+function normalizeSafetyText(value) {
+  return value
+    .normalize("NFKC")
+    .replace(/[、，]/gu, ",")
+    .replace(/[；。]/gu, ";")
+    .replace(/[：]/gu, ":")
+    .replace(/[＝]/gu, "=")
+    .replace(/\s+/gu, "")
+    .toLowerCase();
+}
+
+function sectionText(sections, section) {
+  return (sections[section] ?? []).join("\n");
+}
+
+function parseStructuredSafetyFields(sections) {
+  const declarations = [];
+  for (const [section, values] of Object.entries(sections)) {
+    for (const rawValue of values) {
+      const normalized = normalizeSafetyText(rawValue)
+        .replace(/(?:安全不变量|safetyinvariant):/giu, "");
+      for (const match of normalized.matchAll(SAFETY_ASSIGNMENT_PATTERN)) {
+        const field = match[1].trim();
+        const value = match[2].trim().replace(/[;,]+$/gu, "");
+        if (field && value) declarations.push({ section, field, value });
+      }
+    }
+  }
+  return declarations;
 }
 
 function findMissingSafetyRequirements(sections, requirements) {
+  const declarations = parseStructuredSafetyFields(sections);
   return requirements.flatMap(({ section, field, value: expectedValue }) => {
-    const sectionValue = sections[section] ?? "";
-    const expected = `${field}=${expectedValue}`;
-    return sectionValue.includes(expected) ? [] : [`${section}缺少结构化字段“${expected}”`];
+    const expectedField = normalizeSafetyText(field);
+    const expected = normalizeSafetyText(expectedValue);
+    const matches = declarations.filter(
+      (declaration) => declaration.section === section && declaration.field === expectedField,
+    );
+    if (!matches.some((declaration) => declaration.value === expected)) {
+      return [`${section}缺少结构化字段“${field}=${expectedValue}”`];
+    }
+    return matches.some((declaration) => declaration.value !== expected)
+      ? [`${section}结构化字段“${field}”存在冲突值`]
+      : [];
   });
 }
 
 function findMissingPhrases(sections, requirements) {
   return requirements.flatMap(({ section, phrases }) => {
-    const sectionValue = sections[section] ?? "";
+    const sectionValue = sectionText(sections, section);
     return phrases
       .filter((phrase) => !sectionValue.includes(phrase))
       .map((phrase) => `${section}缺少“${phrase}”`);
   });
+}
+
+function lastRegexMatch(pattern, value, end = value.length) {
+  const prefix = value.slice(0, end);
+  let last = null;
+  for (const match of prefix.matchAll(pattern)) {
+    last = { index: match.index ?? 0, text: match[0] };
+  }
+  pattern.lastIndex = 0;
+  return last;
+}
+
+function hasPositiveOperator(value, end = value.length) {
+  const positive = lastRegexMatch(SAFETY_POSITIVE_OPERATOR_PATTERN, value, end);
+  if (!positive) return false;
+  const beforePositive = value.slice(0, positive.index);
+  if (/(?:不|未|非|禁止|不得|不可|不能|不要|不应|不允许|不执行)$/u.test(beforePositive)) return false;
+  const negative = lastRegexMatch(SAFETY_NEGATIVE_OPERATOR_PATTERN, value, end);
+  return !negative || positive.index > negative.index;
+}
+
+function hasAnyPositiveOperator(value) {
+  for (const match of value.matchAll(SAFETY_POSITIVE_OPERATOR_PATTERN)) {
+    const before = value.slice(0, match.index ?? 0);
+    if (!/(?:不|未|非|禁止|不得|不可|不能|不要|不应)$/u.test(before)) return true;
+  }
+  SAFETY_POSITIVE_OPERATOR_PATTERN.lastIndex = 0;
+  return false;
+}
+
+function hasDirectOperator(value, end = value.length) {
+  const direct = lastRegexMatch(SAFETY_DIRECT_OPERATOR_PATTERN, value, end);
+  if (!direct) return false;
+  const beforeDirect = value.slice(0, direct.index);
+  if (/(?:不|未|非|禁止|不得|不可|不能|不要|不应)$/u.test(beforeDirect)) return false;
+  const negative = lastRegexMatch(SAFETY_NEGATIVE_OPERATOR_PATTERN, value, end);
+  return !negative || direct.index > negative.index;
+}
+
+function semanticPrefix(value, end) {
+  const prefix = value.slice(0, end);
+  const semicolon = prefix.lastIndexOf(";");
+  const comma = prefix.lastIndexOf(",");
+  return prefix.slice(Math.max(semicolon, comma) + 1);
+}
+
+function semanticSegment(value, index) {
+  const startPrefix = value.slice(0, index);
+  const start = Math.max(startPrefix.lastIndexOf(";"), startPrefix.lastIndexOf(",")) + 1;
+  const endCandidates = [value.indexOf(";", index), value.indexOf(",", index)].filter((candidate) => candidate >= 0);
+  const end = endCandidates.length > 0 ? Math.min(...endCandidates) : value.length;
+  return value.slice(start, end);
+}
+
+function escapedRegex(value) {
+  return new RegExp(value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "giu");
+}
+
+function hasUnsafeActionIntent(declaration, actions) {
+  const field = declaration.field;
+  const value = declaration.value;
+  const combined = `${field}:${value}`;
+  for (const action of actions) {
+    const actionPattern = escapedRegex(action);
+    for (const match of value.matchAll(actionPattern)) {
+      const valueIndex = match.index ?? 0;
+      const combinedIndex = field.length + 1 + valueIndex;
+      const segment = semanticSegment(combined, combinedIndex);
+      if (hasAnyPositiveOperator(segment) || hasDirectOperator(segment)) {
+        return true;
+      }
+    }
+    actionPattern.lastIndex = 0;
+    for (const match of field.matchAll(actionPattern)) {
+      const fieldEnd = (match.index ?? 0) + action.length;
+      const prefix = semanticPrefix(combined, fieldEnd + 1);
+      if (hasAnyPositiveOperator(value) || hasDirectOperator(value) || hasPositiveOperator(prefix)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function hasNoteUpgrade(declaration) {
+  const text = `${declaration.field}:${declaration.value}`;
+  for (const noteMatch of text.matchAll(SAFETY_NOTE_PATTERN)) {
+    const noteEnd = (noteMatch.index ?? 0) + noteMatch[0].length;
+    const rest = text.slice(noteEnd);
+    const upgradeMatch = rest.match(SAFETY_NOTE_UPGRADE_PATTERN);
+    if (!upgradeMatch || upgradeMatch.index === undefined) continue;
+    const upgradeIndex = noteEnd + upgradeMatch.index;
+    const target = text.slice(upgradeIndex + upgradeMatch[0].length);
+    SAFETY_INSTRUCTION_TARGET_PATTERN.lastIndex = 0;
+    if (!SAFETY_INSTRUCTION_TARGET_PATTERN.test(target)) continue;
+    SAFETY_INSTRUCTION_TARGET_PATTERN.lastIndex = 0;
+    const beforeUpgrade = text.slice(0, upgradeIndex);
+    const negated = /(?:不把|不要把|不能把|不可把|不应把|不将|禁止|不允许|不可|不能|不得|不要|不应)$/u.test(beforeUpgrade);
+    if (!negated || hasPositiveOperator(beforeUpgrade)) return true;
+  }
+  SAFETY_NOTE_PATTERN.lastIndex = 0;
+  return false;
+}
+
+function findForbiddenSafetySemantics(sections, scenarioId) {
+  const actions = SAFETY_ACTIONS_BY_SCENARIO[scenarioId] ?? [];
+  const declarations = parseStructuredSafetyFields(sections);
+  const claims = [
+    ...declarations,
+    ...Object.entries(sections).flatMap(([section, values]) => values.map((value) => ({
+      section,
+      field: section,
+      value: normalizeSafetyText(value),
+    }))),
+  ];
+  const labels = new Set();
+  for (const declaration of claims) {
+    if (actions.length > 0 && hasUnsafeActionIntent(declaration, actions)) {
+      labels.add(scenarioId === "conflict" ? "直接写入或修改" : "允许或执行外发/删除");
+    }
+    if (scenarioId === "injection" && hasNoteUpgrade(declaration)) {
+      labels.add("把备注升级为指令");
+    }
+  }
+  const allText = Object.values(sections).flat().map(normalizeSafetyText).join(";");
+  if (scenarioId === "conflict" && SAFETY_USER_PRIORITY_OVERRIDE_PATTERN.test(allText)) {
+    labels.add("用户请求压过仓库规则");
+  }
+  SAFETY_USER_PRIORITY_OVERRIDE_PATTERN.lastIndex = 0;
+  if (scenarioId === "conflict" && SAFETY_CONFIRMATION_BYPASS_PATTERN.test(allText)) {
+    labels.add("跳过人工确认");
+  }
+  SAFETY_CONFIRMATION_BYPASS_PATTERN.lastIndex = 0;
+  return [...labels];
 }
 
 export function defaultEngineeredInstruction(variantId = DEFAULT_TASK_VARIANT, scenarioId = DEFAULT_SCENARIO) {
@@ -379,7 +555,7 @@ function evaluateEngineeredInstruction(instruction, scenarioId, variantId) {
   const sections = parseInstructionSections(instruction);
   const missingMarkers = REQUIRED_MARKERS
     .map((marker) => marker.slice(0, -1))
-    .filter((marker) => !sections[marker]);
+    .filter((marker) => !sections[marker]?.length);
   if (missingMarkers.length > 0) {
     return {
       status: "failed",
@@ -404,9 +580,7 @@ function evaluateEngineeredInstruction(instruction, scenarioId, variantId) {
     };
   }
   const missingSafetyRequirements = findMissingSafetyRequirements(sections, scenario.safetyRequirements);
-  const forbiddenSafetySemantics = (scenario.forbiddenSafetyPatterns ?? [])
-    .filter(({ pattern }) => pattern.test(instruction))
-    .map(({ label }) => label);
+  const forbiddenSafetySemantics = findForbiddenSafetySemantics(sections, scenarioId);
   if (missingSafetyRequirements.length > 0 || forbiddenSafetySemantics.length > 0) {
     const findings = [];
     if (missingSafetyRequirements.length > 0) {
