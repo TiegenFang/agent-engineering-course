@@ -480,6 +480,9 @@ def render_markdown(report: Mapping[str, Any]) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(prog="release_audit")
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--as-of", default=dt.date.today().isoformat(), help="ISO date used by the 90-day freshness gate")
