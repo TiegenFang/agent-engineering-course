@@ -29,6 +29,7 @@ export default defineConfig({
             { label: "Git 安全修改与恢复", link: "/module-0-git-safety/" },
             { label: "Agent、模型与 Harness", link: "/module-1-agent-loop/" },
             { label: "自定义 Skill", link: "/module-7-skill/" },
+            { label: "Plugin 打包与供应链审计", link: "/module-8-plugin/" },
           ],
         },
       ],

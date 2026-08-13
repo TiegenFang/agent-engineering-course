@@ -374,6 +374,43 @@ MEMORY_CHECK_IDS = (
     "offline-deterministic",
 )
 
+PLUGIN_AUDIT_LESSON_ID = "t18-plugin-audit"
+PLUGIN_AUDIT_VERSION = "1"
+PLUGIN_COMPONENT_TYPES = ("skill", "command", "hook", "mcp")
+PLUGIN_AUDIT_FIELDS = (
+    "origin",
+    "version",
+    "license",
+    "permissions",
+    "network",
+    "dependencies",
+    "lifecycle",
+    "execution",
+)
+PLUGIN_LIFECYCLE_ACTIONS = ("upgrade", "rollback", "uninstall")
+PLUGIN_AUDIT_PROFILES = frozenset({"reviewable", "community-shape", "needs-review"})
+PLUGIN_AUDIT_STATUSES = frozenset({"reviewable", "needs-review", "do-not-install"})
+PLUGIN_AUDIT_FINDINGS = frozenset(
+    {
+        "license-unknown",
+        "version-unpinned",
+        "provenance-unpinned",
+        "permission-broad",
+        "network-enabled",
+        "dependency-unpinned",
+        "install-script",
+        "lifecycle-gap",
+    }
+)
+PLUGIN_AUDIT_CHECK_IDS = (
+    "manifest-reviewed",
+    "component-composition-mapped",
+    "supply-chain-fields-audited",
+    "unsafe-package-contained",
+    "lifecycle-reviewed",
+    "offline-no-install",
+)
+
 
 class ContractError(ValueError):
     """Raised when the public Foundation contract is incomplete."""
@@ -1629,6 +1666,240 @@ def validate_t16_experiment(
     }
 
 
+def validate_t18_evidence_checks(value: Any) -> list[dict[str, Any]]:
+    """Validate the fixed public checks for the Plugin audit lesson."""
+
+    if not isinstance(value, list) or len(value) != len(PLUGIN_AUDIT_CHECK_IDS):
+        raise EvidenceError("T18 Plugin audit evidence checks must contain the complete fixed check list")
+    actual_ids: list[str] = []
+    normalized: list[dict[str, str]] = []
+    for index, check in enumerate(value):
+        if not isinstance(check, dict):
+            raise EvidenceError(f"T18 Plugin audit evidence check {index} must be an object")
+        _reject_sensitive_unknown_fields(check, f"T18 Plugin audit evidence check {index}")
+        check_id = check.get("id")
+        if not isinstance(check_id, str) or not check_id:
+            raise EvidenceError(f"T18 Plugin audit evidence check {index} needs an id")
+        result = check.get("result")
+        if result not in {"passed", "failed", "alternative"}:
+            raise EvidenceError(f"T18 Plugin audit evidence check {check_id}.result is not supported")
+        actual_ids.append(check_id)
+        normalized.append({"id": check_id, "result": result})
+    if actual_ids != list(PLUGIN_AUDIT_CHECK_IDS):
+        raise EvidenceError(
+            "T18 Plugin audit evidence IDs must be exactly "
+            + ", ".join(PLUGIN_AUDIT_CHECK_IDS)
+        )
+    return normalized
+
+
+def _expected_t18_profile(profile: str) -> tuple[str, set[str], set[str]]:
+    """Return the inert fixture's status, component types and findings."""
+
+    if profile == "reviewable":
+        return "reviewable", set(PLUGIN_COMPONENT_TYPES), set()
+    if profile == "community-shape":
+        return (
+            "needs-review",
+            {"skill", "command"},
+            {"license-unknown", "provenance-unpinned", "dependency-unpinned"},
+        )
+    if profile == "needs-review":
+        return (
+            "do-not-install",
+            set(PLUGIN_COMPONENT_TYPES),
+            {
+                "license-unknown",
+                "provenance-unpinned",
+                "permission-broad",
+                "network-enabled",
+                "dependency-unpinned",
+                "install-script",
+                "lifecycle-gap",
+            },
+        )
+    raise EvidenceError(f"T18 Plugin audit profile is unsupported: {profile}")
+
+
+def validate_t18_audit(
+    value: Any,
+    *,
+    document_result: str,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Validate status-only Plugin audit runs and derive public checks."""
+
+    if not isinstance(value, dict):
+        raise EvidenceError("T18 completed evidence must include an audit object")
+    _reject_sensitive_unknown_fields(value, "T18 audit")
+    required = {
+        "version",
+        "runs",
+        "observed_findings",
+        "observed_components",
+        "observed_fields",
+        "observed_lifecycle",
+    }
+    missing = sorted(required - set(value))
+    if missing:
+        raise EvidenceError("T18 audit is missing: " + ", ".join(missing))
+    unexpected = sorted(set(value) - required)
+    if unexpected:
+        raise EvidenceError("T18 audit has unexpected fields: " + ", ".join(unexpected))
+    if value["version"] != PLUGIN_AUDIT_VERSION:
+        raise EvidenceError("Unsupported T18 Plugin audit version")
+
+    runs = value["runs"]
+    if not isinstance(runs, list) or not runs:
+        raise EvidenceError("T18 audit runs must be a non-empty list")
+    seen_ids: set[str] = set()
+    normalized_runs: list[dict[str, Any]] = []
+    observed_findings: set[str] = set()
+    observed_components: set[str] = set()
+    observed_fields: set[str] = set()
+    observed_lifecycle: set[str] = set()
+    expected_run_fields = {
+        "id",
+        "fixture",
+        "status",
+        "findings",
+        "components",
+        "inspected",
+        "lifecycle",
+        "offline",
+        "executed",
+    }
+
+    for index, raw_run in enumerate(runs):
+        if not isinstance(raw_run, dict):
+            raise EvidenceError(f"T18 audit run {index} must be an object")
+        _reject_sensitive_unknown_fields(raw_run, f"T18 audit run {index}")
+        missing = sorted(expected_run_fields - set(raw_run))
+        if missing:
+            raise EvidenceError(f"T18 audit run {index} is missing: " + ", ".join(missing))
+        unexpected = sorted(set(raw_run) - expected_run_fields)
+        if unexpected:
+            raise EvidenceError(
+                f"T18 audit run {index} has unexpected fields: " + ", ".join(unexpected)
+            )
+
+        run_id = raw_run["id"]
+        _require_identifier(run_id, f"T18 audit run {index}.id")
+        if run_id in seen_ids:
+            raise EvidenceError(f"T18 audit run id repeated: {run_id}")
+        seen_ids.add(run_id)
+
+        profile = raw_run["fixture"]
+        if profile not in PLUGIN_AUDIT_PROFILES:
+            raise EvidenceError(f"T18 audit run {run_id}.fixture is unsupported")
+        expected_status, expected_components, expected_findings = _expected_t18_profile(profile)
+        status = raw_run["status"]
+        if status not in PLUGIN_AUDIT_STATUSES or status != expected_status:
+            raise EvidenceError(f"T18 audit run {run_id}.status does not match its fixture profile")
+
+        findings = raw_run["findings"]
+        if not isinstance(findings, list) or any(item not in PLUGIN_AUDIT_FINDINGS for item in findings):
+            raise EvidenceError(f"T18 audit run {run_id}.findings is invalid")
+        if len(findings) != len(set(findings)) or set(findings) != expected_findings:
+            raise EvidenceError(f"T18 audit run {run_id}.findings does not match its fixture profile")
+
+        components = raw_run["components"]
+        if not isinstance(components, list) or any(item not in PLUGIN_COMPONENT_TYPES for item in components):
+            raise EvidenceError(f"T18 audit run {run_id}.components is invalid")
+        if len(components) != len(set(components)) or set(components) != expected_components:
+            raise EvidenceError(f"T18 audit run {run_id}.components does not match its fixture profile")
+
+        inspected = raw_run["inspected"]
+        if not isinstance(inspected, list) or any(item not in PLUGIN_AUDIT_FIELDS for item in inspected):
+            raise EvidenceError(f"T18 audit run {run_id}.inspected is invalid")
+        if set(inspected) != set(PLUGIN_AUDIT_FIELDS) or len(inspected) != len(set(inspected)):
+            raise EvidenceError(f"T18 audit run {run_id}.inspected must cover all audit fields")
+
+        lifecycle = raw_run["lifecycle"]
+        if not isinstance(lifecycle, list) or any(item not in PLUGIN_LIFECYCLE_ACTIONS for item in lifecycle):
+            raise EvidenceError(f"T18 audit run {run_id}.lifecycle is invalid")
+        if set(lifecycle) != set(PLUGIN_LIFECYCLE_ACTIONS) or len(lifecycle) != len(set(lifecycle)):
+            raise EvidenceError(f"T18 audit run {run_id}.lifecycle must cover all actions")
+
+        if raw_run["offline"] is not True or raw_run["executed"] is not False:
+            raise EvidenceError("T18 audit must remain offline and must not execute a package")
+
+        observed_findings.update(findings)
+        observed_components.update(components)
+        observed_fields.update(inspected)
+        observed_lifecycle.update(lifecycle)
+        normalized_runs.append(
+            {
+                "id": run_id,
+                "fixture": profile,
+                "status": status,
+                "findings": list(findings),
+                "components": list(components),
+                "inspected": list(inspected),
+                "lifecycle": list(lifecycle),
+                "offline": True,
+                "executed": False,
+            }
+        )
+
+    supplied_findings = value["observed_findings"]
+    supplied_components = value["observed_components"]
+    supplied_fields = value["observed_fields"]
+    supplied_lifecycle = value["observed_lifecycle"]
+    for label, supplied, allowed, observed in (
+        ("findings", supplied_findings, PLUGIN_AUDIT_FINDINGS, observed_findings),
+        ("components", supplied_components, set(PLUGIN_COMPONENT_TYPES), observed_components),
+        ("fields", supplied_fields, set(PLUGIN_AUDIT_FIELDS), observed_fields),
+        ("lifecycle", supplied_lifecycle, set(PLUGIN_LIFECYCLE_ACTIONS), observed_lifecycle),
+    ):
+        if not isinstance(supplied, list) or any(item not in allowed for item in supplied):
+            raise EvidenceError(f"T18 audit observed_{label} is invalid")
+        if len(supplied) != len(set(supplied)) or set(supplied) != observed:
+            raise EvidenceError(f"T18 audit observed_{label} does not match its runs")
+
+    derived_checks = [
+        {"id": "manifest-reviewed", "result": "passed"},
+        {
+            "id": "component-composition-mapped",
+            "result": "passed"
+            if set(PLUGIN_COMPONENT_TYPES) <= observed_components
+            else "failed",
+        },
+        {
+            "id": "supply-chain-fields-audited",
+            "result": "passed"
+            if set(PLUGIN_AUDIT_FIELDS) <= observed_fields
+            else "failed",
+        },
+        {
+            "id": "unsafe-package-contained",
+            "result": "passed"
+            if any(
+                run["status"] != "reviewable" and run["findings"] for run in normalized_runs
+            )
+            else "failed",
+        },
+        {
+            "id": "lifecycle-reviewed",
+            "result": "passed"
+            if set(PLUGIN_LIFECYCLE_ACTIONS) <= observed_lifecycle
+            else "failed",
+        },
+        {"id": "offline-no-install", "result": "passed"},
+    ]
+    if document_result in {"passed", "alternative"} and any(
+        check["result"] != "passed" for check in derived_checks
+    ):
+        raise EvidenceError("Completed T18 evidence is missing a required audit observation")
+    return derived_checks, {
+        "version": PLUGIN_AUDIT_VERSION,
+        "runs": normalized_runs,
+        "observed_findings": sorted(observed_findings),
+        "observed_components": sorted(observed_components),
+        "observed_fields": sorted(observed_fields),
+        "observed_lifecycle": sorted(observed_lifecycle),
+    }
+
+
 def validate_claude_migration_checks(value: Any) -> list[dict[str, Any]]:
     """Validate the stable public checks for the Claude migration journey."""
 
@@ -2035,6 +2306,14 @@ def load_evidence_checks(
             if checks != expected_checks:
                 raise EvidenceError("T17 Skill evidence checks do not match the recorded simulation")
             return checks, simulation
+        if expected_lesson_id == PLUGIN_AUDIT_LESSON_ID:
+            checks = validate_t18_evidence_checks(document["evidence"])
+            expected_checks, audit = validate_t18_audit(
+                value.get("audit"), document_result=document["result"]
+            )
+            if checks != expected_checks:
+                raise EvidenceError("T18 evidence checks do not match the recorded audit")
+            return checks, audit
         return document["evidence"], None
     checks = value.get("checks")
     if not isinstance(checks, list):
@@ -2095,6 +2374,15 @@ def load_evidence_checks(
         if checks != expected_checks:
             raise EvidenceError("T17 Skill evidence checks do not match the recorded simulation")
         return checks, simulation
+    if expected_lesson_id == PLUGIN_AUDIT_LESSON_ID:
+        checks = validate_t18_evidence_checks(checks)
+        result = classify_checks([check["result"] for check in checks])
+        expected_checks, audit = validate_t18_audit(
+            value.get("audit"), document_result=result
+        )
+        if checks != expected_checks:
+            raise EvidenceError("T18 evidence checks do not match the recorded audit")
+        return checks, audit
     return checks, None
 
 
@@ -2529,6 +2817,7 @@ def check_lesson(
         T15_CONTEXT_RECOVERY_LESSON_ID,
         MEMORY_LESSON_ID,
         SKILL_LESSON_ID,
+        PLUGIN_AUDIT_LESSON_ID,
     }:
         raise ContractError(f"Unsupported evidence lesson: {lesson_id}")
     course_version = validate_foundation(root)
@@ -2734,6 +3023,40 @@ def check_lesson(
                 expected_course_version=course_version,
                 skill_package_check=package_check,
             )
+    elif lesson_id == PLUGIN_AUDIT_LESSON_ID:
+        checks = [
+            {
+                "id": "plugin-audit-page",
+                "result": "passed"
+                if (root / "site/src/content/docs/module-8-plugin.mdx").is_file()
+                else "failed",
+            },
+            {
+                "id": "plugin-audit-simulator",
+                "result": "passed"
+                if (root / "site/src/lib/plugin-audit.mjs").is_file()
+                else "failed",
+            },
+            {
+                "id": "plugin-audit-contract",
+                "result": "passed"
+                if (root / "labs/plugin-audit/README.md").is_file()
+                else "failed",
+            },
+            {
+                "id": "plugin-audit-sources",
+                "result": "passed"
+                if (root / "docs/sources/source-ledger.json").is_file()
+                else "failed",
+            },
+            {"id": "plugin-audit-evidence", "result": "failed"},
+        ]
+        if evidence_file is not None:
+            checks, trace = load_evidence_checks(
+                evidence_file,
+                expected_lesson_id=lesson_id,
+                expected_course_version=course_version,
+            )
     elif lesson_id == "t03-agent-instruction":
         checks = [
             {
@@ -2874,6 +3197,8 @@ def check_lesson(
             document["simulation"] = trace
         elif lesson_id == SKILL_LESSON_ID:
             document["simulation"] = trace
+        elif lesson_id == PLUGIN_AUDIT_LESSON_ID:
+            document["audit"] = trace
         else:
             document["experiment"] = trace
     return document

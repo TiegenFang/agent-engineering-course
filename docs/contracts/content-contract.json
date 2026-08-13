@@ -628,6 +628,58 @@
         "CC-BY-4.0",
         "MIT"
       ]
+    },
+    {
+      "id": "t18-plugin-audit",
+      "title": "模块 8：Plugin 打包与供应链审计",
+      "stage": "core-beta",
+      "duration_minutes": 60,
+      "prerequisites": ["t14-context-budget"],
+      "outcomes": [
+        "区分 Skill、脚本、Tool、Hook、MCP 配置与 Plugin 的边界",
+        "从 manifest 和组件组合审计来源、版本、许可证、权限、网络与依赖",
+        "为 Plugin 的升级、回滚和卸载保留可核验的生命周期计划",
+        "在不安装或执行未知第三方包的前提下生成匿名 Plugin audit evidence"
+      ],
+      "artifacts": [
+        "三个固定包形状的离线审计记录",
+        "t18-plugin-audit-evidence.json（仅含稳定状态与 ID）",
+        "供应链字段和升级/回滚/卸载审计清单",
+        "一份不调用真实客户端或第三方脚本的迁移挑战记录"
+      ],
+      "primary_tool": "Deterministic browser Plugin package audit fixture (metadata only)",
+      "migration_tool": "Codex or Claude Code (conceptual metadata-only migration; no live install)",
+      "platforms": {
+        "primary": "Desktop browser; Windows 11 + PowerShell 7 for course_check",
+        "secondary": ["macOS/Linux browser; checker path not yet cross-platform verified"]
+      },
+      "versions": {
+        "client": "Claude Code official Plugin docs observed 2026-08-13; no client install asserted",
+        "sdk": "not-applicable",
+        "model": "not-applicable; offline fixture only",
+        "protocol": "agent-engineering-course/evidence v1; plugin-audit fixture v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free for the offline fixture and checker; optional live tools may require an account or paid quota",
+        "network": "browser fixture and checker need no network after dependencies are installed; official docs need network when refreshed"
+      },
+      "risk": {
+        "permissions": "页面只读取课程内置的脱敏 manifest；不安装包、不执行脚本/hook、不启动 MCP、不修改真实客户端配置",
+        "side_effects": "浏览器只生成本地下载；checker 只读取用户显式指定的 JSON 并输出匿名摘要；未知第三方包永不执行",
+        "staleness": "Plugin manifest、marketplace、scope、cache 和自动更新行为属于易变产品层；发布前必须重新核验官方文档与真实客户端，不能由离线夹具推断"
+      },
+      "sources": [
+        "anthropic-claude-code-plugins-current",
+        "anthropic-claude-code-plugin-marketplaces-current",
+        "anthropic-claude-code-plugin-discovery-current",
+        "anthropic-claude-code-plugin-reference-current",
+        "wshobson-agents-plugin-reference",
+        "anthropic-claude-plugins-official-marketplace",
+        "course-plugin-audit-original"
+      ],
+      "licenses": ["CC-BY-4.0", "MIT"]
     }
   ]
 }

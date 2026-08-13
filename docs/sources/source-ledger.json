@@ -591,6 +591,76 @@
       "usage": "Prompt/Skill/脚本/Tool/Plugin 边界、evidence-research 目录、四类离线场景、正负触发夹具、安全状态和匿名 evidence 设计",
       "license_or_terms": "project-original; code MIT and content CC-BY-4.0; no copied assets",
       "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-code-plugins-current",
+      "title": "Claude Code: Create plugins",
+      "url": "https://code.claude.com/docs/en/plugins",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "page observed 2026-08-13; current docs page; no Claude Code client version asserted",
+      "usage": "核验 standalone .claude 能力与带 .claude-plugin/plugin.json 的 Plugin 边界，以及 skills、agents、hooks、MCP servers 组件组合；正文为原创改写",
+      "license_or_terms": "reference-only; Anthropic product and trademark terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-code-plugin-marketplaces-current",
+      "title": "Claude Code: Create and distribute a plugin marketplace",
+      "url": "https://code.claude.com/docs/en/plugin-marketplaces",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "page observed 2026-08-13; current docs page; no Claude Code client version asserted",
+      "usage": "核验 marketplace.json 条目、Plugin source/version、固定 release 与 update/remove 生命周期；课程不执行真实 marketplace 操作",
+      "license_or_terms": "reference-only; Anthropic product and trademark terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-code-plugin-discovery-current",
+      "title": "Claude Code: Discover and install prebuilt plugins through marketplaces",
+      "url": "https://code.claude.com/docs/en/discover-plugins",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "page observed 2026-08-13; current docs page; no Claude Code client version asserted",
+      "usage": "核验添加 marketplace 与安装单个 Plugin 的分步边界、scope、信任提醒和自动更新说明；正文明确不伪造真实安装",
+      "license_or_terms": "reference-only; Anthropic product and trademark terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-code-plugin-reference-current",
+      "title": "Claude Code: Plugins reference",
+      "url": "https://code.claude.com/docs/en/plugins-reference",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "page observed 2026-08-13; current docs page; no Claude Code client version asserted",
+      "usage": "核验 Plugin 组件参考、marketplace cache、版本目录与路径边界；课程只引用行为事实，不运行第三方组件",
+      "license_or_terms": "reference-only; Anthropic product and trademark terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "wshobson-agents-plugin-reference",
+      "title": "wshobson/agents Plugin documentation",
+      "url": "https://github.com/wshobson/agents/blob/main/docs/plugins.md",
+      "source_role": "teaching-source-reference",
+      "pinned_version": "page observed 2026-08-13; main branch is a teaching reference, not a frozen product fact",
+      "usage": "参考 agents/commands/skills 目录组合、marketplace 命名空间和练习梯度；目录形状、star、提交时间和可发现性不作为质量或安全证明",
+      "license_or_terms": "reference-only; repository license and upstream terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-plugins-official-marketplace",
+      "title": "anthropics/claude-plugins-official",
+      "url": "https://github.com/anthropics/claude-plugins-official",
+      "source_role": "official-marketplace-reference",
+      "pinned_version": "repository observed 2026-08-13; no release or client version asserted",
+      "usage": "核验官方 marketplace 的 internal/external 目录与逐包信任提醒；课程不把官方目录当作免审计质量认证，也不复制插件资产",
+      "license_or_terms": "reference-only; repository license and Anthropic product/trademark terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "course-plugin-audit-original",
+      "title": "模块 8 Plugin 打包与供应链审计原创实验设计",
+      "url": "docs/course-plan.md",
+      "source_role": "course-original",
+      "pinned_version": "workspace baseline 7f0fb3b; T18 implementation v1",
+      "usage": "Skill/脚本/Tool/Plugin 边界、manifest 与组件组合、离线审计夹具、风险信号、匿名 evidence 和不执行未知包的安全边界",
+      "license_or_terms": "project-original; no copied assets",
+      "copied_assets": false
     }
   ]
 }

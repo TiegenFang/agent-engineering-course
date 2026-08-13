@@ -23,3 +23,7 @@ pwsh -NoProfile -File .\labs\module-0\diagnose-environment.ps1
 一次性目录中创建合成 `AGENTS.md`/`CLAUDE.md` 文件，并输出匿名状态证据；不要把
 实验规则复制到真实仓库，也不要把真实规则正文或客户端日志提交到课程仓库。
 
+模块 8 的 Plugin 审计实验位于 `labs/plugin-audit/`。它只审计课程内置的脱敏
+manifest 元数据，不添加 marketplace、不安装包、不执行脚本/hook、不启动 MCP，
+并由 checker 重新推导匿名审计证据。
+

@@ -1,0 +1,307 @@
+---
+import courseVersion from "../../../course-version.json";
+
+const expectedCourseVersion = courseVersion.course_version;
+---
+
+<section
+  class="plugin-audit-lab"
+  data-plugin-audit
+  data-course-version={expectedCourseVersion}
+  aria-labelledby="plugin-audit-title"
+>
+  <div class="plugin-audit-lab__heading">
+    <div>
+      <p class="eyebrow">模块 8 · Skill 与 Plugin</p>
+      <h2 id="plugin-audit-title">先看清清单，再决定是否安装</h2>
+    </div>
+    <span class="plugin-audit-lab__version">plugin-audit v1 · {expectedCourseVersion}</span>
+  </div>
+
+  <p class="plugin-audit-lab__lead">
+    这是一个离线、确定性的包审计夹具。它只读取课程内置的脱敏 manifest 字符串，不下载 marketplace、不启动 hook 或 MCP、不运行安装脚本，也不调用真实 Codex 或 Claude Code。
+  </p>
+
+  <noscript>
+    <section class="plugin-audit-lab__noscript" aria-labelledby="plugin-audit-noscript-title">
+      <h3 id="plugin-audit-noscript-title">未启用 JavaScript 时的审计边界</h3>
+      <p>
+        Plugin 是带发现、版本和生命周期治理的能力包；Skill、command、hook 和 MCP 配置只是包内可能组合的组件。安装前至少要人工核对来源、版本、许可证、权限、网络和依赖，并保留升级、回滚、卸载方案。未知市场包不要安装。
+      </p>
+      <p><strong>本页不会执行任何第三方脚本、命令或 MCP server。</strong></p>
+    </section>
+  </noscript>
+
+  <div class="plugin-audit-lab__boundaries" aria-label="Skill、脚本、Tool 与 Plugin 的边界">
+    <article>
+      <h3>Skill</h3>
+      <p>围绕任务组织的知识、流程与资源；可以是可复用的 <code>SKILL.md</code>，本身不是安装器。</p>
+    </article>
+    <article>
+      <h3>脚本</h3>
+      <p>由运行时执行的文件或命令；它可能产生写入、网络或进程副作用，必须单独审计。</p>
+    </article>
+    <article>
+      <h3>Tool</h3>
+      <p>Agent 可调用的一项外部能力；Tool 的存在不自动说明来源、权限或生命周期。</p>
+    </article>
+    <article>
+      <h3>Plugin</h3>
+      <p>负责能力发现、安装、组合、版本和治理的包；可包含 Skill、command、hook 或 MCP 配置。</p>
+    </article>
+  </div>
+
+  <section class="plugin-audit-lab__manifest" aria-labelledby="plugin-manifest-title">
+    <div class="plugin-audit-lab__section-heading">
+      <h3 id="plugin-manifest-title">一个可读的 manifest 与组件组合</h3>
+      <span>只展示元数据，不把目录形状当质量证明</span>
+    </div>
+    <p>
+      真实 Plugin 通常会在包根的 <code>.claude-plugin/plugin.json</code> 声明名称、版本和组件入口；marketplace 清单还会指向包的来源。清单是审计起点，不是安全担保。
+    </p>
+    <div class="plugin-audit-lab__manifest-grid">
+      <div>
+        <h4>当前包 manifest</h4>
+        <pre data-plugin-manifest aria-label="当前包 manifest">运行审计后显示脱敏 manifest。</pre>
+      </div>
+      <div>
+        <h4>组件入口</h4>
+        <table>
+          <caption>组件只在此处列出，不会被执行</caption>
+          <thead><tr><th scope="col">类型</th><th scope="col">名称</th><th scope="col">入口/传输</th></tr></thead>
+          <tbody data-plugin-components><tr><td colspan="3">运行审计后显示组件。</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="plugin-audit-lab__audit" aria-labelledby="plugin-audit-controls-title">
+    <div class="plugin-audit-lab__section-heading">
+      <h3 id="plugin-audit-controls-title">离线 package audit lab</h3>
+      <span>审计 ≠ 安装</span>
+    </div>
+    <form data-plugin-audit-form>
+      <label for="plugin-audit-profile">选择一个固定夹具</label>
+      <select id="plugin-audit-profile" name="profile">
+        <option value="reviewable">可审计的本地样包</option>
+        <option value="community-shape">社区目录形状（仅读）</option>
+        <option value="needs-review">高风险包（拒绝安装）</option>
+      </select>
+      <button type="submit" data-run-plugin-audit>运行离线审计</button>
+    </form>
+    <div class="plugin-audit-lab__presets">
+      <h4>快速复现</h4>
+      <div>
+        <button type="button" data-plugin-audit-preset="reviewable">检查固定版本</button>
+        <button type="button" data-plugin-audit-preset="community-shape">检查社区形状</button>
+        <button type="button" data-plugin-audit-preset="needs-review">注入供应链风险</button>
+      </div>
+    </div>
+    <p class="plugin-audit-lab__status" data-plugin-audit-status role="status" aria-live="polite">
+      先观察 manifest，再记录审计结果。
+    </p>
+    <div class="plugin-audit-lab__result" aria-labelledby="plugin-audit-result-title">
+      <div class="plugin-audit-lab__result-heading">
+        <h4 id="plugin-audit-result-title">审计结论</h4>
+        <span data-plugin-audit-primary>尚未运行</span>
+      </div>
+      <div class="plugin-audit-lab__findings" aria-live="polite">
+        <h5>需要人工复核的信号</h5>
+        <ul data-plugin-audit-findings>
+          <li>运行夹具后显示许可证、来源、权限、网络、依赖和生命周期信号。</li>
+        </ul>
+      </div>
+      <div class="plugin-audit-lab__lifecycle">
+        <h5>生命周期计划</h5>
+        <ul data-plugin-audit-lifecycle>
+          <li>升级、回滚、卸载方案会随 manifest 一起显示。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="plugin-audit-lab__controls">
+      <button type="button" data-record-plugin-audit>记录本次审计</button>
+      <button type="button" data-export-plugin-audit>导出匿名 evidence</button>
+    </div>
+    <p class="plugin-audit-lab__evidence" data-plugin-audit-evidence-status role="status" aria-live="polite">
+      已记录 0 次观察；需要覆盖四类组件、供应链字段、生命周期和一个风险包后再宣称完成。
+    </p>
+    <p class="plugin-audit-lab__privacy">
+      evidence 只保留 profile、状态、稳定风险 ID、组件类型、审计字段和生命周期动作；不会保存路径、manifest 原文、命令参数、依赖输出、网络响应、密钥或个人数据。
+    </p>
+  </section>
+</section>
+
+<script>
+  // @ts-nocheck
+  import {
+    PLUGIN_AUDIT_FIELDS,
+    PLUGIN_AUDIT_PROFILES,
+    PLUGIN_AUDIT_VERSION,
+    PLUGIN_COMPONENT_TYPES,
+    PLUGIN_LIFECYCLE_ACTIONS,
+    auditPluginPackage,
+    buildPluginAuditEvidence,
+    createPluginAuditSession,
+    findingLabels,
+    recordPluginAuditObservation,
+    statusLabels,
+    updatePluginAuditSession,
+  } from "../lib/plugin-audit.mjs";
+
+  const root = document.querySelector("[data-plugin-audit]");
+  if (root instanceof HTMLElement) {
+    const form = root.querySelector("[data-plugin-audit-form]");
+    const profileSelect = root.querySelector("#plugin-audit-profile");
+    const status = root.querySelector("[data-plugin-audit-status]");
+    const evidenceStatus = root.querySelector("[data-plugin-audit-evidence-status]");
+    const primary = root.querySelector("[data-plugin-audit-primary]");
+    const findings = root.querySelector("[data-plugin-audit-findings]");
+    const lifecycle = root.querySelector("[data-plugin-audit-lifecycle]");
+    const manifest = root.querySelector("[data-plugin-manifest]");
+    const components = root.querySelector("[data-plugin-components]");
+    let session = createPluginAuditSession("reviewable");
+
+    const setMessage = (element, message, kind = "") => {
+      if (!(element instanceof HTMLElement)) return;
+      element.textContent = message;
+      element.dataset.status = kind;
+    };
+
+    const currentProfile = () => (profileSelect instanceof HTMLSelectElement ? profileSelect.value : "reviewable");
+
+    const render = () => {
+      const result = session.current;
+      if (!result) return;
+      if (primary instanceof HTMLElement) {
+        primary.textContent = statusLabels[result.status] ?? result.status;
+        primary.dataset.status = result.status;
+      }
+      if (manifest instanceof HTMLElement) {
+        manifest.textContent = JSON.stringify({
+          path: result.manifestPath,
+          ...result.manifest,
+          provenance: result.provenance,
+          permissions: result.permissions,
+          network: result.network,
+          dependencies: result.dependencies,
+          installScripts: result.installScripts,
+        }, null, 2);
+      }
+      if (components instanceof HTMLElement) {
+        components.replaceChildren();
+        const profile = PLUGIN_AUDIT_PROFILES[result.profile];
+        for (const component of profile.components) {
+          const row = document.createElement("tr");
+          const values = [
+            component.type,
+            component.name,
+            component.location ?? component.transport ?? "仅元数据",
+          ];
+          for (const value of values) {
+            const cell = document.createElement("td");
+            cell.textContent = value;
+            row.append(cell);
+          }
+          components.append(row);
+        }
+      }
+      if (findings instanceof HTMLElement) {
+        findings.replaceChildren();
+        if (result.findings.length === 0) {
+          const item = document.createElement("li");
+          item.dataset.finding = "none";
+          item.textContent = "当前夹具的来源、版本、许可证、权限、网络、依赖和安装脚本信号均可继续人工复核。";
+          findings.append(item);
+        } else {
+          for (const id of result.findings) {
+            const item = document.createElement("li");
+            item.dataset.finding = id;
+            item.textContent = findingLabels[id] ?? id;
+            findings.append(item);
+          }
+        }
+      }
+      if (lifecycle instanceof HTMLElement) {
+        lifecycle.replaceChildren();
+        const profile = PLUGIN_AUDIT_PROFILES[result.profile];
+        for (const action of PLUGIN_LIFECYCLE_ACTIONS) {
+          const item = document.createElement("li");
+          item.dataset.lifecycle = action;
+          item.innerHTML = `<strong>${action}</strong>：`;
+          const detail = document.createElement("span");
+          detail.textContent = profile.lifecycle[action];
+          item.append(detail);
+          lifecycle.append(item);
+        }
+      }
+      if (evidenceStatus instanceof HTMLElement) {
+        const checks = session.runs.length > 0 ? [
+          new Set(session.runs.flatMap((run) => run.components)).size >= PLUGIN_COMPONENT_TYPES.length,
+          PLUGIN_AUDIT_FIELDS.every((field) => session.runs.some((run) => run.inspected.includes(field))),
+          PLUGIN_LIFECYCLE_ACTIONS.every((action) => session.runs.some((run) => run.lifecycle.includes(action))),
+          session.runs.some((run) => run.status !== "reviewable"),
+        ] : [];
+        evidenceStatus.textContent = `已记录 ${session.runs.length} 次观察；已满足 ${checks.filter(Boolean).length} / 4 个审计覆盖目标。`;
+      }
+    };
+
+    const runProfile = (profileId) => {
+      try {
+        session = updatePluginAuditSession(session, profileId);
+        render();
+        const result = session.current;
+        setMessage(status, `${result.label}：${statusLabels[result.status]}。此结果只来自本地元数据，未执行任何组件。`, result.status === "reviewable" ? "success" : "warning");
+      } catch (error) {
+        setMessage(status, `无法运行审计：${error instanceof Error ? error.message : "输入无效"}`, "error");
+      }
+    };
+
+    form?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      runProfile(currentProfile());
+    });
+
+    root.querySelectorAll("[data-plugin-audit-preset]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const profileId = button.getAttribute("data-plugin-audit-preset");
+        if (!(profileId in PLUGIN_AUDIT_PROFILES)) return;
+        if (profileSelect instanceof HTMLSelectElement) profileSelect.value = profileId;
+        runProfile(profileId);
+      });
+    });
+
+    root.querySelector("[data-record-plugin-audit]")?.addEventListener("click", () => {
+      try {
+        session = recordPluginAuditObservation(session);
+        setMessage(status, `已记录 ${session.lastRun.id}：${statusLabels[session.lastRun.status]}。可以换一个夹具继续审计。`, "success");
+        render();
+      } catch (error) {
+        setMessage(status, `无法记录：${error instanceof Error ? error.message : "请先运行审计"}`, "error");
+      }
+    });
+
+    root.querySelector("[data-export-plugin-audit]")?.addEventListener("click", () => {
+      try {
+        const evidence = buildPluginAuditEvidence(session, { courseVersion: root.dataset.courseVersion ?? "" });
+        const encoded = `${JSON.stringify(evidence, null, 2)}\n`;
+        const blob = new Blob([encoded], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "t18-plugin-audit-evidence.json";
+        link.click();
+        URL.revokeObjectURL(url);
+        window.dispatchEvent(new CustomEvent("plugin-audit:evidence", { detail: evidence }));
+        setMessage(evidenceStatus, `已导出 ${evidence.result} 匿名 evidence；交给本地 course_check 重新审计。`, "success");
+      } catch (error) {
+        setMessage(evidenceStatus, `无法导出 evidence：${error instanceof Error ? error.message : "证据生成失败"}`, "error");
+      }
+    });
+
+    render();
+    // Keep a direct deterministic call in the browser bundle for the static
+    // contract: no package component is ever invoked by this page.
+    auditPluginPackage("reviewable");
+    void PLUGIN_AUDIT_VERSION;
+  }
+</script>

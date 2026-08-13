@@ -1,0 +1,122 @@
+---
+title: 模块 8：Plugin 打包与供应链审计
+description: 区分 Skill、脚本、Tool 与 Plugin，使用离线确定性夹具审计 manifest、组件、权限、来源、版本、许可证、依赖和生命周期。
+sidebar:
+  order: 9
+---
+
+import PluginAudit from '../../components/PluginAudit.astro';
+import EvidenceLoop from '../../components/EvidenceLoop.astro';
+
+# 模块 8：Plugin 打包与供应链审计
+
+> 本课的主实验是离线、确定性的 package audit。它不添加 marketplace、不下载插件、不调用真实 Codex 或 Claude Code，也不执行任何 hook、脚本或 MCP server。你练习的是“安装前做决定”的工程能力。
+
+## 你要解决的真实问题
+
+团队想复用一个报告审查能力包：它看起来有一个 `SKILL.md`，目录里还有 command、hook 和 MCP 配置。有人把“目录完整”“市场里能搜到”或“别人用过”当成质量证明，随后在项目范围安装，才发现许可证不清楚、依赖漂移、启动时联网，或者 hook 要求的权限远大于任务需要。
+
+本课完成后，你应能：
+
+1. 解释 Skill、脚本、Tool、Hook、MCP 配置和 Plugin 的边界，不把任何一个概念当作另一个概念的安全保证。
+2. 从 manifest 和 marketplace 条目提取来源/版本、许可证、权限、网络、依赖和组件组合，记录证据而不是凭目录印象判断。
+3. 在安装前给出继续人工复核、补充审计或拒绝安装的决定，并为升级、回滚和卸载留下可执行方案。
+4. 让离线 checker 重新推导匿名 evidence；不把真实客户端安装或第三方脚本执行伪装成课程成果。
+
+## 心智模型：Plugin 是能力包和生命周期，不是一个更大的 Skill
+
+| 概念 | 本课程工作定义 | 需要额外审计什么 |
+| --- | --- | --- |
+| Skill | 围绕任务组织的知识、流程与资源，常见入口是 `SKILL.md` | 正文是否可信、边界是否清楚；它本身不负责安装和更新 |
+| 脚本 | 由运行时执行的文件或命令 | 写入、进程、网络、环境变量、依赖和副作用 |
+| Tool | Agent 可以调用的一项外部能力 | 谁提供、接受什么参数、拥有何种权限和数据边界 |
+| Hook | 在工具或生命周期事件附近自动触发的处理器 | 触发时机、命令、输入数据和是否会阻塞/写入 |
+| MCP 配置 | 描述 MCP Server 的传输、启动命令或远程端点 | transport、网络、凭据、Server 进程和资源访问 |
+| Plugin | 对能力进行发现、安装、组合、版本和治理的打包机制 | manifest、marketplace 来源、许可证、依赖、升级/回滚/卸载 |
+
+一个 Plugin 可以组合 Skill、command、hook 和 MCP 配置，但“能组合”不等于“已经审核”。把它想成一条证据链：
+
+```text
+marketplace/catalog → manifest → 组件与依赖 → 权限/网络 → 人工决定 → 受控安装 → 可回滚生命周期
+```
+
+## 操作前预测
+
+先不要运行下面的模拟器，回答四个问题并写入你的实验记录：
+
+- 只有 `skills/` 和 `commands/` 的社区目录，是否足以证明许可证、版本和依赖安全？
+- 一个包声明了 `hook` 与 MCP `sse` endpoint，但 manifest 没有 digest；你会选择“可继续人工复核”还是“拒绝安装”？
+- 若新版本出现问题，为什么“删除当前目录”不一定等于完整卸载？你需要保留什么已知良好版本和配置范围？
+- `Tool` 和 `Plugin` 哪个负责安装与版本生命周期？如果答案是 Tool，请在运行后回看你的理由。
+
+## 主工具演示：以官方文档为事实适配层
+
+本课使用 Anthropic Claude Code 的官方 Plugin 文档作为一个具体适配层示例，而不是宣称所有 Coding Agent 都共享同一安装界面。官方文档描述了：Plugin 可以包含 skills、agents、hooks、MCP servers 等组件；marketplace 负责发现与分发；安装时需要信任来源，并应查看插件主页，因为 Anthropic 不控制第三方包中包含的 MCP、文件或软件，也不保证它们按预期工作。
+
+- [Create plugins（官方）](https://code.claude.com/docs/en/plugins)：对照 standalone `.claude/` 能力和带 `.claude-plugin/plugin.json` 的可分发包，并理解组件入口。
+- [Create and distribute a plugin marketplace（官方）](https://code.claude.com/docs/en/plugin-marketplaces)：查看 marketplace 条目的 `name`、`source`、`version` 等字段，以及更新和移除操作。
+- [Discover and install prebuilt plugins（官方）](https://code.claude.com/docs/en/discover-plugins)：理解先添加 marketplace、再选择单个 Plugin 的发现/安装分步边界与 scope。
+- [Plugins reference（官方）](https://code.claude.com/docs/en/plugins-reference)：了解 marketplace Plugin 会复制到本地 cache；不要因为“可加载”就把缓存当作许可证或安全证明。
+
+教学参考 [wshobson/agents 的 Plugin 文档](https://github.com/wshobson/agents/blob/main/docs/plugins.md) 展示了 `agents/`、`commands/`、`skills/` 等组织方式和命名空间调用。它用于启发组件组合与练习梯度；目录数量、star、最近提交或“出现在参考仓库”都不能替代本次包的来源、版本、许可证、权限和依赖审计。Anthropic 的官方 marketplace 目录也不是免审计许可证：官方仓库明确提醒安装、更新或使用前先信任并逐个查看包。
+
+## 本地实验：审计三个固定包形状
+
+<PluginAudit />
+
+按“固定版本 → 社区形状 → 高风险包”的顺序运行并记录三次观察。组件表和 manifest 里的命令只作为字符串展示；请不要复制到终端执行，也不要把 `example.invalid` 改成真实 endpoint。
+
+实验完成后，在课程工作区外保存下载文件，并用 Windows 11 + PowerShell 7 的本地 checker 检查：
+
+```powershell
+Set-Location -LiteralPath .\checker
+python -m course_check check t18-plugin-audit --root .. --evidence-file ..\t18-plugin-audit-evidence.json --output ..\t18-plugin-audit-checked.json --json
+Get-Content -LiteralPath ..\t18-plugin-audit-checked.json
+```
+
+没有 `--evidence-file` 时，checker 只检查页面、模拟器、lab README 和来源账本，结果是 `partial`；带上浏览器导出的证据后，checker 会根据运行记录重新推导结果，不信任手写的 `result` 或检查状态。
+
+## 故障注入与恢复：看到风险就停在审计边界
+
+点击“注入供应链风险”后，实验会显示未声明许可证、未固定来源、宽权限、运行时网络、未固定依赖、安装脚本或缺失生命周期说明等信号。恢复路径是：
+
+1. 不安装、不运行 hook，不启动 MCP，不把命令粘贴到真实项目。
+2. 把风险按来源/版本、许可证、权限/网络、依赖、执行副作用和生命周期分组，标记需要补充的人工证据。
+3. 要求维护者提供固定 release/tag 或 digest、许可证文本、最小权限说明和依赖锁定；仍不能确认时保持“拒绝安装”。
+4. 只有在已知良好版本、升级验证和回滚路径都写清楚后，才讨论具体客户端的 scope。卸载时同时检查 scope 配置、marketplace 条目、缓存版本和 reload 状态；不要用宽泛删除命令清理不明目录。
+
+## 迁移挑战：换工具审计同一份元数据
+
+任选你可用的 Codex 或 Claude Code，把一个课程夹具的脱敏 manifest 表格交给它，要求它只输出一页审计报告：
+
+- 将 Skill、脚本、Tool、Hook、MCP 配置和 Plugin 分栏；
+- 给每个来源、版本、许可证、权限、网络和依赖字段写“已核对/待核对”；
+- 明确哪些组件不能被默认执行，提出升级、回滚和卸载的人工确认点；
+- 在没有真实安装、联网、模型调用和项目文件读取的前提下，给出继续复核或拒绝安装的决定。
+
+Codex 与 Claude Code 的真实 Plugin 命令、scope 和缓存行为属于工具适配层，不能从本页面的模拟结果推断。迁移挑战的可核验成果是审计表和理由，不是客户端安装截图。
+
+## 可核验成果：匿名 evidence
+
+至少留下：
+
+- 三个包形状的审计记录，其中至少一个被标为需要复核或拒绝安装；
+- 一个组件组合表，覆盖 Skill、command、hook 和 MCP 配置；
+- 一份包含来源/版本、许可证、权限、网络、依赖、升级/回滚/卸载的审计清单；
+- `t18-plugin-audit-evidence.json` 及 checker 输出；
+- 一段迁移挑战说明，明确没有安装或执行未知第三方包。
+
+checker 的通过证据是 `manifest-reviewed`、`component-composition-mapped`、`supply-chain-fields-audited`、`unsafe-package-contained`、`lifecycle-reviewed` 和 `offline-no-install` 全部通过。网页上的“已记录”不等于课程完成；请把 JSON 和本地检查结果保留为可复核产物。
+
+<EvidenceLoop lessonId="t18-plugin-audit" />
+
+## 风险、版本与来源卡片
+
+- **账号与成本**：离线夹具和 checker 免费，不需要账号、API key、模型额度或网络。真实 marketplace/客户端安装若用于迁移挑战，可能需要独立账号、权限和付费额度；本课不要求执行。
+- **权限与副作用**：页面只读取内置脱敏对象并在浏览器内计算。不会下载、写入项目、运行脚本、启动 hook/MCP、联网或修改真实客户端配置。下载和导入由你主动触发。
+- **隐私边界**：匿名 evidence 只保存稳定 profile、风险 ID、组件类型、审计字段、生命周期动作和布尔状态；不保存路径、manifest 原文、命令、依赖输出、网络响应、密钥、研究数据或个人信息。
+- **版本与验证边界**：本课锁定 `plugin-audit v1` 与 `agent-engineering-course/evidence v1`，核验日期为 2026-08-13。官方文档页面用于适配层事实；本课未验证真实 Claude Code/Codex 客户端、真实 marketplace、真实 MCP transport、付费服务或跨平台客户端行为。
+- **事实与课程判断**：官方文档支持 Plugin 组件、marketplace、cache 和信任提醒的事实；Skill/脚本/Tool/Plugin 的教学边界、固定包夹具、审计字段、风险 ID 和恢复顺序是本课程原创判断与实验设计。`wshobson/agents` 仅是教学参考，不是质量认证。
+- **许可**：正文采用 CC BY 4.0；模拟器、组件、测试和 checker 采用 MIT；官方文档和参考仓库只作链接引用，不复制第三方代码、manifest 或目录资产。
+
+下一步是模块 9 的 MCP 实验：你会在真实 transport 和本地检查工具之间区分 Host、Client、Server、Tool、Resource 与 Prompt，并把本课的安装前审计继续带入运行时权限。

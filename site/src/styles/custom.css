@@ -482,6 +482,282 @@
   }
 }
 
+.plugin-audit-lab {
+  margin-block: 2rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.75rem;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: color-mix(in srgb, var(--sl-color-accent-low) 38%, transparent);
+}
+
+.plugin-audit-lab__heading,
+.plugin-audit-lab__section-heading,
+.plugin-audit-lab__result-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.plugin-audit-lab__heading h2,
+.plugin-audit-lab__section-heading h3,
+.plugin-audit-lab__result-heading h4 {
+  margin-block: 0.35rem 0;
+}
+
+.plugin-audit-lab__version,
+.plugin-audit-lab__section-heading > span {
+  color: var(--sl-color-gray-2);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.plugin-audit-lab__lead,
+.plugin-audit-lab__privacy {
+  max-inline-size: 75ch;
+  color: var(--sl-color-gray-2);
+}
+
+.plugin-audit-lab__boundaries,
+.plugin-audit-lab__manifest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+  gap: 0.75rem;
+  margin-block: 1.25rem;
+}
+
+.plugin-audit-lab__boundaries article,
+.plugin-audit-lab__manifest,
+.plugin-audit-lab__audit,
+.plugin-audit-lab__result {
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.55rem;
+  padding: 1rem;
+  background: var(--sl-color-bg);
+}
+
+.plugin-audit-lab__boundaries h3,
+.plugin-audit-lab__manifest h4,
+.plugin-audit-lab__audit h4,
+.plugin-audit-lab__result h5 {
+  margin-block: 0.2rem 0.45rem;
+}
+
+.plugin-audit-lab__boundaries p,
+.plugin-audit-lab__manifest p {
+  margin-block: 0.35rem 0;
+}
+
+.plugin-audit-lab__manifest,
+.plugin-audit-lab__audit {
+  margin-block: 1rem;
+}
+
+.plugin-audit-lab__manifest-grid > div {
+  min-inline-size: 0;
+}
+
+.plugin-audit-lab__manifest pre {
+  max-block-size: 23rem;
+  overflow: auto;
+  margin: 0;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.4rem;
+  padding: 0.8rem;
+  background: var(--sl-color-gray-7);
+  font-size: 0.78rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.plugin-audit-lab table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.plugin-audit-lab caption {
+  margin-block: 0.45rem 0.7rem;
+  color: var(--sl-color-gray-2);
+  text-align: start;
+}
+
+.plugin-audit-lab th,
+.plugin-audit-lab td {
+  border-block-end: 1px solid var(--sl-color-gray-5);
+  padding: 0.55rem;
+  text-align: start;
+  vertical-align: top;
+}
+
+.plugin-audit-lab form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.65rem;
+  margin-block: 1rem;
+}
+
+.plugin-audit-lab form label {
+  flex: 1 1 16rem;
+  font-weight: 700;
+}
+
+.plugin-audit-lab select,
+.plugin-audit-lab button {
+  min-block-size: 2.75rem;
+  font: inherit;
+}
+
+.plugin-audit-lab select {
+  flex: 1 1 18rem;
+  border: 1px solid var(--sl-color-gray-4);
+  border-radius: 0.4rem;
+  padding: 0.55rem 0.7rem;
+  color: var(--sl-color-text);
+  background: var(--sl-color-bg);
+}
+
+.plugin-audit-lab button {
+  border: 1px solid var(--sl-color-accent);
+  border-radius: 0.4rem;
+  padding: 0.55rem 0.8rem;
+  color: var(--sl-color-text-invert);
+  background: var(--sl-color-accent);
+  cursor: pointer;
+}
+
+.plugin-audit-lab button:hover {
+  background: var(--sl-color-accent-high);
+}
+
+.plugin-audit-lab button:focus-visible,
+.plugin-audit-lab select:focus-visible {
+  outline: 0.2rem solid var(--sl-color-accent-high);
+  outline-offset: 0.15rem;
+}
+
+.plugin-audit-lab__presets > div,
+.plugin-audit-lab__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-block: 0.65rem;
+}
+
+.plugin-audit-lab__presets button,
+.plugin-audit-lab__controls button {
+  color: var(--sl-color-text);
+  background: transparent;
+}
+
+.plugin-audit-lab__status,
+.plugin-audit-lab__evidence {
+  border-inline-start: 0.2rem solid var(--sl-color-gray-4);
+  padding-inline-start: 0.75rem;
+}
+
+.plugin-audit-lab__status[data-status='success'],
+.plugin-audit-lab__evidence[data-status='success'] {
+  border-color: var(--sl-color-accent);
+}
+
+.plugin-audit-lab__status[data-status='warning'] {
+  border-color: var(--sl-color-orange-high);
+}
+
+.plugin-audit-lab__status[data-status='error'],
+.plugin-audit-lab__evidence[data-status='error'] {
+  border-color: var(--sl-color-red-high);
+}
+
+.plugin-audit-lab__result-heading > span {
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.84rem;
+}
+
+.plugin-audit-lab__result-heading > span[data-status='reviewable'] {
+  border-color: var(--sl-color-accent);
+}
+
+.plugin-audit-lab__result-heading > span[data-status='needs-review'],
+.plugin-audit-lab__result-heading > span[data-status='do-not-install'] {
+  border-color: var(--sl-color-orange-high);
+}
+
+.plugin-audit-lab__findings ul,
+.plugin-audit-lab__lifecycle ul {
+  display: grid;
+  gap: 0.5rem;
+  margin-block: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plugin-audit-lab__findings li,
+.plugin-audit-lab__lifecycle li {
+  border-inline-start: 0.25rem solid var(--sl-color-orange-high);
+  padding: 0.55rem 0.7rem;
+  background: color-mix(in srgb, var(--sl-color-gray-7) 65%, transparent);
+}
+
+.plugin-audit-lab__findings li[data-finding='none'] {
+  border-color: var(--sl-color-accent);
+}
+
+.plugin-audit-lab__lifecycle {
+  margin-block-start: 1rem;
+}
+
+.plugin-audit-lab__lifecycle li strong {
+  display: inline-block;
+  min-inline-size: 5.5rem;
+  text-transform: uppercase;
+}
+
+.plugin-audit-lab__noscript {
+  margin-block: 1rem;
+  border-inline-start: 0.2rem solid var(--sl-color-orange-high);
+  padding: 0.75rem 1rem;
+  background: var(--sl-color-bg);
+}
+
+.plugin-audit-lab__noscript h3 {
+  margin-block: 0.25rem 0;
+}
+
+.plugin-audit-lab__noscript p {
+  margin-block: 0.5rem 0;
+}
+
+@media (max-width: 42rem) {
+  .plugin-audit-lab__heading,
+  .plugin-audit-lab__section-heading,
+  .plugin-audit-lab__result-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .plugin-audit-lab form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .plugin-audit-lab form label,
+  .plugin-audit-lab form select,
+  .plugin-audit-lab form button {
+    flex-basis: auto;
+    inline-size: 100%;
+  }
+
+  .plugin-audit-lab__manifest-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* T15 context recovery lab: compact evidence cards that remain readable on mobile. */
 .context-recovery-lab {
   border: 1px solid var(--sl-color-gray-5);
