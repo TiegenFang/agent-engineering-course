@@ -1,0 +1,181 @@
+---
+title: 模块 9A：发现并检查真实 MCP Server
+description: 用真实 stdio transport、官方 Inspector 和本地 checker 发现 Tool、Resource 与 Prompt。
+sidebar:
+  order: 10
+---
+
+import EvidenceLoop from '../../components/EvidenceLoop.astro';
+import McpDiscoveryLab from '../../components/McpDiscoveryLab.astro';
+
+# 模块 9A：发现并检查真实 MCP Server
+
+> 本课的正式实验不是浏览器模拟：Python Client 会启动一个真实 MCP Server 子进程，使用官方 SDK 通过 `stdio` 传输 JSON-RPC，再由 MCP Inspector CLI 检查三类能力。浏览器下方的 deterministic fallback 只给没有安装环境的学员练习记录格式，绝不等于正式完成。
+
+## 你要解决的真实问题
+
+“接入一个 MCP Server”不是把一个工具名称复制进配置文件。你需要知道连接的另一端是谁、它发现了哪些能力、调用会发生什么，以及失败后是否仍能安全恢复。尤其要避免把 Tool、Resource、Prompt 都叫成“工具”，也不要把 Inspector 的 UI 截图当成协议调用证据。
+
+完成本课后，你应能：
+
+- 区分 MCP **Host**、**Client**、**Server** 的职责边界，并说明一个 Host 可以管理多个面向不同 Server 的 Client；
+- 区分 Server 暴露的 **Tools**、**Resources**、**Prompts**，并记住它们在协议中的典型控制关系：Tool 由模型选择调用，Resource 由应用选择附加，Prompt 由用户选择模板；
+- 解释 transport 只负责传递 JSON-RPC 消息，不决定 Tool 的含义；
+- 用真实 stdio transport 发现并调用三类能力，用官方 Inspector CLI 和课程 checker 交叉检查；
+- 注入未知 Tool 错误，保存错误证据并在不重启整个课程工作区的前提下恢复；
+- 明确一个 MCP Server 的启动命令、目录、环境变量、网络和数据副作用，调用真实第三方 Server 前先人工确认。
+
+## 心智模型：Host、Client、Server 不是三个同义词
+
+可以把一次连接画成：
+
+```text
+用户 ↔ MCP Host（承载模型、上下文、权限和 UI）
+             ├─ MCP Client A ──真实 transport── MCP Server A
+             └─ MCP Client B ──真实 transport── MCP Server B
+```
+
+- **Host** 是应用外壳：它拥有用户交互、模型上下文、工具审批和多个连接的编排。Codex、Claude Code 或 IDE 可以各自实现 Host，但 MCP 不规定某个产品 UI。
+- **Client** 是 Host 为某一个 Server 实例化的协议连接器：它负责发送请求、处理版本/能力发现、关联响应、把结果交回 Host。一个 Client 不应被误解为“模型”。
+- **Server** 是能力提供者：它注册 Tools、Resources、Prompts，收到协议请求后执行自己的逻辑并返回结构化结果。Server 可以是本地子进程，也可以在受控远程服务上运行。
+
+Server 的三类核心 primitive 有不同的控制边界：
+
+| Primitive | 常见控制者 | 本课中的检查 | 安全问题 |
+| --- | --- | --- | --- |
+| **Tool** | 模型控制（Host 应审批） | `tools/list` → `tools/call` | 可能写文件、发请求、改数据；schema 和 annotations 不是自动授权 |
+| **Resource** | 应用控制 | `resources/list` → `resources/read` | 可能暴露文件、数据库或远端内容；URI 与内容都要审阅 |
+| **Prompt** | 用户控制 | `prompts/list` → `prompts/get` | 是可复用模板，不是隐含的权限或系统规则 |
+
+这张控制表是协议的交互模型，不是“谁可以绕过 Host”。真正的权限仍由 Host、操作系统、配置、人工确认和 Server 自己的授权实现共同决定。
+
+## 2026-07-28 规范校准：发现、协议层与 transport
+
+本课按 MCP `2026-07-28` 规范和官方 SDK 2.0 校准。该版本的现代路径不再依赖 `initialize`/`initialized` 握手或 `Mcp-Session-Id`；请求在 `_meta` 中携带协议版本、Client 身份和 Client capabilities，可用 `server/discover` 在正式操作前得到 Server 的能力信息。兼容旧 Server 的 Client 仍可能回退到 legacy 初始化路径，因此看到 `initialize` 不要直接断言“不是 MCP”；要记录实际协商版本。
+
+**Transport** 是消息绑定：它定义如何分帧、传递和取消 JSON-RPC，不改变 `tools/list` 或 `resources/read` 的语义。正式主路径使用：
+
+- **stdio**：Host 启动本地子进程，Client 写 stdin、读 stdout；stdout 是 wire，Server 的日志不能混进去。这条路径最适合本地、可审阅的 Windows 实验。
+- **Streamable HTTP**：Server 暴露一个 HTTP MCP endpoint，Client 为每个请求 POST；2026 现代路径没有协议级 session，HTTP 可镜像 `MCP-Protocol-Version`、`Mcp-Method`、`Mcp-Name` 等头，但消息 body 的 `_meta` 仍是语义来源。它适合远程部署，本课不把它伪装成已现场验证。
+
+MCP Inspector 也不是“协议里的 Host”：它是开发检查工具，提供 Web、CLI、TUI 三种表面；其 proxy/client 会连接 Server 并呈现能力和调用结果。本课使用固定版 `@modelcontextprotocol/inspector@2.2.0 --cli`，分别检查 `tools/list`、`resources/list`、`prompts/list`，再让 Python Client 调用对应的 `call/read/get`。
+
+## 操作前预测
+
+在运行命令前，先写下答案，不要把真实路径、用户名、环境变量或 Prompt 正文粘贴到课程记录：
+
+1. Host、Client、Server 中，谁启动本地 Python 子进程？谁拥有“是否允许调用 Tool”的人工确认？
+2. `summarize_telemetry`、`telemetry://demo/snapshot` 和 `review-telemetry` 分别属于 Tool、Resource 还是 Prompt？它们的发现 RPC 名称是什么？
+3. 如果 `tools/list` 成功而 `tools/call` 返回未知 Tool 错误，问题在能力发现、参数校验还是调用目标？恢复时应先重启所有东西，还是用已知 Tool 做一次受控重试？
+4. 只运行 `mcp_client.py --offline` 会不会产生正式通过证据？为什么？
+
+## 主工具演示：真实 Python Server/Client + Inspector
+
+实验代码在 [`labs/mcp-discovery`](../../../labs/mcp-discovery/README.md)。依赖只锁定官方 Python SDK `mcp==2.0.0`；Inspector 使用 npm 包 `@modelcontextprotocol/inspector@2.2.0`。首次安装需要网络，实验本身不需要账号、API key、模型或付费 API。
+
+Windows 11 + PowerShell 7 主路径：
+
+```powershell
+$lab = (Resolve-Path -LiteralPath .\labs\mcp-discovery).Path
+$venv = Join-Path $lab ".venv"
+python -m venv $venv
+if ($LASTEXITCODE -ne 0) { throw "venv creation failed" }
+$python = Join-Path $venv "Scripts\python.exe"
+& $python -m pip install -r (Join-Path $lab "requirements.lock")
+if ($LASTEXITCODE -ne 0) { throw "MCP SDK installation failed" }
+```
+
+Inspector v2 当前要求 Node.js `>=22.19.0`。先确认版本；如果版本不满足，记录为安装阻塞，使用离线 fallback 练习概念，但不要把它写成真实完成：
+
+```powershell
+node --version
+if ($LASTEXITCODE -ne 0) { throw "Node.js is required for Inspector" }
+```
+
+推荐运行一次性编排脚本。它拒绝覆盖已有输出目录，也拒绝把证据写进课程仓库：
+
+```powershell
+pwsh -NoProfile -File .\labs\mcp-discovery\run_mcp_discovery.ps1 `
+  -OutputDirectory (Join-Path $env:TEMP "agent-engineering-course\t19-mcp-discovery-run")
+if ($LASTEXITCODE -ne 0) { throw "MCP discovery journey failed" }
+```
+
+对照输出中的三段证据：
+
+1. Inspector 通过真实 stdio 子进程分别发现 `summarize_telemetry`、`telemetry://demo/snapshot`、`review-telemetry`；
+2. Python Client 的 `protocol_version` 应为 `2026-07-28`，并且 `server_connected`、三类 list、三类 call/read/get 和 `failure_recovered` 都为真；
+3. checker 只接受从这些公开字段重新推导的结果，不接受把 `passed` 手写进未知字段。
+
+## 本地实验：观察能力并留下证据
+
+用脚本生成的 `mcp-client.json` 运行：
+
+```powershell
+Push-Location .\checker
+try {
+  & $python -m course_check check t19-mcp-discovery `
+    --root .. `
+    --evidence-file (Join-Path $env:TEMP "agent-engineering-course\t19-mcp-discovery-run\mcp-client.json") `
+    --output (Join-Path $env:TEMP "agent-engineering-course\t19-mcp-discovery-run\checked.json") `
+    --json
+  if ($LASTEXITCODE -ne 0) { throw "course_check failed" }
+} finally {
+  Pop-Location
+}
+```
+
+成功的正式证据包含 `real-transport`、`server-connected`、`tools-discovered`、`resources-discovered`、`prompts-discovered`、`tool-call-observed`、`resource-read-observed`、`prompt-retrieval-observed`、`failure-recovered` 和 `inspector-verified`。网页只导入 checker 生成的匿名 JSON，不导入包含本地路径或原始结果的中间文件。
+
+## 故障注入与恢复：未知 Tool 不等于连接已死
+
+Client 故意调用 `missing_tool_for_recovery`。预期现象是一个可观察的 MCP 错误（不同 SDK surface 可能抛出 `MCPError`，或返回 `is_error`），随后用 `summarize_telemetry` 做受控重试。恢复的判据是：连接仍可用、已知 Tool 返回成功、`failure_recovered` 为真。
+
+如果三类 list 都是空的，不要先修改 Server 的代码：先检查是否运行了错误的 Python、是否把 stdout 日志混进 stdio、是否由 Inspector 启动了另一个路径的 Server。若 Inspector 只列出 Tool，分别运行 `--method resources/list` 与 `--method prompts/list`，把协议发现问题和 capability 注册问题分开。输出目录已有未知文件时，脚本会拒绝覆盖；恢复应换一个一次性目录，而不是删除整个仓库。
+
+## 迁移挑战：保留能力目标，改变实现表面
+
+任选 Codex 或 Claude Code，给它一份不含路径和原始 Prompt 的 capability 摘要，让它解释：
+
+- Host、Client、Server 的边界；
+- 为什么“列出 Tool”不能推出“允许执行 Tool”；
+- 为什么 Resource/Prompt 不是模型可以随意执行的 Tool；
+- 如果把本课 Python stdio Server 迁移到官方 TypeScript SDK，应该把 stdio Client/Server transport 换成什么公开 API；
+- 如果改成 Streamable HTTP，需要重新审阅 endpoint、协议版本 header、认证、CORS、DNS rebinding 和远程副作用哪些边界。
+
+迁移挑战只要求解释和安全设计，不要求安装第二套 SDK，也不调用任何模型或付费服务；不要把“看起来像调用”的文字写成现场验证。
+
+## 可核验成果：真实与离线要分开
+
+正式成果是：
+
+- `mcp-client.json`：真实 `stdio`、`2026-07-28` discovery、三类能力清单、调用/读取结果的布尔观察和故障恢复；
+- `inspector.json`：固定版 Inspector CLI 的三个 list 方法均成功；
+- `t19-mcp-discovery-evidence.json`：本地 checker 生成的匿名结果；
+- 一段不含个人路径、Prompt 正文、原始返回值、token 或研究数据的预测/恢复记录。
+
+下方按钮只提供 `offline-fallback`：它的 transport 是 `deterministic-in-memory`，其 evidence 永远不是 `passed`，用于没有 SDK/Node/Inspector 的学员练习验收字段。
+
+<McpDiscoveryLab />
+
+<EvidenceLoop lessonId="t19-mcp-discovery" />
+
+## 风险、版本与来源卡片
+
+**权限、账号、成本和副作用**
+
+- 本课正式 Server 只做合成计算；没有文件、网络、设备、账号、凭据和模型权限。首次 `pip`/`npx` 安装需要网络和本机写入虚拟环境/npm cache；安装成本为免费，网络流量与磁盘占用由学员确认。
+- Inspector 会启动本地子进程，并可能在用户目录保存 Inspector catalog/storage；不要把这些路径或环境变量复制进证据。只向明确的临时目录写三份实验 JSON。
+- 真实第三方 MCP Server 的权限不能由本课样例外推。执行前人工核对启动命令、`cwd`、环境变量、网络目标、Tool schema/annotations、Resource URI 和撤销方式；对写入、删除、发送请求或支付类 Tool 先拒绝或单独审批。
+- 本课不调用付费 API，不读取真实科研/企业数据，不上传任何 evidence。
+
+**版本和事实边界（最后核验：2026-08-13）**
+
+- 协议事实来自 [MCP 2026-07-28 transport 规范](https://github.com/modelcontextprotocol/modelcontextprotocol/tree/main/docs/specification/2026-07-28/basic/transports)、[Server primitives](https://github.com/modelcontextprotocol/modelcontextprotocol/tree/main/docs/specification/2026-07-28/server) 和 [Tools 规范](https://github.com/modelcontextprotocol/modelcontextprotocol/tree/main/docs/specification/2026-07-28/server/tools)。
+- Python 适配层来自官方 [Python SDK run 文档](https://github.com/modelcontextprotocol/python-sdk/blob/main/docs/run/index.md) 和锁定的 `mcp==2.0.0`；TypeScript 迁移阅读来自官方 [TypeScript Client Guide](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/client.md)。
+- Inspector 事实来自官方 [Inspector README/CLI](https://github.com/modelcontextprotocol/inspector/blob/main/README.md) 与 [CLI README](https://github.com/modelcontextprotocol/inspector/blob/main/clients/cli/README.md)，锁定 `@modelcontextprotocol/inspector@2.2.0`。当前环境 Node `v22.18.0` 能运行但给出 engine warning；`>=22.19.0` 的正式 Node 环境尚未在本次运行。
+- [Microsoft mcp-for-beginners Core Concepts](https://github.com/microsoft/mcp-for-beginners/blob/main/01-CoreConcepts/README.md) 和其 [2026-07-28 校准说明](https://github.com/microsoft/mcp-for-beginners/blob/main/01-CoreConcepts/mcp-2026-07-28-release-candidate.md) 只作为初学者梯度与术语教学参考；规范事实以上述 MCP 官方规范为准。
+- 已现场验证：本机 PowerShell 下 Python `mcp==2.0.0` 的真实 stdio server/client、modern `server/discover`、Tools/Resources/Prompts list + call/read/get、未知 Tool 恢复，以及 Inspector CLI v2.2.0 的三项 list；未验证：远程 Streamable HTTP、OAuth、真实第三方 Server、真实 Host（Codex/Claude Code）、macOS/Linux 和浏览器生产部署。
+
+正文和图解为课程原创 CC BY 4.0；Server、Client、wrapper、fallback、checker 和测试为项目代码 MIT；官方来源只作引用，不复制其图示、代码或 UI 资产。
+
+下一步进入模块 10：当多个能力已经可以被发现时，再讨论 Hooks、Tasks、Subagents 与多 Agent 编排是否真的增加可预测性。

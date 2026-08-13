@@ -735,6 +735,58 @@
         "course-hooks-tasks-original-t21"
       ],
       "licenses": ["CC-BY-4.0", "MIT"]
+    },
+    {
+      "id": "t19-mcp-discovery",
+      "title": "模块 9A：发现并检查真实 MCP Server",
+      "stage": "core-beta",
+      "duration_minutes": 75,
+      "prerequisites": ["t14-context-budget"],
+      "outcomes": [
+        "用 MCP 2026-07-28 的术语区分 Host、Client、Server 及 Tools、Resources、Prompts 的控制边界",
+        "在真实 stdio transport 上用官方 Python SDK 发现并调用一个本地 MCP Server",
+        "用官方 MCP Inspector 检查 tools/list、resources/list 和 prompts/list，并区分协议证据与课程解释",
+        "在缺少运行环境时运行离线 deterministic fallback，同时明确它不能替代正式真实 transport 验收",
+        "输出不含路径、原始数据或凭据的匿名能力发现证据 JSON，并解释权限、副作用、成本与未验证边界"
+      ],
+      "artifacts": [
+        "labs/mcp-discovery/mcp_server.py 与 mcp_client.py 的真实 stdio 实验",
+        "Inspector 2.2.0 能力发现摘要 JSON",
+        "匿名 t19-mcp-discovery evidence JSON（真实正式路径或明确 partial fallback）",
+        "一次故障注入、恢复和变化输入迁移记录"
+      ],
+      "primary_tool": "Official MCP Python SDK 2.0.0 over stdio plus MCP Inspector 2.2.0",
+      "migration_tool": "Official MCP TypeScript SDK StdioClientTransport (conceptual migration challenge; no paid API)",
+      "platforms": {
+        "primary": "Windows 11 + PowerShell 7; local Python and Node processes",
+        "secondary": ["macOS/Linux conceptual migration; not live-verified in this release"]
+      },
+      "versions": {
+        "client": "course mcp_client.py v1; MCP Inspector CLI 2.2.0; Node >=22.19.0 recommended",
+        "sdk": "mcp==2.0.0; TypeScript SDK transport names checked 2026-08-13",
+        "model": "not-applicable; no model or paid API call",
+        "protocol": "MCP 2026-07-28; agent-engineering-course/evidence v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free; Python package and Inspector install may download dependencies, no paid API",
+        "network": "dependency installation and Inspector npx resolution need network; server/client/checker are local after installation"
+      },
+      "risk": {
+        "permissions": "本地 Python 子进程通过 stdio 交换合成遥测；Inspector 只读取声明的能力；checker 只读用户显式指定的 JSON",
+        "side_effects": "server 不写文件、不访问网络、不调用设备或付费 API；实验只生成用户指定的临时 JSON；异常工具调用用于恢复验证",
+        "staleness": "MCP 规范、Python/TypeScript SDK、Inspector 和 Node 要求会变化；本课固定 2026-07-28/2.0.0/2.2.0 观察，发版前需重新核验"
+      },
+      "sources": [
+        "mcp-spec-2026-07-28",
+        "mcp-python-sdk-current",
+        "mcp-typescript-sdk-current",
+        "mcp-inspector-current",
+        "microsoft-mcp-for-beginners-core",
+        "course-mcp-discovery-original"
+      ],
+      "licenses": ["CC-BY-4.0", "MIT"]
     }
   ]
 }

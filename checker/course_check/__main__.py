@@ -350,6 +350,29 @@ T15_CONTEXT_RECOVERY_RISKS = {
     "history-is-not-a-current-constraint",
     "memory-promotion-requires-owner-and-lifetime",
 }
+MCP_DISCOVERY_LESSON_ID = "t19-mcp-discovery"
+MCP_DISCOVERY_FIXTURE_VERSION = "1"
+MCP_DISCOVERY_PROTOCOL_VERSION = "2026-07-28"
+MCP_DISCOVERY_FORMAL_CHECK_IDS = (
+    "real-transport",
+    "server-connected",
+    "tools-discovered",
+    "resources-discovered",
+    "prompts-discovered",
+    "tool-call-observed",
+    "resource-read-observed",
+    "prompt-retrieval-observed",
+    "failure-recovered",
+    "inspector-verified",
+)
+MCP_DISCOVERY_CAPABILITIES = {
+    "tools": ("summarize_telemetry",),
+    "resources": ("telemetry://demo/snapshot",),
+    "prompts": ("review-telemetry",),
+}
+MCP_DISCOVERY_INSPECTOR_METHODS = frozenset(
+    {"tools/list", "resources/list", "prompts/list"}
+)
 
 MEMORY_LESSON_ID = "t16-memory"
 MEMORY_EXPERIMENT_VERSION = "1"
@@ -2365,6 +2388,126 @@ def load_claude_migration_checks(
     return checks, experiment
 
 
+def _mcp_expected_capabilities() -> dict[str, list[str]]:
+    return {key: list(value) for key, value in MCP_DISCOVERY_CAPABILITIES.items()}
+
+
+def validate_mcp_discovery(
+    value: Any,
+    *,
+    document_result: str | None = None,
+) -> tuple[list[dict[str, str]], dict[str, Any]]:
+    """Validate status-only evidence for the real MCP discovery lab."""
+
+    if not isinstance(value, dict):
+        raise EvidenceError("MCP discovery evidence must be an object")
+    _reject_sensitive_unknown_fields(value, "MCP discovery evidence")
+    allowed = {
+        "fixture_version", "lesson_id", "mode", "transport", "protocol_version",
+        "server", "capabilities", "observations", "inspector",
+    }
+    unexpected = sorted(set(value) - allowed)
+    if unexpected:
+        raise EvidenceError(
+            "MCP discovery evidence contains unsupported fields: " + ", ".join(unexpected)
+        )
+    if value.get("fixture_version") != MCP_DISCOVERY_FIXTURE_VERSION:
+        raise EvidenceError("Unsupported MCP discovery fixture version")
+    if value.get("lesson_id") != MCP_DISCOVERY_LESSON_ID:
+        raise EvidenceError("MCP discovery fixture has the wrong lesson_id")
+
+    mode = value.get("mode")
+    transport = value.get("transport")
+    protocol_version = value.get("protocol_version")
+    if mode not in {"real-stdio", "offline-fallback"}:
+        raise EvidenceError("MCP discovery mode must be real-stdio or offline-fallback")
+    if transport not in {"stdio", "deterministic-in-memory"}:
+        raise EvidenceError("MCP discovery transport is unsupported")
+    if mode == "real-stdio" and transport != "stdio":
+        raise EvidenceError("Real MCP discovery must use stdio transport")
+    if mode == "offline-fallback" and transport != "deterministic-in-memory":
+        raise EvidenceError("Offline MCP discovery must use the deterministic fallback label")
+
+    server = value.get("server")
+    if isinstance(server, dict):
+        _reject_sensitive_unknown_fields(server, "MCP server identity")
+    if not isinstance(server, dict) or set(server) != {"name", "version"}:
+        raise EvidenceError("MCP server identity must contain only name and version")
+    if server != {"name": "t19-discovery-server", "version": "1.0.0"}:
+        raise EvidenceError("MCP discovery server identity does not match the course fixture")
+
+    capabilities = value.get("capabilities")
+    if not isinstance(capabilities, dict) or set(capabilities) != {"tools", "resources", "prompts"}:
+        raise EvidenceError("MCP capabilities must contain tools, resources and prompts")
+    normalized_capabilities: dict[str, list[str]] = {}
+    for category in MCP_DISCOVERY_CAPABILITIES:
+        actual = capabilities.get(category)
+        if not isinstance(actual, list) or any(not isinstance(item, str) for item in actual):
+            raise EvidenceError(f"MCP {category} capability names must be a list of strings")
+        if len(actual) != len(set(actual)):
+            raise EvidenceError(f"MCP {category} capability names must not repeat")
+        normalized_capabilities[category] = sorted(actual)
+
+    observations = value.get("observations")
+    expected_observations = {
+        "server_connected", "tools_listed", "resources_listed", "prompts_listed",
+        "tool_called", "resource_read", "prompt_retrieved", "failure_recovered",
+    }
+    if not isinstance(observations, dict) or set(observations) != expected_observations:
+        raise EvidenceError("MCP observations must contain exactly the boolean status fields")
+    if any(not isinstance(observations[key], bool) for key in expected_observations):
+        raise EvidenceError("MCP observations must contain exactly the boolean status fields")
+
+    inspector = value.get("inspector")
+    if not isinstance(inspector, dict) or set(inspector) != {"verified", "methods"}:
+        raise EvidenceError("MCP Inspector evidence must contain verified and methods")
+    methods = inspector.get("methods")
+    if not isinstance(methods, list) or any(not isinstance(item, str) for item in methods):
+        raise EvidenceError("MCP Inspector methods must be a list of strings")
+    if len(methods) != len(set(methods)) or not set(methods) <= MCP_DISCOVERY_INSPECTOR_METHODS:
+        raise EvidenceError("MCP Inspector methods contain duplicates or unknown IDs")
+    if not isinstance(inspector.get("verified"), bool):
+        raise EvidenceError("MCP Inspector verified must be boolean")
+
+    formal = (
+        mode == "real-stdio"
+        and protocol_version == MCP_DISCOVERY_PROTOCOL_VERSION
+        and normalized_capabilities == _mcp_expected_capabilities()
+        and all(observations.values())
+        and inspector["verified"] is True
+        and set(methods) == MCP_DISCOVERY_INSPECTOR_METHODS
+    )
+    checks = [
+        {"id": "real-transport", "result": "passed" if mode == "real-stdio" and transport == "stdio" else "failed"},
+        {"id": "server-connected", "result": "passed" if observations["server_connected"] and mode == "real-stdio" else "failed"},
+        {"id": "tools-discovered", "result": "passed" if observations["tools_listed"] and normalized_capabilities["tools"] == list(MCP_DISCOVERY_CAPABILITIES["tools"]) else "failed"},
+        {"id": "resources-discovered", "result": "passed" if observations["resources_listed"] and normalized_capabilities["resources"] == list(MCP_DISCOVERY_CAPABILITIES["resources"]) else "failed"},
+        {"id": "prompts-discovered", "result": "passed" if observations["prompts_listed"] and normalized_capabilities["prompts"] == list(MCP_DISCOVERY_CAPABILITIES["prompts"]) else "failed"},
+        {"id": "tool-call-observed", "result": "passed" if observations["tool_called"] else "failed"},
+        {"id": "resource-read-observed", "result": "passed" if observations["resource_read"] else "failed"},
+        {"id": "prompt-retrieval-observed", "result": "passed" if observations["prompt_retrieved"] else "failed"},
+        {"id": "failure-recovered", "result": "passed" if observations["failure_recovered"] else "failed"},
+        {"id": "inspector-verified", "result": "passed" if inspector["verified"] and set(methods) == MCP_DISCOVERY_INSPECTOR_METHODS else "failed"},
+    ]
+    if mode == "offline-fallback":
+        checks.insert(0, {"id": "offline-deterministic", "result": "passed"})
+    if formal and document_result in {"failed", "partial"}:
+        raise EvidenceError("MCP fixture is complete but its document result is not complete")
+    if document_result in {"passed", "alternative"} and not formal:
+        raise EvidenceError("Completed MCP evidence is missing real transport or Inspector proof")
+    return checks, {
+        "fixture_version": MCP_DISCOVERY_FIXTURE_VERSION,
+        "lesson_id": MCP_DISCOVERY_LESSON_ID,
+        "mode": mode,
+        "transport": transport,
+        "protocol_version": protocol_version,
+        "server": {"name": server["name"], "version": server["version"]},
+        "capabilities": normalized_capabilities,
+        "observations": {key: observations[key] for key in sorted(observations)},
+        "inspector": {"verified": inspector["verified"], "methods": sorted(methods)},
+    }
+
+
 def load_evidence_checks(
     evidence_file: Path,
     *,
@@ -2423,6 +2566,17 @@ def load_evidence_checks(
                 raise
         else:
             document = validate_evidence_document(value)
+        if expected_lesson_id == MCP_DISCOVERY_LESSON_ID:
+            mcp_fixture = value.get("mcp")
+            if mcp_fixture is None:
+                raise EvidenceError("T19 evidence requires its MCP fixture summary")
+            checks, trace = validate_mcp_discovery(
+                mcp_fixture,
+                document_result=document["result"],
+            )
+            if document["evidence"] != checks:
+                raise EvidenceError("T19 evidence checks do not match the MCP fixture")
+            return checks, trace
         if expected_lesson_id == "t02-agent-loop":
             checks = validate_t02_evidence_checks(document["evidence"])
             trace = validate_t02_trace(value.get("trace"), document_result=document["result"])
@@ -2492,6 +2646,8 @@ def load_evidence_checks(
                 raise EvidenceError("T18 evidence checks do not match the recorded audit")
             return checks, audit
         return document["evidence"], None
+    if expected_lesson_id == MCP_DISCOVERY_LESSON_ID:
+        return validate_mcp_discovery(value)
     checks = value.get("checks")
     if not isinstance(checks, list):
         raise EvidenceError("Evidence fixture checks must be a list")
@@ -3005,6 +3161,7 @@ def check_lesson(
         MEMORY_LESSON_ID,
         SKILL_LESSON_ID,
         PLUGIN_AUDIT_LESSON_ID,
+        MCP_DISCOVERY_LESSON_ID,
     }:
         raise ContractError(f"Unsupported evidence lesson: {lesson_id}")
     course_version = validate_foundation(root)
@@ -3279,6 +3436,49 @@ def check_lesson(
                 expected_lesson_id=lesson_id,
                 expected_course_version=course_version,
             )
+    elif lesson_id == MCP_DISCOVERY_LESSON_ID:
+        if evidence_file is None:
+            checks = [
+                {
+                    "id": "mcp-page",
+                    "result": "passed"
+                    if (root / "site/src/content/docs/module-9-mcp-discovery.mdx").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "mcp-server-client",
+                    "result": "passed"
+                    if all(
+                        (root / relative).is_file()
+                        for relative in (
+                            "labs/mcp-discovery/mcp_server.py",
+                            "labs/mcp-discovery/mcp_client.py",
+                            "labs/mcp-discovery/requirements.lock",
+                        )
+                    )
+                    else "failed",
+                },
+                {
+                    "id": "mcp-inspector-script",
+                    "result": "passed"
+                    if (root / "labs/mcp-discovery/inspector-check.mjs").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "mcp-offline-fallback",
+                    "result": "passed"
+                    if (root / "site/src/lib/mcp-discovery.mjs").is_file()
+                    and (root / "site/src/components/McpDiscoveryLab.astro").is_file()
+                    else "failed",
+                },
+                {"id": "mcp-evidence-executed", "result": "failed"},
+            ]
+        else:
+            checks, trace = load_evidence_checks(
+                evidence_file,
+                expected_lesson_id=lesson_id,
+                expected_course_version=course_version,
+            )
     elif lesson_id == "t03-agent-instruction":
         checks = [
             {
@@ -3421,6 +3621,8 @@ def check_lesson(
             document["simulation"] = trace
         elif lesson_id == PLUGIN_AUDIT_LESSON_ID:
             document["audit"] = trace
+        elif lesson_id == MCP_DISCOVERY_LESSON_ID:
+            document["mcp"] = trace
         elif lesson_id == HOOKS_TASKS_LESSON_ID:
             document["experiment"] = trace
         else:

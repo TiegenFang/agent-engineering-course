@@ -177,6 +177,7 @@ const expectedCourseVersion = courseVersion.course_version;
     window.addEventListener("skill:evidence", handleGeneratedEvidence);
     window.addEventListener("plugin-audit:evidence", handleGeneratedEvidence);
     window.addEventListener("hooks-tasks:evidence", handleGeneratedEvidence);
+    window.addEventListener("mcp-discovery:evidence", handleGeneratedEvidence);
 
     try {
       const saved = loadLearningRecord(localStorage, storageKey, courseVersion) as LearningRecord;

@@ -731,6 +731,66 @@
       "usage": "Hook/Task/schedule/background 四问模型、触发去重、权限边界、失败恢复、停止条件、副作用保护和匿名 evidence 合同",
       "license_or_terms": "project-original; no copied assets",
       "copied_assets": false
+    },
+    {
+      "id": "mcp-spec-2026-07-28",
+      "title": "Model Context Protocol specification 2026-07-28",
+      "url": "https://github.com/modelcontextprotocol/modelcontextprotocol/tree/main/docs/specification/2026-07-28",
+      "source_role": "protocol-fact-source",
+      "pinned_version": "2026-07-28 specification snapshot; observed 2026-08-13",
+      "usage": "核验 Host/Client/Server 边界、Tools/Resources/Prompts 控制权、JSON-RPC transport 与 Streamable HTTP/stdio 语义；正文为原创中文解释",
+      "license_or_terms": "reference-only; MCP repository license and terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "mcp-python-sdk-current",
+      "title": "MCP Python SDK",
+      "url": "https://github.com/modelcontextprotocol/python-sdk",
+      "source_role": "official-sdk-fact-source",
+      "pinned_version": "mcp==2.0.0; observed 2026-08-13",
+      "usage": "真实实验使用 ClientSession、stdio_client、StdioServerParameters 与 MCPServer；核验 stdio 子进程的 stdout wire 约束",
+      "license_or_terms": "MIT; reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "mcp-typescript-sdk-current",
+      "title": "MCP TypeScript SDK client guide",
+      "url": "https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/client.md",
+      "source_role": "official-sdk-fact-source",
+      "pinned_version": "current main client guide; observed 2026-08-13; no npm package version asserted",
+      "usage": "迁移挑战核验 StdioClientTransport 与 StreamableHTTPClientTransport 的对应关系；课程不在验收中调用付费 API",
+      "license_or_terms": "MIT; reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "mcp-inspector-current",
+      "title": "MCP Inspector CLI",
+      "url": "https://github.com/modelcontextprotocol/inspector/tree/main/clients/cli",
+      "source_role": "official-tool-fact-source",
+      "pinned_version": "@modelcontextprotocol/inspector@2.2.0; Node >=22.19.0 documented; observed 2026-08-13",
+      "usage": "正式实验用 Inspector CLI 通过真实 stdio server 执行 tools/list、resources/list、prompts/list，并只保存脱敏摘要",
+      "license_or_terms": "MIT; reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "microsoft-mcp-for-beginners-core",
+      "title": "Microsoft MCP for Beginners: Core Concepts",
+      "url": "https://github.com/microsoft/mcp-for-beginners/tree/main/01-CoreConcepts",
+      "source_role": "secondary-teaching-source",
+      "pinned_version": "repository page and MCP 2026-07-28 release candidate link observed 2026-08-13",
+      "usage": "对照初学者的 Host/Client/Server 与 primitives 教学框架；产品事实仍以 MCP 规范和官方 SDK 为准",
+      "license_or_terms": "MIT; reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "course-mcp-discovery-original",
+      "title": "模块 9A 真实 MCP Server 发现原创实验设计",
+      "url": "docs/course-plan.md",
+      "source_role": "course-original",
+      "pinned_version": "T19 implementation @ ticket-20-mcp-discovery; observed 2026-08-13",
+      "usage": "合成 telemetry server、真实 stdio/Inspector 证据、故障恢复、匿名 checker、离线 fallback 分离与权限边界",
+      "license_or_terms": "project-original; code MIT and prose CC-BY-4.0; no copied assets",
+      "copied_assets": false
     }
   ]
 }

@@ -1,0 +1,89 @@
+---
+import courseVersion from "../../../course-version.json";
+---
+
+<section
+  class="mcp-discovery-lab"
+  data-mcp-discovery-lab
+  data-course-version={courseVersion.course_version}
+  aria-labelledby="mcp-discovery-lab-title"
+>
+  <div class="mcp-discovery-lab__heading">
+    <div>
+      <p class="eyebrow">无环境 fallback</p>
+      <h2 id="mcp-discovery-lab-title">离线能力清单观察</h2>
+    </div>
+    <span class="mcp-discovery-lab__badge">非正式完成</span>
+  </div>
+  <p>
+    这个按钮只运行浏览器内的确定性对象：它不是 MCP Server、不是 JSON-RPC transport，也不会启动 Inspector。
+    运行后只能得到 <strong>partial</strong> evidence；正式成果必须来自上面的 Python stdio + Inspector 路径。
+  </p>
+  <noscript>
+    <section class="mcp-discovery-lab__noscript" aria-labelledby="mcp-discovery-noscript-title">
+      <h3 id="mcp-discovery-noscript-title">离线观察需要 JavaScript</h3>
+      <p>未启用 JavaScript 时仍可阅读正式 PowerShell 命令；请不要把本页 fallback 当成真实 MCP 实验完成证据。</p>
+    </section>
+  </noscript>
+  <div class="mcp-discovery-lab__controls">
+    <button type="button" data-mcp-offline-run>运行离线观察</button>
+    <button type="button" data-mcp-offline-export disabled>导出 partial evidence</button>
+  </div>
+  <p data-mcp-offline-status role="status" aria-live="polite">尚未运行离线观察。</p>
+  <div class="mcp-discovery-lab__output" data-mcp-offline-output hidden>
+    <h3>固定能力清单</h3>
+    <dl>
+      <div><dt>Tool</dt><dd data-mcp-offline-tools>—</dd></div>
+      <div><dt>Resource</dt><dd data-mcp-offline-resources>—</dd></div>
+      <div><dt>Prompt</dt><dd data-mcp-offline-prompts>—</dd></div>
+      <div><dt>Transport</dt><dd data-mcp-offline-transport>—</dd></div>
+    </dl>
+  </div>
+</section>
+
+<script>
+  import { offlineEvidenceDocument, runOfflineMcpDiscovery } from "../lib/mcp-discovery.mjs";
+
+  const root = document.querySelector("[data-mcp-discovery-lab]");
+  if (root instanceof HTMLElement) {
+    const courseVersion = root.dataset.courseVersion ?? "";
+    const runButton = root.querySelector("[data-mcp-offline-run]");
+    const exportButton = root.querySelector("[data-mcp-offline-export]");
+    const status = root.querySelector("[data-mcp-offline-status]");
+    const output = root.querySelector("[data-mcp-offline-output]");
+    let evidence;
+
+    const setText = (selector, value) => {
+      const element = root.querySelector(selector);
+      if (element) element.textContent = value;
+    };
+
+    runButton?.addEventListener("click", () => {
+      const observation = runOfflineMcpDiscovery();
+      evidence = offlineEvidenceDocument(courseVersion);
+      setText("[data-mcp-offline-tools]", observation.capabilities.tools.join(", "));
+      setText("[data-mcp-offline-resources]", observation.capabilities.resources.join(", "));
+      setText("[data-mcp-offline-prompts]", observation.capabilities.prompts.join(", "));
+      setText("[data-mcp-offline-transport]", observation.transport);
+      if (output instanceof HTMLElement) output.hidden = false;
+      if (exportButton instanceof HTMLButtonElement) exportButton.disabled = false;
+      if (status instanceof HTMLElement) {
+        status.textContent = "已运行 offline fallback；这是 partial，不是正式 MCP 完成。";
+        status.dataset.status = "partial";
+      }
+      window.dispatchEvent(new CustomEvent("mcp-discovery:evidence", { detail: evidence }));
+    });
+
+    exportButton?.addEventListener("click", () => {
+      if (!evidence) return;
+      const blob = new Blob([JSON.stringify(evidence, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "t19-mcp-discovery-offline-evidence.json";
+      link.click();
+      URL.revokeObjectURL(url);
+      if (status instanceof HTMLElement) status.textContent = "已导出 partial offline evidence；仍需真实 transport + Inspector。";
+    });
+  }
+</script>

@@ -1,0 +1,4 @@
+# Official Python SDK for MCP 2026-07-28 support.
+# The exact top-level pin is intentional; pip resolves its published runtime
+# dependencies.  Re-run this command in a fresh .venv before each release.
+mcp==2.0.0

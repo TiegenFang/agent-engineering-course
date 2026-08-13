@@ -30,6 +30,7 @@ export default defineConfig({
             { label: "Agent、模型与 Harness", link: "/module-1-agent-loop/" },
             { label: "自定义 Skill", link: "/module-7-skill/" },
             { label: "Plugin 打包与供应链审计", link: "/module-8-plugin/" },
+            { label: "模块 9A：真实 MCP Server", link: "/module-9-mcp-discovery/" },
             { label: "Hooks 与 Tasks", link: "/module-10-hooks-tasks/" },
           ],
         },

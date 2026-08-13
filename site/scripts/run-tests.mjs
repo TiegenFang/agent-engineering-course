@@ -16,6 +16,7 @@ const testCommands = [
   ["--test", "scripts/test-plugin-audit.mjs"],
   ["--test", "scripts/test-evidence-record.mjs"],
   ["--test", "scripts/test-project-rules.mjs"],
+  ["--test", "scripts/test-mcp-discovery.mjs"],
   ["scripts/assert-homepage.mjs"],
   ["scripts/assert-module-zero.mjs"],
   ["scripts/assert-module-four.mjs"],

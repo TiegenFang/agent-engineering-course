@@ -473,6 +473,121 @@
   margin-block: 0.5rem 0;
 }
 
+.mcp-discovery-lab {
+  margin-block: 2rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.75rem;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: color-mix(in srgb, var(--sl-color-orange-low) 24%, transparent);
+}
+
+.mcp-discovery-lab__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.mcp-discovery-lab__heading h2 {
+  margin-block: 0.35rem 0;
+}
+
+.mcp-discovery-lab__badge {
+  border: 1px solid var(--sl-color-orange-high);
+  border-radius: 999px;
+  padding: 0.3rem 0.55rem;
+  color: var(--sl-color-orange-high);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.mcp-discovery-lab__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-block: 1.25rem;
+}
+
+.mcp-discovery-lab__controls button {
+  min-height: 2.75rem;
+  border: 1px solid var(--sl-color-accent);
+  border-radius: 0.45rem;
+  padding: 0.5rem 0.75rem;
+  color: var(--sl-color-text-invert);
+  background: var(--sl-color-accent);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+}
+
+.mcp-discovery-lab__controls button:hover {
+  background: var(--sl-color-accent-high);
+}
+
+.mcp-discovery-lab__controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.mcp-discovery-lab__controls button:focus-visible {
+  outline: 0.2rem solid var(--sl-color-orange-high);
+  outline-offset: 0.15rem;
+}
+
+.mcp-discovery-lab__output {
+  border-inline-start: 0.2rem solid var(--sl-color-accent);
+  padding: 0.75rem 1rem;
+  background: var(--sl-color-bg);
+}
+
+.mcp-discovery-lab__output h3 {
+  margin-block: 0.25rem 0.5rem;
+}
+
+.mcp-discovery-lab__output dl {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.mcp-discovery-lab__output dl > div {
+  display: grid;
+  grid-template-columns: minmax(6rem, 0.35fr) 1fr;
+  gap: 0.75rem;
+}
+
+.mcp-discovery-lab__output dt {
+  font-weight: 700;
+}
+
+.mcp-discovery-lab__output dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.mcp-discovery-lab__noscript {
+  margin-block: 1rem;
+  border-inline-start: 0.2rem solid var(--sl-color-orange-high);
+  padding: 0.75rem 1rem;
+  background: var(--sl-color-bg);
+}
+
+.mcp-discovery-lab__noscript h3 {
+  margin-block: 0.25rem 0;
+}
+
+@media (max-width: 600px) {
+  .mcp-discovery-lab__heading {
+    display: block;
+  }
+
+  .mcp-discovery-lab__badge {
+    display: inline-block;
+    margin-block-start: 0.75rem;
+  }
+}
+
 .agent-loop-lab {
   margin-block: 2rem;
   border: 1px solid var(--sl-color-gray-5);
