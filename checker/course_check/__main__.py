@@ -465,6 +465,43 @@ PLUGIN_AUDIT_CHECK_IDS = (
     "lifecycle-reviewed",
     "offline-no-install",
 )
+T26_OFFLINE_AGENT_LOOP_LESSON_ID = "t26-offline-agent-loop"
+T26_OFFLINE_AGENT_LOOP_VERSION = "1"
+T26_OFFLINE_AGENT_LOOP_IMPLEMENTATION = "python-stdlib"
+T26_OFFLINE_AGENT_LOOP_FRAMEWORK = "none"
+T26_OFFLINE_AGENT_LOOP_SCENARIOS = (
+    "success",
+    "tool-failure",
+    "invalid-args",
+    "budget-stop",
+    "retry-recovery",
+)
+T26_OFFLINE_AGENT_LOOP_CHECK_IDS = (
+    "deterministic-fixture",
+    "response-tool-loop",
+    "state-refill",
+    "structured-output",
+    "tool-failure-stop",
+    "invalid-arguments-recovery",
+    "budget-stop",
+    "retry-recovery",
+    "framework-free",
+)
+T26_OFFLINE_AGENT_LOOP_EVENT_KINDS = {
+    "response",
+    "tool_call",
+    "tool_execution",
+    "state_refill",
+    "structured_output",
+    "stop",
+}
+T26_OFFLINE_AGENT_LOOP_ALLOWED_OUTCOMES = {
+    "success",
+    "failure",
+    "invalid-args",
+    "budget-stop",
+    "retry-recovery",
+}
 
 
 class ContractError(ValueError):
@@ -1568,6 +1605,44 @@ def validate_t16_evidence_checks(value: Any) -> list[dict[str, str]]:
     return normalized
 
 
+def validate_t26_evidence_checks(value: Any) -> list[dict[str, Any]]:
+    """Validate the fixed public check list for the offline Python loop."""
+
+    if not isinstance(value, list) or not value:
+        raise EvidenceError("T26 offline Agent loop evidence checks must be a non-empty list")
+    actual_ids: list[str] = []
+    normalized: list[dict[str, Any]] = []
+    for index, check in enumerate(value):
+        if not isinstance(check, dict):
+            raise EvidenceError(f"T26 evidence check {index} must be an object")
+        _reject_sensitive_unknown_fields(check, f"T26 evidence check {index}")
+        check_id = check.get("id")
+        if not isinstance(check_id, str) or not check_id:
+            raise EvidenceError(f"T26 evidence check {index} needs an id")
+        if check_id in actual_ids:
+            raise EvidenceError(f"T26 evidence check ID repeated: {check_id}")
+        result = check.get("result")
+        if result not in {"passed", "failed", "alternative"}:
+            raise EvidenceError(f"T26 evidence check {check_id}.result is not supported")
+        actual_ids.append(check_id)
+        normalized.append({"id": check_id, "result": result})
+    expected_ids = list(T26_OFFLINE_AGENT_LOOP_CHECK_IDS)
+    if actual_ids != expected_ids:
+        missing = [check_id for check_id in expected_ids if check_id not in actual_ids]
+        unknown = [check_id for check_id in actual_ids if check_id not in expected_ids]
+        detail = []
+        if missing:
+            detail.append("missing: " + ", ".join(missing))
+        if unknown:
+            detail.append("unknown: " + ", ".join(unknown))
+        raise EvidenceError(
+            "T26 evidence IDs must be exactly "
+            + ", ".join(expected_ids)
+            + ("; " + "; ".join(detail) if detail else "")
+        )
+    return normalized
+
+
 def validate_t16_experiment(
     value: Any,
     *,
@@ -1978,6 +2053,305 @@ def validate_t18_audit(
         "observed_components": sorted(observed_components),
         "observed_fields": sorted(observed_fields),
         "observed_lifecycle": sorted(observed_lifecycle),
+    }
+
+def _validate_t26_structured_output(value: Any, label: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise EvidenceError(f"{label} must be an object")
+    _reject_sensitive_unknown_fields(value, label)
+    required = {"status", "summary", "reading", "anomaly", "attempts"}
+    if set(value) != required:
+        raise EvidenceError(f"{label} must contain exactly status, summary, reading, anomaly and attempts")
+    if value["status"] not in {"completed", "failed"}:
+        raise EvidenceError(f"{label}.status is not supported")
+    if not isinstance(value["summary"], str) or not value["summary"].strip() or len(value["summary"]) > 240:
+        raise EvidenceError(f"{label}.summary must be a short non-empty string")
+    reading = value["reading"]
+    if reading is not None and (
+        isinstance(reading, bool) or not isinstance(reading, int) or not 0 <= reading <= 100
+    ):
+        raise EvidenceError(f"{label}.reading must be null or an integer from 0 to 100")
+    if not isinstance(value["anomaly"], bool):
+        raise EvidenceError(f"{label}.anomaly must be boolean")
+    attempts = value["attempts"]
+    if isinstance(attempts, bool) or not isinstance(attempts, int) or not 1 <= attempts <= 8:
+        raise EvidenceError(f"{label}.attempts must be an integer from 1 to 8")
+    if value["status"] == "completed" and reading is None:
+        raise EvidenceError(f"{label} completed output needs a reading")
+    if value["status"] == "failed" and reading is not None:
+        raise EvidenceError(f"{label} failed output cannot claim a reading")
+    return {
+        "status": value["status"],
+        "summary": value["summary"],
+        "reading": reading,
+        "anomaly": value["anomaly"],
+        "attempts": attempts,
+    }
+
+
+def _t26_event_sequence(case: dict[str, Any], *, scenario: str) -> tuple[list[dict[str, Any]], list[str]]:
+    events = case.get("events")
+    if not isinstance(events, list) or not events:
+        raise EvidenceError(f"T26 {scenario} case events must be a non-empty list")
+    normalized: list[dict[str, Any]] = []
+    seen_ids: set[str] = set()
+    for index, event in enumerate(events):
+        if not isinstance(event, dict):
+            raise EvidenceError(f"T26 {scenario} event {index} must be an object")
+        _reject_sensitive_unknown_fields(event, f"T26 {scenario} event {index}")
+        required = {"id", "kind", "turn", "status", "result"}
+        if set(event) != required:
+            raise EvidenceError(f"T26 {scenario} event {index} fields are not public contract fields")
+        event_id = event["id"]
+        if not isinstance(event_id, str) or not event_id or event_id in seen_ids:
+            raise EvidenceError(f"T26 {scenario} event IDs must be unique non-empty strings")
+        kind = event["kind"]
+        if kind not in T26_OFFLINE_AGENT_LOOP_EVENT_KINDS:
+            raise EvidenceError(f"T26 {scenario} event kind is unsupported: {kind}")
+        turn = event["turn"]
+        if isinstance(turn, bool) or not isinstance(turn, int) or not 1 <= turn <= 8:
+            raise EvidenceError(f"T26 {scenario} event turn must be an integer from 1 to 8")
+        status = event["status"]
+        if status not in {"ok", "invalid-arguments", "error", "budget", "passed"}:
+            raise EvidenceError(f"T26 {scenario} event status is unsupported: {status}")
+        result = event["result"]
+        if result not in {"passed", "failed", "alternative"}:
+            raise EvidenceError(f"T26 {scenario} event result is unsupported: {result}")
+        seen_ids.add(event_id)
+        normalized.append(
+            {
+                "id": event_id,
+                "kind": kind,
+                "turn": turn,
+                "status": status,
+                "result": result,
+            }
+        )
+    return normalized, [event["kind"] for event in normalized]
+
+
+def _t26_case_observed(case: dict[str, Any], scenario: str) -> bool:
+    """Check one scenario's externally visible event grammar."""
+
+    if case.get("scenario") != scenario or case.get("version") != T26_OFFLINE_AGENT_LOOP_VERSION:
+        return False
+    try:
+        events, kinds = _t26_event_sequence(case, scenario=scenario)
+    except EvidenceError:
+        return False
+    statuses = [event["status"] for event in events]
+    if not {"response", "tool_call", "tool_execution", "state_refill", "stop"}.issubset(kinds):
+        return False
+    if kinds[-1] != "stop":
+        return False
+    output_valid = case.get("output_valid")
+    if not isinstance(output_valid, bool):
+        return False
+    if scenario == "success":
+        return (
+            case.get("outcome") == "success"
+            and case.get("stop_reason") == "completed"
+            and output_valid
+            and kinds[-3:] == ["response", "structured_output", "stop"]
+        )
+    if scenario == "tool-failure":
+        return (
+            case.get("outcome") == "failure"
+            and case.get("stop_reason") == "tool_error"
+            and output_valid
+            and "error" in statuses
+            and kinds[-3:] == ["response", "structured_output", "stop"]
+        )
+    if scenario == "invalid-args":
+        return (
+            case.get("outcome") == "invalid-args"
+            and output_valid
+            and "invalid-arguments" in statuses
+            and kinds[-3:] == ["response", "structured_output", "stop"]
+            and kinds.count("tool_call") >= 2
+        )
+    if scenario == "budget-stop":
+        max_steps = case.get("max_steps")
+        return (
+            case.get("outcome") == "budget-stop"
+            and case.get("stop_reason") == "max_steps"
+            and output_valid is False
+            and case.get("structured_output") is None
+            and statuses[-1] == "budget"
+            and "structured_output" not in kinds
+            and kinds.count("response") == max_steps
+        )
+    if scenario == "retry-recovery":
+        return (
+            case.get("outcome") == "retry-recovery"
+            and case.get("stop_reason") == "completed"
+            and output_valid
+            and int(case.get("retry_count", -1)) >= 1
+            and "error" in statuses
+            and kinds.count("tool_call") >= 2
+            and kinds[-3:] == ["response", "structured_output", "stop"]
+        )
+    return False
+
+
+def _derive_t26_checks(cases: dict[str, dict[str, Any]]) -> list[dict[str, str]]:
+    success = cases.get("success", {})
+    retry = cases.get("retry-recovery", {})
+    state_refill = all(
+        "state_refill"
+        in [
+            event.get("kind")
+            for event in cases.get(scenario, {}).get("events", [])
+            if isinstance(event, dict)
+        ]
+        for scenario in ("success", "tool-failure", "invalid-args", "retry-recovery")
+    )
+    all_cases = all(
+        _t26_case_observed(cases.get(scenario, {}), scenario)
+        for scenario in T26_OFFLINE_AGENT_LOOP_SCENARIOS
+    )
+    return [
+        {"id": "deterministic-fixture", "result": "passed" if all_cases else "failed"},
+        {"id": "response-tool-loop", "result": "passed" if _t26_case_observed(success, "success") else "failed"},
+        {"id": "state-refill", "result": "passed" if state_refill else "failed"},
+        {"id": "structured-output", "result": "passed" if _t26_case_observed(success, "success") and _t26_case_observed(retry, "retry-recovery") else "failed"},
+        {"id": "tool-failure-stop", "result": "passed" if _t26_case_observed(cases.get("tool-failure", {}), "tool-failure") else "failed"},
+        {"id": "invalid-arguments-recovery", "result": "passed" if _t26_case_observed(cases.get("invalid-args", {}), "invalid-args") else "failed"},
+        {"id": "budget-stop", "result": "passed" if _t26_case_observed(cases.get("budget-stop", {}), "budget-stop") else "failed"},
+        {"id": "retry-recovery", "result": "passed" if _t26_case_observed(retry, "retry-recovery") else "failed"},
+        {"id": "framework-free", "result": "passed"},
+    ]
+
+
+def validate_t26_experiment(
+    experiment: Any,
+    *,
+    checks: list[dict[str, Any]],
+    document_result: str,
+) -> dict[str, Any]:
+    """Validate and minimize the T26 offline loop experiment.
+
+    The runner may include synthetic output values for teaching, but this
+    public seam only returns scenario names, event kinds, statuses and the
+    structured-output status.  Prompt text, arguments, paths and raw payloads
+    never cross the checker boundary.
+    """
+
+    if not isinstance(experiment, dict):
+        raise EvidenceError("T26 completed evidence must include an experiment object")
+    _reject_sensitive_unknown_fields(experiment, "T26 offline Agent loop experiment")
+    allowed = {"version", "implementation", "framework", "scenarios", "cases"}
+    unexpected = sorted(set(experiment) - allowed)
+    if unexpected:
+        raise EvidenceError("T26 experiment contains unsupported fields: " + ", ".join(unexpected))
+    if experiment.get("version") != T26_OFFLINE_AGENT_LOOP_VERSION:
+        raise EvidenceError("Unsupported T26 offline Agent loop experiment version")
+    if experiment.get("implementation") != T26_OFFLINE_AGENT_LOOP_IMPLEMENTATION:
+        raise EvidenceError("T26 experiment must identify the Python standard-library implementation")
+    if experiment.get("framework") != T26_OFFLINE_AGENT_LOOP_FRAMEWORK:
+        raise EvidenceError("T26 experiment must explicitly use no upper Agent framework")
+    if experiment.get("scenarios") != list(T26_OFFLINE_AGENT_LOOP_SCENARIOS):
+        raise EvidenceError("T26 experiment scenarios must follow the fixed fixture order")
+
+    raw_cases = experiment.get("cases")
+    if not isinstance(raw_cases, list) or not raw_cases:
+        raise EvidenceError("T26 experiment cases must be a non-empty list")
+    cases: dict[str, dict[str, Any]] = {}
+    for index, case in enumerate(raw_cases):
+        if not isinstance(case, dict):
+            raise EvidenceError(f"T26 case {index} must be an object")
+        _reject_sensitive_unknown_fields(case, f"T26 case {index}")
+        allowed_case = {
+            "version",
+            "scenario",
+            "outcome",
+            "max_steps",
+            "stop_reason",
+            "retry_count",
+            "tool_attempts",
+            "output_valid",
+            "structured_output",
+            "events",
+        }
+        unexpected_case = sorted(set(case) - allowed_case)
+        if unexpected_case:
+            raise EvidenceError(
+                f"T26 case {index} contains unsupported fields: " + ", ".join(unexpected_case)
+            )
+        scenario = case.get("scenario")
+        if scenario not in T26_OFFLINE_AGENT_LOOP_SCENARIOS or scenario in cases:
+            raise EvidenceError("T26 case scenarios must be unique known fixture scenarios")
+        if case.get("version") != T26_OFFLINE_AGENT_LOOP_VERSION:
+            raise EvidenceError(f"T26 {scenario} case has an unsupported version")
+        if case.get("outcome") not in T26_OFFLINE_AGENT_LOOP_ALLOWED_OUTCOMES:
+            raise EvidenceError(f"T26 {scenario} case outcome is not supported")
+        max_steps = case.get("max_steps")
+        if isinstance(max_steps, bool) or not isinstance(max_steps, int) or not 1 <= max_steps <= 8:
+            raise EvidenceError(f"T26 {scenario} max_steps must be an integer from 1 to 8")
+        stop_reason = case.get("stop_reason")
+        if stop_reason not in {"completed", "tool_error", "max_steps", "invalid-structured-output"}:
+            raise EvidenceError(f"T26 {scenario} stop_reason is not supported")
+        for field in ("retry_count", "tool_attempts"):
+            value = case.get(field)
+            if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 8:
+                raise EvidenceError(f"T26 {scenario} {field} must be an integer from 0 to 8")
+        if not isinstance(case.get("output_valid"), bool):
+            raise EvidenceError(f"T26 {scenario} output_valid must be boolean")
+        if case["output_valid"]:
+            output = _validate_t26_structured_output(case.get("structured_output"), f"T26 {scenario} structured_output")
+            structured_status = output["status"]
+        else:
+            if case.get("structured_output") is not None:
+                raise EvidenceError(f"T26 {scenario} invalid output must be null")
+            structured_status = "none"
+        events, event_kinds = _t26_event_sequence(case, scenario=scenario)
+        if scenario == "budget-stop" and case.get("stop_reason") != "max_steps":
+            raise EvidenceError("T26 budget-stop must have max_steps stop_reason")
+        if scenario != "budget-stop" and case.get("stop_reason") == "max_steps":
+            raise EvidenceError(f"T26 {scenario} cannot claim budget stop")
+        cases[scenario] = case
+
+    derived = _derive_t26_checks(cases)
+    if checks != derived:
+        raise EvidenceError("T26 evidence checks do not match the recorded scenario events")
+    if document_result == "passed" and any(check["result"] != "passed" for check in derived):
+        raise EvidenceError("Passed T26 evidence cannot contain failed or alternative checks")
+    if document_result in {"passed", "alternative"} and not all(
+        _t26_case_observed(cases.get(scenario, {}), scenario)
+        for scenario in T26_OFFLINE_AGENT_LOOP_SCENARIOS
+    ):
+        raise EvidenceError("Completed T26 evidence is missing one or more scenario paths")
+
+    public_cases = []
+    for scenario in T26_OFFLINE_AGENT_LOOP_SCENARIOS:
+        case = cases.get(scenario)
+        if case is None:
+            continue
+        events, event_kinds = _t26_event_sequence(case, scenario=scenario)
+        public_cases.append(
+            {
+                "scenario": scenario,
+                "outcome": case["outcome"],
+                "max_steps": case["max_steps"],
+                "stop_reason": case["stop_reason"],
+                "retry_count": case["retry_count"],
+                "tool_attempts": case["tool_attempts"],
+                "output_valid": case["output_valid"],
+                "structured_status": "none"
+                if case["structured_output"] is None
+                else _validate_t26_structured_output(
+                    case["structured_output"], f"T26 {scenario} structured_output"
+                )["status"],
+                "event_kinds": event_kinds,
+                "event_statuses": [event["status"] for event in events],
+            }
+        )
+    return {
+        "version": T26_OFFLINE_AGENT_LOOP_VERSION,
+        "implementation": T26_OFFLINE_AGENT_LOOP_IMPLEMENTATION,
+        "framework": T26_OFFLINE_AGENT_LOOP_FRAMEWORK,
+        "scenarios": list(T26_OFFLINE_AGENT_LOOP_SCENARIOS),
+        "cases": public_cases,
     }
 
 
@@ -2865,6 +3239,14 @@ def load_evidence_checks(
                 value.get("experiment"), document_result=document["result"]
             )
             return checks, experiment
+        if expected_lesson_id == T26_OFFLINE_AGENT_LOOP_LESSON_ID:
+            checks = validate_t26_evidence_checks(document["evidence"])
+            experiment = validate_t26_experiment(
+                value.get("experiment"),
+                checks=checks,
+                document_result=document["result"],
+            )
+            return checks, experiment
         return document["evidence"], None
     if expected_lesson_id == MCP_DISCOVERY_LESSON_ID:
         return validate_mcp_discovery(value)
@@ -2948,6 +3330,14 @@ def load_evidence_checks(
     if expected_lesson_id == MCP_CALL_LESSON_ID:
         result = classify_checks([check["result"] for check in checks])
         return validate_t20_experiment(value.get("experiment"), document_result=result)
+    if expected_lesson_id == T26_OFFLINE_AGENT_LOOP_LESSON_ID:
+        checks = validate_t26_evidence_checks(checks)
+        result = classify_checks([check["result"] for check in checks])
+        return checks, validate_t26_experiment(
+            value.get("experiment"),
+            checks=checks,
+            document_result=result,
+        )
     return checks, None
 
 
@@ -3386,6 +3776,7 @@ def check_lesson(
         PLUGIN_AUDIT_LESSON_ID,
         MCP_DISCOVERY_LESSON_ID,
         MCP_CALL_LESSON_ID,
+        T26_OFFLINE_AGENT_LOOP_LESSON_ID,
     }:
         raise ContractError(f"Unsupported evidence lesson: {lesson_id}")
     course_version = validate_foundation(root)
@@ -3861,6 +4252,48 @@ def check_lesson(
             },
         ]
         if evidence_file is not None:
+            checks, trace = load_evidence_checks(
+                evidence_file,
+                expected_lesson_id=lesson_id,
+                expected_course_version=course_version,
+            )
+    elif lesson_id == T26_OFFLINE_AGENT_LOOP_LESSON_ID:
+        if evidence_file is None:
+            checks = [
+                {
+                    "id": "offline-agent-loop-page",
+                    "result": "passed"
+                    if (root / "site/src/content/docs/module-11-agent-loop.mdx").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "offline-agent-loop-runner",
+                    "result": "passed"
+                    if (root / "labs/api-agent-loop/agent_loop.py").is_file()
+                    and (root / "labs/api-agent-loop/run.py").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "offline-agent-loop-contract",
+                    "result": "passed"
+                    if (root / "labs/api-agent-loop/README.md").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "offline-agent-loop-checker",
+                    "result": "passed"
+                    if (root / "checker/tests/test_api_agent_loop.py").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "offline-agent-loop-sources",
+                    "result": "passed"
+                    if (root / "docs/sources/source-ledger.json").is_file()
+                    else "failed",
+                },
+                {"id": "offline-agent-loop-evidence-executed", "result": "failed"},
+            ]
+        else:
             checks, trace = load_evidence_checks(
                 evidence_file,
                 expected_lesson_id=lesson_id,

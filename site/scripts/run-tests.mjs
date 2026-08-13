@@ -6,6 +6,7 @@ const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const testCommands = [
   ["--test", "scripts/test-course-shell.mjs"],
   ["--test", "scripts/test-agent-loop.mjs"],
+  ["--test", "scripts/test-offline-agent-loop.mjs"],
   ["--test", "scripts/test-agent-instruction.mjs"],
   ["--test", "scripts/test-context-budget.mjs"],
   ["--test", "scripts/test-hooks-tasks.mjs"],

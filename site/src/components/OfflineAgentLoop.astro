@@ -1,0 +1,126 @@
+<section class="offline-agent-loop" data-offline-agent-loop aria-labelledby="offline-agent-loop-title">
+  <header class="offline-agent-loop__heading">
+    <div>
+      <p class="offline-agent-loop__eyebrow">Python stdlib · fixture v1 · 无网络</p>
+      <h2 id="offline-agent-loop-title">把隐藏的控制流摊在桌面上</h2>
+    </div>
+    <span class="offline-agent-loop__version">t26-offline-agent-loop</span>
+  </header>
+  <p class="offline-agent-loop__lead">
+    这不是聊天窗口。你拥有 Harness：它接收响应、校验 tool call、执行本地工具、把结果回填状态，最后验证结构化输出或按预算停止。
+  </p>
+
+  <ol class="offline-agent-loop__trace" data-offline-trace>
+    <li data-event-kind="response">
+      <span class="offline-agent-loop__index">01</span>
+      <div><strong>响应</strong><p>确定性 fixture 提出下一步；它没有连接模型服务。</p></div>
+    </li>
+    <li data-event-kind="tool_call">
+      <span class="offline-agent-loop__index">02</span>
+      <div><strong>tool call</strong><p>Harness 验证工具名、参数类型和额外字段，再决定是否执行。</p></div>
+    </li>
+    <li data-event-kind="tool_execution">
+      <span class="offline-agent-loop__index">03</span>
+      <div><strong>工具执行</strong><p>标准库工具返回合成读数，或返回可分类的失败/无效参数。</p></div>
+    </li>
+    <li data-event-kind="state_refill">
+      <span class="offline-agent-loop__index">04</span>
+      <div><strong>状态回填</strong><p>工具结果进入下一轮状态；模型不会自动拥有工具实现。</p></div>
+    </li>
+    <li data-event-kind="structured_output">
+      <span class="offline-agent-loop__index">05</span>
+      <div><strong>结构化输出</strong><p>只有符合固定字段契约的结果才能被下游消费。</p></div>
+    </li>
+    <li data-event-kind="stop">
+      <span class="offline-agent-loop__index">06</span>
+      <div><strong>停止</strong><p>成功、明确失败或 <code>max_steps</code> 预算都必须成为可观察证据。</p></div>
+    </li>
+  </ol>
+
+  <div class="offline-agent-loop__scenarios" data-offline-scenarios>
+    <h3>同一控制流的五种故障条件</h3>
+    <div class="offline-agent-loop__table-wrap">
+      <table>
+        <caption>runner 的确定性 scenario fixture</caption>
+        <thead><tr><th scope="col">scenario</th><th scope="col">观察重点</th><th scope="col">停止证据</th></tr></thead>
+        <tbody>
+          <tr><th scope="row"><code>success</code></th><td>合法调用、结果回填、结构化完成</td><td><code>completed</code></td></tr>
+          <tr><th scope="row"><code>tool-failure</code></th><td>工具错误不会变成伪造读数</td><td><code>failed</code></td></tr>
+          <tr><th scope="row"><code>invalid-args</code></th><td>先拒绝无效参数，再用状态恢复</td><td>修正后的调用</td></tr>
+          <tr><th scope="row"><code>budget-stop</code></th><td>预算优先于继续调用</td><td><code>max_steps</code></td></tr>
+          <tr><th scope="row"><code>retry-recovery</code></th><td>限制一次瞬时错误重试</td><td>恢复后完成</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="offline-agent-loop__boundary" role="note" data-offline-boundary>
+    <strong>边界：</strong>Python runner 只验证 Agent Application 的本地控制流。它不模拟 Codex/Claude Code 的权限、上下文、账号或产品行为，也不证明真实 OpenAI/Anthropic API 已调用成功。
+  </p>
+
+  <noscript>
+    <p class="offline-agent-loop__noscript">本页的控制流图是静态 HTML；即使禁用 JavaScript，也可以阅读事件顺序。桌面实验请运行 <code>labs/api-agent-loop/run.py</code>。</p>
+  </noscript>
+</section>
+
+<style>
+  .offline-agent-loop {
+    margin-block: 2rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.75rem;
+    padding: clamp(1rem, 3vw, 2rem);
+    background: color-mix(in srgb, var(--sl-color-accent-low) 38%, transparent);
+  }
+
+  .offline-agent-loop__heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .offline-agent-loop__eyebrow,
+  .offline-agent-loop__version {
+    color: var(--sl-color-gray-2);
+    font-family: var(--sl-font-mono);
+    font-size: 0.8rem;
+  }
+
+  .offline-agent-loop__eyebrow { margin: 0; color: var(--sl-color-accent-high); font-weight: 700; }
+  .offline-agent-loop h2 { margin-block: 0.4rem 0; }
+  .offline-agent-loop__lead { max-inline-size: 72ch; color: var(--sl-color-gray-2); }
+
+  .offline-agent-loop__trace {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+    gap: 0.5rem;
+    margin: 1.5rem 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .offline-agent-loop__trace li {
+    min-block-size: 8rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.5rem;
+    padding: 0.7rem;
+    background: var(--sl-color-bg);
+  }
+
+  .offline-agent-loop__trace strong { display: block; margin-block-start: 0.35rem; }
+  .offline-agent-loop__trace p { margin: 0.35rem 0 0; font-size: 0.86rem; }
+  .offline-agent-loop__index { color: var(--sl-color-accent-high); font-family: var(--sl-font-mono); font-size: 0.75rem; }
+  .offline-agent-loop__table-wrap { overflow-x: auto; }
+  .offline-agent-loop table { inline-size: 100%; min-inline-size: 38rem; border-collapse: collapse; }
+  .offline-agent-loop caption { margin-block: 0.5rem; text-align: start; color: var(--sl-color-gray-2); }
+  .offline-agent-loop th,
+  .offline-agent-loop td { border-block-end: 1px solid var(--sl-color-gray-5); padding: 0.55rem; text-align: start; vertical-align: top; }
+  .offline-agent-loop__boundary { margin-block: 1.25rem 0; border-inline-start: 0.2rem solid var(--sl-color-orange-high); padding-inline-start: 0.8rem; color: var(--sl-color-gray-2); }
+  .offline-agent-loop__noscript { margin-block: 1rem 0; color: var(--sl-color-gray-2); }
+
+  @media (max-width: 600px) {
+    .offline-agent-loop__heading { align-items: flex-start; flex-direction: column; gap: 0.25rem; }
+    .offline-agent-loop__trace { grid-template-columns: 1fr; }
+    .offline-agent-loop__trace li { min-block-size: auto; }
+  }
+</style>

@@ -841,6 +841,56 @@
         "Apache-2.0",
         "MCP-Inspector-MIT"
       ]
+    },
+    {
+      "id": "t26-offline-agent-loop",
+      "title": "模块 11A：离线最小 Agent loop",
+      "stage": "advanced",
+      "duration_minutes": 75,
+      "prerequisites": ["t15-context-recovery"],
+      "outcomes": [
+        "用 Python 标准库手写不依赖上层 Agent 框架的最小 Agent Application loop",
+        "观察响应、tool call、参数校验、工具执行、状态回填、结构化输出和停止条件",
+        "在成功、工具失败、无效参数、预算停止和受限重试路径中保留可核验证据",
+        "区分离线控制流 fixture 与 Coding Agent 客户端、真实模型/API 和 SDK 的验证边界"
+      ],
+      "artifacts": [
+        "labs/api-agent-loop/t26-evidence.json（匿名 evidence contract v1）",
+        "五种 scenario 的 response/tool/state/stop 观察记录",
+        "一份无效参数或工具失败后的恢复说明"
+      ],
+      "primary_tool": "Python 3.11+ 标准库离线 fixture + PowerShell 7",
+      "migration_tool": "Codex or Claude Code（只读概念迁移挑战；不由本课发起 live call）",
+      "platforms": {
+        "primary": "Windows 11 + PowerShell 7",
+        "secondary": [
+          "macOS/Linux：Python runner 语义可迁移；本轮未完成对应 shell 现场复核"
+        ]
+      },
+      "versions": {
+        "client": "Python 3.11+; PowerShell 7.x; no Coding Agent client call",
+        "sdk": "not-applicable; upper Agent frameworks intentionally excluded",
+        "model": "deterministic response fixture v1; no model/API call",
+        "protocol": "agent-engineering-course/evidence v1; T26 experiment v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free; no model/API quota or SDK account",
+        "network": "runner and checker are offline; official migration references need network only when refreshed"
+      },
+      "risk": {
+        "permissions": "runner only writes to an explicitly supplied output JSON path; tool executes synthetic read-only logic",
+        "side_effects": "no network, credentials, real devices, source uploads or remote calls; use a temporary output directory",
+        "staleness": "Python and PowerShell commands, course evidence contract and official API migration docs should be rechecked before release; real provider behavior is not inferred from the fixture"
+      },
+      "sources": [
+        "course-offline-agent-loop-original",
+        "python-json-library-t26",
+        "openai-responses-function-calling-t26",
+        "anthropic-tool-use-t26"
+      ],
+      "licenses": ["CC-BY-4.0", "MIT"]
     }
   ]
 }

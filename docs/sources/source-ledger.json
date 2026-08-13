@@ -821,6 +821,46 @@
       "usage": "合成 telemetry server/client、T19 discovery 接缝、调用前人工确认、bounded side effect、四类 fault 注入、恢复和匿名 evidence 边界",
       "license_or_terms": "project-original; no copied assets",
       "copied_assets": false
+    },
+    {
+      "id": "course-offline-agent-loop-original",
+      "title": "模块 11A 离线最小 Agent loop 原创实验设计",
+      "url": "docs/course-plan.md",
+      "source_role": "course-original",
+      "pinned_version": "workspace baseline f051fcb; T26 fixture v1 checked 2026-08-13",
+      "usage": "响应、tool call、参数校验、工具执行、状态回填、结构化输出、预算、错误与重试恢复的课程叙事和确定性实验设计",
+      "license_or_terms": "project-original; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "python-json-library-t26",
+      "title": "Python json — JSON encoder and decoder",
+      "url": "https://docs.python.org/3.12/library/json.html",
+      "source_role": "official-standard-library-fact-source",
+      "pinned_version": "Python 3.12 documentation observed 2026-08-13; runner requires Python 3.11+",
+      "usage": "确认离线 runner 使用标准库 JSON 读写匿名 evidence；正文和代码为课程原创，不复制文档示例",
+      "license_or_terms": "Python Documentation License; reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "openai-responses-function-calling-t26",
+      "title": "OpenAI API: Function calling",
+      "url": "https://developers.openai.com/api/docs/guides/function-calling",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "official page observed 2026-08-13; no SDK, model, price or live call asserted",
+      "usage": "校准后续 OpenAI API 适配中的函数工具、JSON Schema 和应用执行边界；本课不复制 Responses API 代码或发起调用",
+      "license_or_terms": "reference-only; OpenAI documentation and product terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-tool-use-t26",
+      "title": "Anthropic Claude Platform: How tool use works",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/how-tool-use-works",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "official page observed 2026-08-13; no SDK, model, price or live call asserted",
+      "usage": "校准 tool_use/tool_result 的概念迁移边界；本课只教授厂商无关控制流，不复制 Anthropic 字段或声称 fixture 复现其 API",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply; no copied assets",
+      "copied_assets": false
     }
   ]
 }

@@ -1,0 +1,119 @@
+---
+title: 模块 11A：离线最小 Agent loop
+description: 用 Python 标准库和确定性响应 fixture 手写响应、工具执行、状态回填、结构化输出、停止与恢复。
+sidebar:
+  order: 12
+---
+
+import OfflineAgentLoop from '../../components/OfflineAgentLoop.astro';
+import EvidenceLoop from '../../components/EvidenceLoop.astro';
+
+# 模块 11A：离线最小 Agent loop
+
+> 这是进阶实战线的第一条纵向切片。主实验是本地 Python，不连接真实模型或 API；它把 Agent Application 的控制权放回你的代码。
+
+## 真实问题
+
+如果只看 Coding Agent 的最终回答，很难分辨“模型提出了工具请求”“应用真正执行了工具”“结果回到了状态”以及“循环为什么停下”。直接调用 SDK 也容易把这些控制流藏在抽象层里。本课用一个设备遥测与报告工具的合成任务，要求你自己拥有每个边界，并留下能被 checker 复核的证据。
+
+完成本课后，你应能：
+
+- 用 Python 标准库写出不依赖上层 Agent 框架的最小 Agent Application loop；
+- 区分响应、tool call、参数校验、工具执行、状态回填、结构化输出和停止条件；
+- 处理成功、工具失败、无效参数、预算停止和受限重试恢复；
+- 说明它与 Codex/Claude Code 这类 Coding Agent 客户端共享什么能力目标、又不能互相推断哪些产品事实。
+
+## 心智模型：谁拥有控制权
+
+本实验中，fixture 只负责给出确定性“模型响应”。Harness（你的 Python loop）拥有工具 schema、参数校验、执行权限、状态容器、重试预算和停止条件；工具函数只返回合成结果或分类错误；结构化输出验证器决定结果能否交给下游。
+
+```text
+response
+  ├─ final → validate structured output → stop
+  └─ tool_call → validate arguments → execute tool
+                    └─ state_refill → next response
+```
+
+这解释了为什么 Agent Application 不等于“模型加 Prompt”：模型（或本课的 fixture）只提出下一步，应用必须拥有执行、状态、权限和停手。
+
+<OfflineAgentLoop />
+
+## 操作前预测
+
+在运行 runner 前先写下预测：
+
+1. `success` 会产生几次 response？工具调用和状态回填各在哪里出现？
+2. `invalid-args` 的无效 `device_id` 会到达工具函数，还是在 schema/参数边界被拒绝？
+3. `tool-failure` 与 `retry-recovery` 都遇到错误时，为什么一个安全失败、另一个可以恢复？
+4. `budget-stop --max-steps 1` 是否会产生结构化成功结果？如果不会，checker 应该看到什么？
+
+把预测写进实验记录，随后以 `events` 和 `stop_reason` 对照；不要以最后一句自然语言是否“听起来正确”作为验收。
+
+## 主工具演示：看见每一个 seam
+
+打开 [`labs/api-agent-loop/agent_loop.py`](https://github.com/TiegenFang/agent-engineering-course/blob/main/labs/api-agent-loop/agent_loop.py) 只看四个函数：
+
+- `DeterministicResponseFixture.respond`：固定响应，不发送请求；
+- `DeterministicTelemetryTool.execute`：先校验参数，再返回合成读数或错误；
+- `run_agent_loop`：编排 response → tool call → execution → state refill；
+- `validate_structured_output`：拒绝缺字段、额外字段和“失败却带读数”的结果。
+
+主循环的每一轮最多处理一个 response。`max_steps` 计数的是响应轮数，工具校验、执行和状态回填属于该轮；预算到达后追加 `stop_reason=max_steps`，不再伪造 final output。
+
+## 本地实验
+
+在 Windows 11 + PowerShell 7 桌面终端运行：
+
+```powershell
+$t26OutputDir = Join-Path ([System.IO.Path]::GetTempPath()) "agent-course-t26"
+New-Item -ItemType Directory -Force -Path $t26OutputDir | Out-Null
+python labs/api-agent-loop/run.py --scenario all --output (Join-Path $t26OutputDir "t26-evidence.json")
+```
+
+先运行默认的五场景汇总，再逐个阅读 JSON 中每个 case 的 `events`、`outcome`、`stop_reason`、`retry_count` 和 `output_valid`。输出只包含合成实验字段；若你要改变输入，修改 fixture 的安全合成标识符后仍需重新运行测试，不要填入真实设备名称。
+
+## 故障注入与恢复
+
+按以下顺序观察，保留失败证据：
+
+1. `tool-failure`：工具返回 `tool-unavailable`，结果回填为错误，结构化输出必须是 `status=failed`；恢复是确认失败位置后重新运行成功 fixture，而不是把错误包装成读数。
+2. `invalid-args`：第一轮参数不符合 schema，工具执行不会读取它；fixture 收到错误回填后发出合法调用，形成可观察恢复。
+3. `retry-recovery --retry-budget 1`：第一次 `transient-unavailable` 只允许一次重试；第二次成功后才可完成。把预算改成 `0`，验证它退化为安全失败而非无限重试。
+4. `budget-stop --max-steps 1`：Harness 在边界停止，结构化输出为空；这是一条受控替代路径，不是成功。
+
+如果 checker 报 `partial`，先看缺少哪个场景或哪个事件，不要直接改 evidence 的结果字段。checker 会从实验事件重新推导结果，拒绝手工伪造“全通过”。
+
+## 迁移挑战：保留能力目标，换工具边界
+
+Codex 和 Claude Code 是 Coding Agent/Harness：它们可在真实仓库中读取指令、调用工具并执行多步工程任务；本课 Python loop 是 Agent Application。请任选你能使用的 Coding Agent，完成一个只读迁移说明：
+
+- 用不同的合成 `scenario` 描述它如何区分响应、工具执行、结果回填和停止；
+- 明确哪些权限/状态仍由客户端拥有，哪些契约需要应用代码自己验证；
+- 不调用真实 API，不把 Coding Agent 的产品字段抄成通用协议；
+- 附上本课 checker 的匿名结果，区分“离线控制流已验证”和“现场客户端/API 未验证”。
+
+迁移挑战改变故障条件和权限边界，而不是复制主实验的命令列表。后续模块再把 fixture 换成受预算限制的官方 API 现场路径。
+
+## 可核验成果
+
+完成五场景并运行本地 checker：
+
+```powershell
+$t26Evidence = Join-Path ([System.IO.Path]::GetTempPath()) "agent-course-t26\t26-evidence.json"
+python -m course_check check t26-offline-agent-loop --root . --evidence-file $t26Evidence --json
+```
+
+预期得到 `lesson_id=t26-offline-agent-loop`、`anonymous=true`，且 evidence 至少覆盖：确定性 fixture、响应/工具闭环、状态回填、结构化输出、工具失败停止、无效参数恢复、预算停止、重试恢复和无框架实现。把命令输出和预测/恢复记录一并保存；页面的阅读状态不算成果。
+
+## 风险、版本与来源卡片
+
+- **账号与成本**：runner、Python 标准库和本地 checker 免费；本课不需要 OpenAI/Anthropic 账号、API key 或网络。
+- **权限与副作用**：只在你明确指定的一次性临时目录写 evidence；代码不连接远程、不调用工具服务、不触碰真实设备。
+- **隐私边界**：只使用合成 `telemetry-17`；不要把真实路径、凭据、个人信息或研究数据写入参数、日志或截图。
+- **预期失败与恢复**：无效参数、工具失败和预算停止都是刻意注入的可恢复证据；先分类错误，再调整重试/预算并重跑。
+- **版本与验证边界**：Python runner 与 evidence fixture v1、课程版本 `0.1.0-alpha` 在 2026-08-13 核验；源码/测试/checker/静态构建已验证，真实模型、OpenAI/Anthropic API、SDK、Codex、Claude Code、跨平台现场和生产部署未验证。
+- **来源与许可**：课程原创讲解和实验设计采用 CC BY 4.0；runner、fixture、测试与 checker 采用 MIT。Python `json` 标准库、OpenAI Responses/function calling 和 Anthropic tool-use 文档只用于事实校准与迁移阅读，不复制第三方代码。
+
+<EvidenceLoop lessonId="t26-offline-agent-loop" />
+
+下一步是双 API/SDK 对照：先保留本课对状态、工具、预算和证据的所有权，再在当天官方文档和受预算现场冒烟中接入真实模型。
