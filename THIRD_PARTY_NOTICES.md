@@ -8,5 +8,6 @@ Foundation 使用以下构建依赖。版本与许可证在 2026-08-13 通过 np
 | `@astrojs/starlight` | 0.41.7 | MIT | 课程内容导航与页面框架 |
 | `@astrojs/check` | 0.9.10 | MIT | Astro/TypeScript 检查 |
 | `typescript` | 6.0.3 | Apache-2.0 | 类型检查；选择 `@astrojs/check@0.9.10` 支持的最新 6.x 版本 |
+| `playwright` | 1.62.1 | Apache-2.0 | 固定 Chromium 浏览器运行时，用于 T03 三版与索引的桌面/移动交互验收 |
 
 本表只是发布时的依赖摘要，不替代各软件包随附的完整许可证。第三方教材、代码、图示和数据必须在进入课程前单独登记到来源账本。

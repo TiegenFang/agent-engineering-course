@@ -1,0 +1,197 @@
+---
+import courseVersion from "../../../course-version.json";
+
+const expectedCourseVersion = courseVersion.course_version;
+---
+
+<section
+  class="evidence-loop"
+  data-evidence-loop
+  data-course-version={expectedCourseVersion}
+  aria-labelledby="evidence-loop-title"
+>
+  <div class="evidence-loop__heading">
+    <div>
+      <p class="eyebrow">本地学习记录</p>
+      <h2 id="evidence-loop-title">导入可核验成果</h2>
+    </div>
+    <span class="evidence-loop__version">{expectedCourseVersion}</span>
+  </div>
+
+  <p>
+    在课程工作区的 <code>checker</code> 目录运行 <code>python -m course_check check t01-foundation --root .. --output ..\evidence.json</code>，
+    再把生成的匿名 JSON 导入这里。记录只保存在当前浏览器，不上传源码、密钥或原始数据。
+  </p>
+
+  <div class="evidence-loop__controls">
+    <label for="evidence-file">选择 checker JSON</label>
+    <input id="evidence-file" type="file" accept="application/json,.json" />
+    <button type="button" data-import-evidence>导入选定 JSON</button>
+    <button type="button" data-export-evidence>导出本地记录</button>
+    <button type="button" data-clear-evidence>清除本地记录</button>
+  </div>
+
+  <p class="evidence-loop__status" data-evidence-status role="status" aria-live="polite">
+    尚未导入 checker 证据。
+  </p>
+
+  <div class="evidence-loop__results" aria-labelledby="evidence-results-title">
+    <h3 id="evidence-results-title">已保存的证据</h3>
+    <ul data-evidence-results>
+      <li>暂无本地证据。</li>
+    </ul>
+  </div>
+
+  <p class="evidence-loop__privacy">
+    交换契约只保留课程版本、课节身份、结果和证据摘要；未知字段会被忽略。
+    如果版本不匹配，网页会拒绝导入而不会覆盖已有记录。
+  </p>
+</section>
+
+<script>
+  import {
+    EvidenceRecordError,
+    clearLearningRecord,
+    emptyLearningRecord,
+    loadLearningRecord,
+    mergeEvidence,
+    parseLearningInput,
+    saveLearningRecord,
+    serializeLearningRecord,
+  } from "../lib/evidence-record.mjs";
+
+  type EvidenceResult = {
+    lesson_id: string;
+    result: string;
+    checked_on: string;
+    summary: string;
+    evidence: Array<{ id: string; result: string }>;
+  };
+  type LearningRecord = {
+    contract: string;
+    contract_version: string;
+    course_version: string;
+    results: EvidenceResult[];
+  };
+
+  const root = document.querySelector("[data-evidence-loop]");
+  if (root instanceof HTMLElement) {
+    const courseVersion = root.dataset.courseVersion ?? "";
+    const storageKey = `agent-engineering-course:learning-record:${courseVersion}`;
+    const fileInput = root.querySelector("#evidence-file");
+    const importButton = root.querySelector("[data-import-evidence]");
+    const exportButton = root.querySelector("[data-export-evidence]");
+    const clearButton = root.querySelector("[data-clear-evidence]");
+    const status = root.querySelector("[data-evidence-status]");
+    const results = root.querySelector("[data-evidence-results]");
+    let record: LearningRecord = emptyLearningRecord(courseVersion) as LearningRecord;
+
+    const setStatus = (message: string, kind = "") => {
+      if (!(status instanceof HTMLElement)) return;
+      status.textContent = message;
+      status.dataset.status = kind;
+    };
+
+    const persist = () => {
+      try {
+        saveLearningRecord(localStorage, storageKey, record);
+        return true;
+      } catch {
+        setStatus("无法写入浏览器本地记录；请检查浏览器存储权限。", "error");
+        return false;
+      }
+    };
+
+    const resultLabel: Record<string, string> = {
+      passed: "正确",
+      partial: "部分完成",
+      failed: "错误",
+      alternative: "替代实现",
+    };
+
+    const render = () => {
+      if (!(results instanceof HTMLElement)) return;
+      results.replaceChildren();
+      if (record.results.length === 0) {
+        const empty = document.createElement("li");
+        empty.textContent = "暂无本地证据。";
+        results.append(empty);
+        return;
+      }
+      for (const item of record.results) {
+        const listItem = document.createElement("li");
+        const title = document.createElement("strong");
+        title.textContent = item.lesson_id;
+        const state = document.createElement("span");
+        state.textContent = `${resultLabel[item.result] ?? item.result} · ${item.checked_on}`;
+        const summary = document.createElement("p");
+        summary.textContent = item.summary;
+        listItem.append(title, state, summary);
+        results.append(listItem);
+      }
+    };
+
+    const importText = (text: string) => {
+      try {
+        const incoming = parseLearningInput(text, courseVersion) as LearningRecord;
+        record = mergeEvidence(record, incoming) as LearningRecord;
+        if (persist()) {
+          render();
+          setStatus(`已导入 ${incoming.results.length} 条匿名证据。`, "success");
+        }
+      } catch (error) {
+        if (error instanceof EvidenceRecordError && error.code === "incompatible-course-version") {
+          setStatus("拒绝导入：证据属于不兼容的课程版本。", "error");
+        } else {
+          setStatus(
+            `导入失败：${error instanceof Error ? error.message : "JSON 不符合证据契约。"}`,
+            "error",
+          );
+        }
+      }
+    };
+
+    try {
+      const saved = loadLearningRecord(localStorage, storageKey, courseVersion) as LearningRecord;
+      if (saved.results.length > 0) {
+        record = saved;
+        setStatus(`已恢复 ${record.results.length} 条本地证据。`, "success");
+      }
+    } catch {
+      record = emptyLearningRecord(courseVersion);
+      setStatus("已有本地记录无法读取；当前记录保持不变。", "error");
+    }
+    render();
+
+    importButton?.addEventListener("click", async () => {
+      if (!(fileInput instanceof HTMLInputElement) || !fileInput.files?.[0]) {
+        setStatus("请先选择一个 checker JSON 文件。", "error");
+        return;
+      }
+      importText(await fileInput.files[0].text());
+      fileInput.value = "";
+    });
+
+    exportButton?.addEventListener("click", () => {
+      const blob = new Blob([serializeLearningRecord(record)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "agent-engineering-course-progress.json";
+      link.click();
+      URL.revokeObjectURL(url);
+      setStatus("已导出本地学习记录。", "success");
+    });
+
+    clearButton?.addEventListener("click", () => {
+      record = emptyLearningRecord(courseVersion);
+      try {
+        clearLearningRecord(localStorage, storageKey);
+        render();
+        setStatus("已清除本地学习记录。", "success");
+      } catch {
+        setStatus("无法清除浏览器本地记录；请检查浏览器存储权限。", "error");
+      }
+    });
+  }
+</script>

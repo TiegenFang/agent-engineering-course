@@ -79,6 +79,118 @@
   font-size: 0.75rem;
 }
 
+.evidence-loop {
+  margin-block: 2rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.75rem;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: color-mix(in srgb, var(--sl-color-accent-low) 42%, transparent);
+}
+
+.evidence-loop__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.evidence-loop__heading h2 {
+  margin-block: 0.35rem 0;
+}
+
+.evidence-loop__version {
+  color: var(--sl-color-gray-2);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.evidence-loop__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin-block: 1.25rem;
+}
+
+.evidence-loop__controls label {
+  font-weight: 700;
+}
+
+.evidence-loop__controls button {
+  border: 1px solid var(--sl-color-accent);
+  border-radius: 0.45rem;
+  padding: 0.5rem 0.75rem;
+  color: var(--sl-color-text-invert);
+  background: var(--sl-color-accent);
+  cursor: pointer;
+  font: inherit;
+}
+
+.evidence-loop__controls button:hover {
+  background: var(--sl-color-accent-high);
+}
+
+.evidence-loop__controls button:focus-visible,
+.evidence-loop__controls input:focus-visible {
+  outline: 0.2rem solid var(--sl-color-accent-high);
+  outline-offset: 0.15rem;
+}
+
+.evidence-loop__status {
+  border-inline-start: 0.2rem solid var(--sl-color-gray-4);
+  padding-inline-start: 0.75rem;
+}
+
+.evidence-loop__status[data-status='success'] {
+  border-color: var(--sl-color-accent);
+}
+
+.evidence-loop__status[data-status='error'] {
+  border-color: var(--sl-color-red-high);
+}
+
+.evidence-loop__results {
+  margin-block-start: 1.5rem;
+}
+
+.evidence-loop__results h3 {
+  margin-block-end: 0.5rem;
+}
+
+.evidence-loop__results ul {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0;
+  list-style: none;
+}
+
+.evidence-loop__results li {
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  background: var(--sl-color-bg);
+}
+
+.evidence-loop__results li strong,
+.evidence-loop__results li span {
+  display: inline-block;
+  margin-inline-end: 0.65rem;
+}
+
+.evidence-loop__results li span {
+  color: var(--sl-color-gray-2);
+  font-size: 0.85rem;
+}
+
+.evidence-loop__results li p {
+  margin-block: 0.35rem 0;
+}
+
+.evidence-loop__privacy {
+  color: var(--sl-color-gray-2);
+  font-size: 0.9rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

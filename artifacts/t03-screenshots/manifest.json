@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-13T03:52:41.943Z",
+  "generatedAt": "2026-08-13T04:17:31.300Z",
   "runtime": {
     "node": "v22.18.0",
     "playwright": "1.62.1",
@@ -25,6 +25,97 @@
   },
   "directions": [
     {
+      "direction": "index",
+      "desktop": {
+        "title": "T03 可见方向评审 · Agent 工程入门",
+        "width": 1440,
+        "viewport": 1440,
+        "main": true,
+        "skipLabel": "跳到主要内容",
+        "reducedMotionActive": false,
+        "reducedMotionRule": true,
+        "styles": {
+          "normalContrast": 6.011356218837601,
+          "focusContrast": 4.700741358244081,
+          "focusContrastBody": 4.700741358244081,
+          "riskContrast": null,
+          "under44": [],
+          "normalSelector": ".eyebrow",
+          "normalColor": "rgb(0, 107, 87)",
+          "bodyBackground": "rgb(245, 247, 243)",
+          "focusColor": "rgb(164, 93, 0)",
+          "focusBackground": "rgb(245, 247, 243)",
+          "focusElement": {
+            "tag": "A",
+            "className": "skip-link astro-e4dnceow",
+            "outlineStyle": "solid",
+            "outlineWidth": "3px"
+          }
+        },
+        "interaction": {
+          "hover": {
+            "background": "rgb(231, 238, 233)",
+            "color": "rgb(0, 107, 87)",
+            "contrast": 5.493944691321611,
+            "focusVisible": true
+          },
+          "focus": {
+            "background": "rgb(231, 238, 233)",
+            "color": "rgb(0, 107, 87)",
+            "contrast": 5.493944691321611,
+            "focusVisible": true
+          }
+        },
+        "screenshot": "t03-index-desktop.png",
+        "sha256": "eecd3814fa622c428c869f29b9900714bd10cb2fbefe9dbebe925580ad56376b"
+      },
+      "mobile": {
+        "title": "T03 可见方向评审 · Agent 工程入门",
+        "width": 390,
+        "viewport": 390,
+        "main": true,
+        "skipLabel": "跳到主要内容",
+        "reducedMotionActive": true,
+        "reducedMotionRule": true,
+        "styles": {
+          "normalContrast": 6.011356218837601,
+          "focusContrast": 4.700741358244081,
+          "focusContrastBody": 4.700741358244081,
+          "riskContrast": null,
+          "under44": [],
+          "normalSelector": ".eyebrow",
+          "normalColor": "rgb(0, 107, 87)",
+          "bodyBackground": "rgb(245, 247, 243)",
+          "focusColor": "rgb(164, 93, 0)",
+          "focusBackground": "rgb(245, 247, 243)",
+          "focusElement": {
+            "tag": "A",
+            "className": "skip-link astro-e4dnceow",
+            "outlineStyle": "solid",
+            "outlineWidth": "3px"
+          }
+        },
+        "interaction": {
+          "hover": {
+            "background": "rgb(231, 238, 233)",
+            "color": "rgb(0, 107, 87)",
+            "contrast": 5.493944691321611,
+            "focusVisible": true
+          },
+          "focus": {
+            "background": "rgb(231, 238, 233)",
+            "color": "rgb(0, 107, 87)",
+            "contrast": 5.493944691321611,
+            "focusVisible": true
+          }
+        },
+        "screenshot": "t03-index-mobile.png",
+        "sha256": "2de8d9f223ab4a7469217fe6b14e4323dd0edf069072234dea6632bd08069ba5"
+      },
+      "consoleErrors": [],
+      "pageErrors": []
+    },
+    {
       "direction": "quiet-grid",
       "desktop": {
         "title": "Quiet Grid · Agent 工程入门",
@@ -38,6 +129,7 @@
           "normalContrast": 4.58811996534815,
           "focusContrast": 4.700741358244081,
           "focusContrastBody": 4.700741358244081,
+          "riskContrast": null,
           "under44": [],
           "normalSelector": ".eyebrow",
           "normalColor": "rgb(8, 127, 104)",
@@ -51,8 +143,9 @@
             "outlineWidth": "3px"
           }
         },
+        "interaction": null,
         "screenshot": "quiet-grid-desktop.png",
-        "sha256": "6ed20b39648917568b9003e2ff7b1beb2c1e04354837605ee25a2d742d04b722"
+        "sha256": "ead5ddfa78b2ff38749a2f89ed906cbd730b48aac09ce3ef40344537b7199f3d"
       },
       "mobile": {
         "title": "Quiet Grid · Agent 工程入门",
@@ -66,6 +159,7 @@
           "normalContrast": 4.58811996534815,
           "focusContrast": 4.700741358244081,
           "focusContrastBody": 4.700741358244081,
+          "riskContrast": null,
           "under44": [],
           "normalSelector": ".eyebrow",
           "normalColor": "rgb(8, 127, 104)",
@@ -79,8 +173,9 @@
             "outlineWidth": "3px"
           }
         },
+        "interaction": null,
         "screenshot": "quiet-grid-mobile.png",
-        "sha256": "8ea9a13689b154b2e520b66e244b9bf0762d9a0353d07f8aba692602f6afb166"
+        "sha256": "c15e93cdb904943eaa85e1228ab6bbaf2bd21ee6b3f56ea2059d301de77a7e79"
       },
       "consoleErrors": [],
       "pageErrors": []
@@ -99,6 +194,7 @@
           "normalContrast": 6.212978186176223,
           "focusContrast": 4.427135369634619,
           "focusContrastBody": 4.427135369634619,
+          "riskContrast": 4.7709309511556945,
           "under44": [],
           "normalSelector": ".article-label",
           "normalColor": "rgb(150, 59, 40)",
@@ -112,8 +208,9 @@
             "outlineWidth": "3px"
           }
         },
+        "interaction": null,
         "screenshot": "editorial-manual-desktop.png",
-        "sha256": "ad87cab6b0a916e7311e62723310cb2b76c26858b66d7720d864a2574148b2b3"
+        "sha256": "667b32964c19ff9409bc4ddd4d4f3e01107bcf1510cabaff7212bc7d0d225e66"
       },
       "mobile": {
         "title": "Editorial Manual · Agent 工程入门",
@@ -127,6 +224,7 @@
           "normalContrast": 6.212978186176223,
           "focusContrast": 4.427135369634619,
           "focusContrastBody": 4.427135369634619,
+          "riskContrast": 4.7709309511556945,
           "under44": [],
           "normalSelector": ".article-label",
           "normalColor": "rgb(150, 59, 40)",
@@ -140,8 +238,9 @@
             "outlineWidth": "3px"
           }
         },
+        "interaction": null,
         "screenshot": "editorial-manual-mobile.png",
-        "sha256": "76abe055f008cb1cc51d2c0b66985cf657e0d039a38b887e2c61f26d21b9f6c1"
+        "sha256": "ebceab07b6cb609c4b74d4de4e33fcbcb13f38de1ec41a036007799bf880164c"
       },
       "consoleErrors": [],
       "pageErrors": []
@@ -160,6 +259,7 @@
           "normalContrast": 11.273769364800044,
           "focusContrast": 3.554148249745352,
           "focusContrastBody": 3.554148249745352,
+          "riskContrast": null,
           "under44": [],
           "normalSelector": ".console-kicker",
           "normalColor": "rgb(243, 199, 95)",
@@ -173,8 +273,9 @@
             "outlineWidth": "3px"
           }
         },
+        "interaction": null,
         "screenshot": "evidence-console-desktop.png",
-        "sha256": "f2fd40c4b9cb347c0e07be1b26847c63b629f95f28aec7b168c9d1dc37392ce9"
+        "sha256": "133a6acff764add3faa36612b9aa109f86ecf96e4895f000c7027a98995f6bc3"
       },
       "mobile": {
         "title": "Evidence Console · Agent 工程入门",
@@ -188,6 +289,7 @@
           "normalContrast": 11.273769364800044,
           "focusContrast": 3.554148249745352,
           "focusContrastBody": 3.554148249745352,
+          "riskContrast": null,
           "under44": [],
           "normalSelector": ".console-kicker",
           "normalColor": "rgb(243, 199, 95)",
@@ -201,8 +303,9 @@
             "outlineWidth": "3px"
           }
         },
+        "interaction": null,
         "screenshot": "evidence-console-mobile.png",
-        "sha256": "c3b38c2de15e0568452125312e902fa50a815f89e38604f2a42fca658c23f085"
+        "sha256": "5cd294799ee5592c672be98ef3bab951cd5baf36afe2dc665519edf743043225"
       },
       "consoleErrors": [],
       "pageErrors": []

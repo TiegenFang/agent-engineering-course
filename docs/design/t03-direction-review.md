@@ -15,6 +15,7 @@
 
 | 方向 | 桌面 | 移动 |
 | --- | --- | --- |
+| 方向索引 | `t03-index-desktop.png` | `t03-index-mobile.png` |
 | Quiet Grid | `quiet-grid-desktop.png` | `quiet-grid-mobile.png` |
 | Editorial Manual | `editorial-manual-desktop.png` | `editorial-manual-mobile.png` |
 | Evidence Console | `evidence-console-desktop.png` | `evidence-console-mobile.png` |

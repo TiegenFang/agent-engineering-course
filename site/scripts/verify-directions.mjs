@@ -11,7 +11,7 @@ const siteRoot = path.resolve(scriptDirectory, "..");
 const workspaceRoot = path.resolve(siteRoot, "..");
 const baseUrl = process.env.T03_PREVIEW_URL || "http://127.0.0.1:4321/agent-engineering-course";
 const outputDir = process.env.T03_SCREENSHOT_DIR || path.resolve(workspaceRoot, "artifacts", "t03-screenshots");
-const directions = ["quiet-grid", "editorial-manual", "evidence-console"];
+const directions = ["index", "quiet-grid", "editorial-manual", "evidence-console"];
 const viewports = {
   desktop: { width: 1440, height: 900 },
   mobile: { width: 390, height: 844 },
@@ -153,7 +153,9 @@ const assertAccessibleStyles = async (page, direction) => {
       ? ".article-label"
       : document.body.classList.contains("quiet-page")
         ? ".eyebrow"
-        : ".console-kicker";
+        : document.body.classList.contains("console-page")
+          ? ".console-kicker"
+          : ".eyebrow";
     const normalElement = document.querySelector(normalSelector);
     const normalColor = normalElement ? getComputedStyle(normalElement).color : "";
     const focusTarget = document.activeElement?.matches("a[href], button, summary") ? document.activeElement : document.querySelector("button, a[href], summary");
@@ -163,6 +165,9 @@ const assertAccessibleStyles = async (page, direction) => {
     }).find((rule) => rule.selectorText?.includes(":focus-visible") && rule.style?.outline);
     const focusColor = focusRule?.style?.outlineColor || focusStyle?.outlineColor || "";
     const focusBackground = focusTarget ? getComputedStyle(focusTarget.parentElement || document.body).backgroundColor : bodyBackground;
+    const riskElement = document.querySelector(".risk-note p");
+    const riskColor = riskElement ? getComputedStyle(riskElement).color : "";
+    const riskBackground = riskElement ? getComputedStyle(riskElement.parentElement || document.body).backgroundColor : "";
     const targetDetails = [...document.querySelectorAll("a[href], button, summary")]
       .filter((element) => {
         const style = getComputedStyle(element);
@@ -177,6 +182,7 @@ const assertAccessibleStyles = async (page, direction) => {
       normalContrast: contrast(normalColor, bodyBackground),
       focusContrast: contrast(focusColor, focusBackground),
       focusContrastBody: contrast(focusColor, bodyBackground),
+      riskContrast: riskElement ? contrast(riskColor, riskBackground) : null,
       under44: targetDetails.filter((target) => target.width < 44 || target.height < 44),
       normalSelector,
       normalColor,
@@ -188,8 +194,64 @@ const assertAccessibleStyles = async (page, direction) => {
   });
   if ((result.normalContrast ?? 0) < 4.5) fail(`${direction}: normal label contrast ${result.normalContrast} < 4.5 (${result.normalSelector})`);
   if ((result.focusContrast ?? 0) < 3 || (result.focusContrastBody ?? 0) < 3) fail(`${direction}: focus contrast is below 3 (${JSON.stringify(result)})`);
+  if (result.riskContrast !== null && result.riskContrast < 4.5) fail(`${direction}: risk-note contrast ${result.riskContrast} < 4.5`);
   if (result.under44.length) fail(`${direction}: interactive targets below 44px ${JSON.stringify(result.under44)}`);
   return result;
+};
+
+const assertIndexInteraction = async (page, viewportName) => {
+  const route = page.locator(".route").first();
+  if (await route.count() !== 1) fail(`index/${viewportName}: expected direction route cards`);
+  let focused = false;
+  for (let index = 0; index < 12; index += 1) {
+    await page.keyboard.press("Tab");
+    focused = await page.evaluate(() => document.activeElement?.matches(".route") ?? false);
+    if (focused) break;
+  }
+  if (!focused) fail(`index/${viewportName}: keyboard focus did not reach the first direction route`);
+
+  const readRouteState = async () => page.evaluate(() => {
+    const parseRgb = (value) => {
+      const match = value.match(/rgba?\(([^)]+)\)/);
+      if (!match) return null;
+      const channels = match[1].split(",").slice(0, 3).map((channel) => Number.parseFloat(channel.trim()));
+      return channels.length === 3 && channels.every(Number.isFinite) ? channels : null;
+    };
+    const luminance = (value) => {
+      const rgb = parseRgb(value);
+      if (!rgb) return null;
+      const channels = rgb.map((channel) => {
+        const normalized = channel / 255;
+        return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+    };
+    const contrast = (foreground, background) => {
+      const fg = luminance(foreground);
+      const bg = luminance(background);
+      if (fg === null || bg === null) return null;
+      return (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05);
+    };
+    const route = document.querySelector(".route");
+    const label = route?.querySelector(".route-label");
+    const routeStyle = route ? getComputedStyle(route) : null;
+    const labelStyle = label ? getComputedStyle(label) : null;
+    return {
+      background: routeStyle?.backgroundColor || "",
+      color: labelStyle?.color || "",
+      contrast: routeStyle && labelStyle ? contrast(labelStyle.color, routeStyle.backgroundColor) : null,
+      focusVisible: route?.matches(":focus-visible") ?? false,
+    };
+  });
+
+  await route.hover();
+  const hoverState = await readRouteState();
+  if ((hoverState.contrast ?? 0) < 4.5) fail(`index/${viewportName}: route hover contrast ${hoverState.contrast} < 4.5`);
+  await page.mouse.move(0, 0);
+  const focusState = await readRouteState();
+  if (!focusState.focusVisible) fail(`index/${viewportName}: route keyboard focus is not focus-visible`);
+  if ((focusState.contrast ?? 0) < 4.5) fail(`index/${viewportName}: route focus contrast ${focusState.contrast} < 4.5`);
+  return { hover: hoverState, focus: focusState };
 };
 
 const assertQuietInteraction = async (page) => {
@@ -234,7 +296,9 @@ const assertEvidenceInteraction = async (page) => {
 };
 
 const runDirection = async (browser, direction) => {
-  const url = `${baseUrl}/t03/${direction}/`;
+  const routePath = direction === "index" ? "t03" : `t03/${direction}`;
+  const screenshotPrefix = direction === "index" ? "t03-index" : direction;
+  const url = `${baseUrl}/${routePath}/`;
   const consoleErrors = [];
   const pageErrors = [];
   const desktop = await browser.newPage({ viewport: viewports.desktop, deviceScaleFactor: 1 });
@@ -244,10 +308,12 @@ const runDirection = async (browser, direction) => {
   const desktopLayout = await assertCommonLayout(desktop, direction, "desktop");
   const desktopStyles = await assertAccessibleStyles(desktop, direction);
   await desktop.reload({ waitUntil: "networkidle" });
-  const desktopScreenshot = path.join(outputDir, `${direction}-desktop.png`);
+  const desktopScreenshot = path.join(outputDir, `${screenshotPrefix}-desktop.png`);
   await desktop.screenshot({ path: desktopScreenshot, fullPage: true });
   await desktop.keyboard.press("Tab");
   if (!(await desktop.evaluate(() => document.activeElement?.classList.contains("skip-link")))) fail(`${direction}/desktop: first Tab did not reach skip link`);
+  let desktopInteraction = null;
+  if (direction === "index") desktopInteraction = await assertIndexInteraction(desktop, "desktop");
   if (direction === "quiet-grid") await assertQuietInteraction(desktop);
   if (direction === "editorial-manual") await assertEditorialInteraction(desktop);
   if (direction === "evidence-console") await assertEvidenceInteraction(desktop);
@@ -261,8 +327,10 @@ const runDirection = async (browser, direction) => {
   const mobileLayout = await assertCommonLayout(mobile, direction, "mobile");
   const mobileStyles = await assertAccessibleStyles(mobile, direction);
   await mobile.reload({ waitUntil: "networkidle" });
-  const mobileScreenshot = path.join(outputDir, `${direction}-mobile.png`);
+  const mobileScreenshot = path.join(outputDir, `${screenshotPrefix}-mobile.png`);
   await mobile.screenshot({ path: mobileScreenshot, fullPage: true });
+  let mobileInteraction = null;
+  if (direction === "index") mobileInteraction = await assertIndexInteraction(mobile, "mobile");
   if (direction === "evidence-console") {
     if (await mobile.locator("#layer-listbox").getAttribute("aria-orientation") !== "horizontal") fail("evidence-console/mobile: listbox orientation was not updated");
     await mobile.locator('[data-layer-index="0"]').focus();
@@ -273,8 +341,8 @@ const runDirection = async (browser, direction) => {
   if (consoleErrors.length || pageErrors.length) fail(`${direction}: browser errors ${[...consoleErrors, ...pageErrors].join(" | ")}`);
   return {
     direction,
-    desktop: { ...desktopLayout, styles: desktopStyles, screenshot: path.basename(desktopScreenshot), sha256: await sha256(desktopScreenshot) },
-    mobile: { ...mobileLayout, styles: mobileStyles, screenshot: path.basename(mobileScreenshot), sha256: await sha256(mobileScreenshot) },
+    desktop: { ...desktopLayout, styles: desktopStyles, interaction: desktopInteraction, screenshot: path.basename(desktopScreenshot), sha256: await sha256(desktopScreenshot) },
+    mobile: { ...mobileLayout, styles: mobileStyles, interaction: mobileInteraction, screenshot: path.basename(mobileScreenshot), sha256: await sha256(mobileScreenshot) },
     consoleErrors,
     pageErrors,
   };

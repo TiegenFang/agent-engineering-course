@@ -53,6 +53,16 @@
       "copied_assets": false
     },
     {
+      "id": "playwright-package-t03",
+      "title": "Playwright",
+      "url": "https://www.npmjs.com/package/playwright",
+      "source_role": "development-dependency",
+      "pinned_version": "1.62.1",
+      "usage": "site/scripts/verify-directions.mjs 的固定 Chromium 桌面/移动浏览器验证；运行时版本写入 artifacts/t03-screenshots/manifest.json",
+      "license_or_terms": "Apache-2.0",
+      "copied_assets": false
+    },
+    {
       "id": "course-source-landscape",
       "title": "AI Agent 网页课程资料源版图",
       "url": "docs/research/agent-course-source-landscape.md",

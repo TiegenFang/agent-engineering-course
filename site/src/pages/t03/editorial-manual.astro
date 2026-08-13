@@ -30,6 +30,7 @@ const claudeLogo = `${base}${t03Products[1].logoPath}`;
           <span>方向 B / 现实标杆迁移</span>
         </div>
         <h1 id="editorial-title">读一遍，再动手。</h1>
+        <p class="course-subtitle">{t03Content.course.subtitle}</p>
         <p class="hero-dek">{t03Content.hero.summary}</p>
         <div class="hero-rule" aria-hidden="true"></div>
         <div class="hero-footer">
@@ -189,7 +190,7 @@ const claudeLogo = `${base}${t03Products[1].logoPath}`;
       :global(h1), :global(h2), :global(h3), :global(p) { text-wrap: pretty; }
       :global(h1), :global(h2), :global(h3) { text-wrap: balance; }
       :global(a) { color: inherit; }
-      .editorial-page { --ink: #24231f; --muted: #716a60; --paper: #f4efe7; --paper-deep: #e8dfd2; --rust: #963b28; --line: #cfc5b7; }
+      .editorial-page { --ink: #24231f; --muted: #665f56; --paper: #f4efe7; --paper-deep: #e8dfd2; --rust: #963b28; --line: #cfc5b7; }
       .skip-link { min-height: 44px; position: fixed; left: 1rem; top: -5rem; z-index: 20; display: inline-flex; align-items: center; background: var(--ink); color: #fff; padding: 0.65rem 0.9rem; text-decoration: none; }
       .skip-link:focus { top: 1rem; }
       .editorial-header { width: min(1320px, calc(100% - 3rem)); display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-inline: auto; padding-block: 1.4rem; border-bottom: 1px solid var(--ink); }
@@ -199,6 +200,7 @@ const claudeLogo = `${base}${t03Products[1].logoPath}`;
       .editorial-hero { width: min(1320px, calc(100% - 3rem)); margin-inline: auto; padding-block: clamp(4.5rem, 11vw, 9rem) clamp(3rem, 8vw, 7rem); }
       .hero-kicker, .hero-footer { display: flex; justify-content: space-between; gap: 1rem; color: var(--rust); font-family: "Geist Mono", "Cascadia Mono", monospace; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
       .editorial-hero h1 { max-width: 9ch; margin: 2rem 0 1.3rem; font-family: "Newsreader", Georgia, "Noto Serif SC", serif; font-size: clamp(4.6rem, 14vw, 13rem); font-weight: 450; letter-spacing: -0.08em; line-height: 0.82; }
+      .course-subtitle { max-width: 40rem; margin: -0.35rem 0 0.9rem; color: var(--rust); font-family: "Geist Mono", "Cascadia Mono", monospace; font-size: 0.8rem; line-height: 1.5; }
       .hero-dek { max-width: 40rem; margin: 0; color: var(--muted); font-size: clamp(1rem, 1.3vw, 1.2rem); }
       .hero-rule { height: 1px; margin-block: 3.5rem 1rem; background: var(--ink); }
       .hero-footer a { min-height: 44px; display: inline-flex; align-items: center; color: var(--ink); text-underline-offset: 0.35em; text-transform: none; }

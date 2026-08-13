@@ -17,6 +17,7 @@ const directions = [
 
 const requiredSharedContent = [
   "Agent 工程入门",
+  "从 Codex 与 Claude Code，到 Memory、Skills、MCP 与 API 实战",
   "Codex",
   "Claude Code",
   "20–24 小时",
@@ -41,6 +42,37 @@ if (!sharedData) {
       fail(`shared content is missing ${value}`);
     }
   }
+}
+
+const indexSourcePath = resolve(siteRoot, "src", "pages", "t03", "index.astro");
+const indexSource = await readFile(indexSourcePath, "utf8").catch(() => "");
+if (!indexSource.includes("t03Content.course.subtitle")) {
+  fail("/t03/ source does not render the shared course subtitle");
+}
+if (!indexSource.includes("prefers-reduced-motion")) {
+  fail("/t03/ source does not declare reduced-motion handling");
+}
+
+const indexPagePath = resolve(distRoot, "t03", "index.html");
+try {
+  await access(indexPagePath, constants.R_OK);
+  const indexPage = await readFile(indexPagePath, "utf8");
+  for (const value of [
+    "同一份真实课程内容",
+    "从 Codex 与 Claude Code，到 Memory、Skills、MCP 与 API 实战",
+    "等待维护者视觉选择",
+  ]) {
+    if (!indexPage.includes(value)) {
+      fail(`/t03/ is missing index content ${value}`);
+    }
+  }
+  for (const direction of directions) {
+    if (!indexPage.includes(`/agent-engineering-course/t03/${direction}/`)) {
+      fail(`/t03/ is missing a route to ${direction}`);
+    }
+  }
+} catch {
+  fail("missing built direction index /t03/");
 }
 
 for (const direction of directions) {

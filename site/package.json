@@ -6,7 +6,7 @@
     "dev": "astro dev",
     "check": "astro check",
     "build": "astro build",
-    "test": "node scripts/assert-homepage.mjs && node scripts/assert-directions.mjs",
+    "test": "node scripts/run-tests.mjs && node scripts/assert-directions.mjs",
     "browser:install": "playwright install chromium",
     "test:browser": "npm run build && node scripts/verify-directions.mjs"
   },
