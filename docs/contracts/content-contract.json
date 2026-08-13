@@ -222,7 +222,7 @@
         "secondary": ["macOS/Linux browser; checker path not yet cross-platform verified"]
       },
       "versions": {
-        "client": "Astro/Starlight course page @ workspace baseline 442eda0; T08 instruction experiment v2",
+        "client": "Astro/Starlight course page @ workspace baseline 4baf94f; T08 instruction experiment v2",
         "sdk": "not-applicable",
         "model": "deterministic instruction fixture v2; no model call",
         "protocol": "agent-engineering-course/evidence v1"
