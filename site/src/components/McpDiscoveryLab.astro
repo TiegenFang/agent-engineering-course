@@ -51,9 +51,9 @@ import courseVersion from "../../../course-version.json";
     const exportButton = root.querySelector("[data-mcp-offline-export]");
     const status = root.querySelector("[data-mcp-offline-status]");
     const output = root.querySelector("[data-mcp-offline-output]");
-    let evidence;
+    let evidence: ReturnType<typeof offlineEvidenceDocument> | undefined;
 
-    const setText = (selector, value) => {
+    const setText = (selector: string, value: string): void => {
       const element = root.querySelector(selector);
       if (element) element.textContent = value;
     };

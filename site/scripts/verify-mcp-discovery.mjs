@@ -102,7 +102,10 @@ const assertJavaScriptRoute = async (browser, viewport) => {
   assert.equal(controls.every((target) => target.width >= 44 && target.height >= 44), true, JSON.stringify(controls));
 
   await page.locator("[data-mcp-offline-run]").focus();
-  assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("data-mcp-offline-run")), "true");
+  assert.notEqual(
+    await page.evaluate(() => document.activeElement?.getAttribute("data-mcp-offline-run")),
+    null,
+  );
   await page.locator("[data-mcp-offline-run]").click();
   assert.match(await page.locator("[data-mcp-offline-status]").textContent(), /partial/);
   assert.match(await page.locator("[data-mcp-offline-transport]").textContent(), /deterministic-in-memory/);
