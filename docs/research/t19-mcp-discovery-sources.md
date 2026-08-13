@@ -1,6 +1,6 @@
 # T19：真实 MCP Server 发现的来源校准
 
-> 核验日期：2026-08-13（Asia/Shanghai）  
+> 核验日期：2026-08-13（Asia/Shanghai）
 > 课程适配版本：MCP 2026-07-28、Python SDK `mcp==2.0.0`、Inspector `@modelcontextprotocol/inspector@2.2.0`。本文只记录本课使用的事实边界；具体安装时仍应查看锁定版本的官方文档。
 
 ## 采用的事实来源
