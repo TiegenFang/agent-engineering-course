@@ -13,7 +13,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CHECKER = ROOT / "checker"
-COURSE_VERSION = "0.1.0-foundation"
+COURSE_VERSION = json.loads(
+    (ROOT / "course-version.json").read_text(encoding="utf-8")
+)["course_version"]
 
 SUCCESS_TRACE_IDS = [
     "prediction-1",
@@ -102,6 +104,7 @@ class AgentLoopCheckerTests(unittest.TestCase):
             env=env,
             capture_output=True,
             text=True,
+            encoding="utf-8",
             check=False,
         )
 

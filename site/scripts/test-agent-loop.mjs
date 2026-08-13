@@ -16,10 +16,12 @@ import {
   submitPrediction,
 } from "../src/lib/agent-loop.mjs";
 
-const COURSE_VERSION = "0.1.0-foundation";
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const workspaceRoot = resolve(siteRoot, "..");
 const checkerRoot = join(workspaceRoot, "checker");
+const COURSE_VERSION = JSON.parse(
+  readFileSync(join(workspaceRoot, "course-version.json"), "utf8"),
+).course_version;
 
 test("模块 1 页面公开 Agent loop 实验并连接匿名证据入口", () => {
   const page = readFileSync(
