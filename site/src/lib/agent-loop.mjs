@@ -360,6 +360,22 @@ function classifyEvidence(results) {
 }
 
 /**
+ * Describe only an observation that the learner has actually reached.
+ * A tool error is evidence of an error path, not a successful telemetry read.
+ * @param {AgentLoopSession} session
+ * @returns {string}
+ */
+export function describeAgentLoopObservation(session) {
+  const current = ensureSession(session);
+  const toolResult = current.history.find((event) => event.kind === "tool-result");
+  if (!toolResult) return "模拟读数会在工具结果回填后出现。";
+  if (toolResult.status === "error") {
+    return "工具结果为错误：模拟工具拒绝请求，没有可用遥测读数；Harness 已回填错误并停止循环。";
+  }
+  return `本次模拟观察：${current.trace.observation.deviceId} = ${current.trace.observation.value} ${current.trace.observation.unit}；${current.trace.observation.condition === "threshold-exceeded" ? "超过" : "未超过"}阈值 ${current.trace.observation.threshold} °C。`;
+}
+
+/**
  * Reduce the learner session to the fixed, anonymous T02 trace contract.
  * Predictions are represented by one aggregate step; event details never
  * cross the checker boundary.

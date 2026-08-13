@@ -12,6 +12,7 @@ import {
   buildAgentLoopEvidence,
   buildAgentLoopTrace,
   createAgentLoopSession,
+  describeAgentLoopObservation,
   submitPrediction,
 } from "../src/lib/agent-loop.mjs";
 
@@ -25,9 +26,17 @@ test("模块 1 页面公开 Agent loop 实验并连接匿名证据入口", () =>
     new URL("../src/content/docs/module-1-agent-loop.mdx", import.meta.url),
     "utf8",
   );
+  const component = readFileSync(
+    new URL("../src/components/AgentLoop.astro", import.meta.url),
+    "utf8",
+  );
 
   assert.match(page, /<AgentLoop\s*\/>/);
   assert.match(page, /<EvidenceLoop\s+lessonId="t02-agent-loop"\s*\/>/);
+  assert.match(component, /<noscript>/);
+  assert.match(component, /交互控件需要 JavaScript/);
+  assert.match(component, /prediction-1/);
+  assert.match(component, /工具错误路径（error）/);
 });
 
 const DEFAULT_INPUT = {
@@ -96,6 +105,15 @@ test("工具错误分支会回填错误并按停止条件停下", () => {
   assert.match(result.detail, /错误回填/);
   assert.equal(trace.steps.at(-1).kind, "stop");
   assert.equal(trace.steps.at(-1).status, "error");
+});
+
+test("工具错误结果不会被渲染成成功遥测读数", () => {
+  const completed = finishSession(createAgentLoopSession({ ...DEFAULT_INPUT, failureMode: "tool-error" }));
+  const observation = describeAgentLoopObservation(completed);
+
+  assert.match(observation, /工具结果为错误/);
+  assert.match(observation, /没有可用遥测读数/);
+  assert.doesNotMatch(observation, /本次模拟观察：/);
 });
 
 test("完成 trace 后可以生成版本锁定且匿名的 evidence", () => {

@@ -224,6 +224,29 @@
   color: var(--sl-color-gray-2);
 }
 
+.agent-loop-lab__noscript {
+  margin-block: 1rem;
+  border-inline-start: 0.2rem solid var(--sl-color-orange-high);
+  padding: 0.75rem 1rem;
+  background: var(--sl-color-bg);
+}
+
+.agent-loop-lab__noscript h3,
+.agent-loop-lab__noscript h4 {
+  margin-block: 0.25rem 0;
+}
+
+.agent-loop-lab__noscript p {
+  margin-block: 0.5rem 0 1rem;
+}
+
+.agent-loop-lab__fallback-trace {
+  display: grid;
+  gap: 0.25rem;
+  margin-block: 0.5rem 1rem;
+  padding-inline-start: 1.5rem;
+}
+
 .agent-loop-lab__model-grid,
 .agent-loop-lab__workbench {
   display: grid;

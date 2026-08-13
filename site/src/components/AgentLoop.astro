@@ -22,6 +22,34 @@ const expectedCourseVersion = courseVersion.course_version;
     这是一个无网络、无模型调用的确定性教学夹具。它把“模型响应 → 工具请求 → 工具执行 → 结果回填 → 停止条件”拆成可预测、可逐步推进的事件；它不代表真实 Codex 或 Claude Code 的产品行为。
   </p>
 
+  <noscript>
+    <section class="agent-loop-lab__noscript" aria-labelledby="agent-loop-noscript-title">
+      <h3 id="agent-loop-noscript-title">交互控件需要 JavaScript</h3>
+      <p>
+        当前浏览器未启用 JavaScript，因此输入、逐步预测和证据导出控件不会执行。你仍可以阅读这份固定 trace 合同；启用 JavaScript 后才能改变输入并运行本地模拟。
+      </p>
+      <h4>成功路径（success）</h4>
+      <ol class="agent-loop-lab__fallback-trace" aria-label="成功路径固定 trace">
+        <li><code>prediction-1</code> · prediction</li>
+        <li><code>response-1</code> · response</li>
+        <li><code>tool-request-1</code> · tool request</li>
+        <li><code>tool-execution-1</code> · execution</li>
+        <li><code>tool-result-1</code> · result</li>
+        <li><code>response-2</code> · response</li>
+        <li><code>stop-1</code> · stop</li>
+      </ol>
+      <h4>工具错误路径（error）</h4>
+      <ol class="agent-loop-lab__fallback-trace" aria-label="工具错误路径固定 trace">
+        <li><code>prediction-1</code> · prediction</li>
+        <li><code>response-1</code> · response</li>
+        <li><code>tool-request-1</code> · tool request</li>
+        <li><code>tool-execution-1</code> · execution · error</li>
+        <li><code>tool-result-1</code> · result · error（没有可用遥测读数）</li>
+        <li><code>stop-1</code> · stop · error</li>
+      </ol>
+    </section>
+  </noscript>
+
   <div class="agent-loop-lab__model-grid" aria-label="四个概念边界">
     <article>
       <h3>模型（Model）</h3>
@@ -149,6 +177,7 @@ const expectedCourseVersion = courseVersion.course_version;
     advanceAgentLoop,
     buildAgentLoopEvidence,
     createAgentLoopSession,
+    describeAgentLoopObservation,
     submitPrediction,
   } from "../lib/agent-loop.mjs";
 
@@ -237,10 +266,7 @@ const expectedCourseVersion = courseVersion.course_version;
         advanceButton.disabled = session.status !== "ready";
       }
       if (observation instanceof HTMLElement) {
-        const resultVisible = session.history.some((event) => event.kind === "tool-result");
-        observation.textContent = resultVisible
-          ? `本次模拟观察：${session.trace.observation.deviceId} = ${session.trace.observation.value} ${session.trace.observation.unit}；${session.trace.observation.condition === "threshold-exceeded" ? "超过" : "未超过"}阈值 ${session.trace.observation.threshold} °C。`
-          : "模拟读数会在工具结果回填后出现。";
+        observation.textContent = describeAgentLoopObservation(session);
       }
       renderTrace();
       try {
