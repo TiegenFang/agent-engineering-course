@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   AgentLoopStateError,
@@ -12,6 +16,9 @@ import {
 } from "../src/lib/agent-loop.mjs";
 
 const COURSE_VERSION = "0.1.0-foundation";
+const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const workspaceRoot = resolve(siteRoot, "..");
+const checkerRoot = join(workspaceRoot, "checker");
 
 test("模块 1 页面公开 Agent loop 实验并连接匿名证据入口", () => {
   const page = readFileSync(
@@ -101,10 +108,81 @@ test("完成 trace 后可以生成版本锁定且匿名的 evidence", () => {
   assert.equal(evidence.contract, "agent-engineering-course/evidence");
   assert.equal(evidence.lesson_id, "t02-agent-loop");
   assert.equal(evidence.result, "passed");
+  assert.equal(evidence.trace.version, "1");
   assert.equal(evidence.anonymous, true);
   assert.deepEqual(
     evidence.evidence.map((check) => check.id),
     ["prediction-recorded", "trace-observed", "stop-condition-observed"],
   );
+  assert.deepEqual(
+    evidence.trace.steps.map((step) => step.id),
+    [
+      "prediction-1",
+      "response-1",
+      "tool-request-1",
+      "tool-execution-1",
+      "tool-result-1",
+      "response-2",
+      "stop-1",
+    ],
+  );
   assert.doesNotMatch(JSON.stringify(evidence), /device-17|C:\\\\Users|api_key|sk-/i);
+});
+
+test("错误路径导出固定的 error trace，而不是伪造成功读数", () => {
+  const session = finishSession(createAgentLoopSession({ ...DEFAULT_INPUT, failureMode: "tool-error" }));
+  const evidence = buildAgentLoopEvidence(session, {
+    courseVersion: COURSE_VERSION,
+    checkedOn: "2026-08-13",
+  });
+
+  assert.equal(evidence.result, "passed");
+  assert.equal(evidence.trace.version, "1");
+  assert.equal(evidence.trace.outcome, "error");
+  assert.deepEqual(
+    evidence.trace.steps.map((step) => step.id),
+    ["prediction-1", "response-1", "tool-request-1", "tool-execution-1", "tool-result-1", "stop-1"],
+  );
+  assert.equal(evidence.trace.steps.at(-1).status, "error");
+});
+
+test("浏览器导出的成功 trace 可以直接通过 Python checker", () => {
+  const session = finishSession(createAgentLoopSession(DEFAULT_INPUT));
+  const evidence = buildAgentLoopEvidence(session, {
+    courseVersion: COURSE_VERSION,
+    checkedOn: "2026-08-13",
+  });
+  const temporaryRoot = mkdtempSync(join(tmpdir(), "agent-loop-trace-"));
+  const evidencePath = join(temporaryRoot, "t02-agent-loop-evidence.json");
+  writeFileSync(evidencePath, `${JSON.stringify(evidence)}\n`, "utf8");
+  try {
+    const result = spawnSync(
+      process.env.PYTHON ?? "python",
+      [
+        "-m",
+        "course_check",
+        "check",
+        "t02-agent-loop",
+        "--root",
+        workspaceRoot,
+        "--evidence-file",
+        evidencePath,
+        "--json",
+      ],
+      {
+        cwd: checkerRoot,
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          PYTHONIOENCODING: "utf-8",
+          PYTHONPATH: checkerRoot,
+        },
+      },
+    );
+    assert.equal(result.error, undefined, result.error?.message);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(JSON.parse(result.stdout).result, "passed");
+  } finally {
+    rmSync(temporaryRoot, { recursive: true, force: true });
+  }
 });

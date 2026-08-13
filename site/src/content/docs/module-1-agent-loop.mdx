@@ -78,7 +78,7 @@ import EvidenceLoop from '../../components/EvidenceLoop.astro';
 
 ## 可核验成果：导出匿名 evidence
 
-完成成功路径和故障路径后，点击实验下方的“导出匿名证据”。导出的文档遵循课程已有的 `agent-engineering-course/evidence` v1 合同，只保留课节身份、结果状态和三项证据摘要。你可以把它交给本地 `course_check`，再导入本页的本地学习记录组件：
+完成成功路径和故障路径后，点击实验下方的“导出匿名证据”。导出的文档遵循课程已有的 `agent-engineering-course/evidence` v1 合同，并附带固定的 trace v1 步骤顺序。你可以把它交给本地 `course_check`，再导入本页的本地学习记录组件：
 
 <EvidenceLoop lessonId="t02-agent-loop" />
 
@@ -94,7 +94,7 @@ python -m course_check check t02-agent-loop --root .. --json
 python -m course_check check t02-agent-loop --root .. --evidence-file ..\t02-agent-loop-evidence.json --output ..\t02-agent-loop-checked.json
 ```
 
-检查器只读取你主动指定的本地证据文件，并丢弃 trace 细节；它不会上传源码、密钥、绝对路径或原始遥测。
+不带 `--evidence-file` 的命令只验证页面、模拟器和实验契约结构，结果是 `partial`，不表示已经执行 trace。带文件的路径会拒绝缺失、未知或重复的 trace ID，也会拒绝旧 `course_version`；它不会把旧版本改写为当前版本。检查器只读取你主动指定的本地证据文件，不上传源码、密钥、绝对路径或原始遥测。
 
 ## 风险、版本与来源卡片
 

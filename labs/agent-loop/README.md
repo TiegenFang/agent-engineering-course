@@ -17,13 +17,13 @@
 python -m course_check check t02-agent-loop --root .. --evidence-file ..\t02-agent-loop-evidence.json --output ..\t02-agent-loop-checked.json
 ```
 
-`course_check` 只保留 `t02-agent-loop`、结果状态和证据 ID；未知字段会被丢弃，路径、密钥和原始遥测不会进入网页交换文档。没有导入页面导出的文件时，也可以运行：
+`course_check` 会严格验证 `t02-agent-loop` 的固定 trace v1：`prediction-1 → response-1 → tool-request-1 → tool-execution-1 → tool-result-1 → response-2 → stop-1`；工具错误路径以 `outcome: error` 省略第二次响应。缺失、未知或重复的 trace ID 会被拒绝。网页导出的文档还保留 `course_version`，旧版本不会被改写为当前版本。未知字段会被丢弃，路径、密钥和原始遥测不会进入网页交换文档。没有导入页面导出的文件时，也可以运行：
 
 ```powershell
 python -m course_check check t02-agent-loop --root .. --json
 ```
 
-这条命令检查课程页面、模拟器和本实验契约是否存在，并输出匿名结果。
+这条命令只检查课程页面、模拟器和实验契约的结构，输出 `partial` 的匿名结果；它不冒充已经执行了 trace。只有带有完整成功或错误 trace 的页面 evidence 才会得到 `passed`。
 
 ## 可核验成果
 

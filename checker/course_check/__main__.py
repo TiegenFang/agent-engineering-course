@@ -14,6 +14,7 @@ from .evidence import (
     _require_identifier,
     _reject_sensitive_unknown_fields,
     build_evidence_document,
+    classify_checks,
     validate_evidence_document,
 )
 
@@ -135,6 +136,32 @@ SOURCE_REQUIRED_FIELDS = {
     "usage",
     "license_or_terms",
     "copied_assets",
+}
+
+T02_TRACE_CHECK_IDS = (
+    "prediction-recorded",
+    "trace-observed",
+    "stop-condition-observed",
+)
+T02_TRACE_VERSION = "1"
+T02_TRACE_CONTRACTS = {
+    "success": (
+        ("prediction-1", "prediction"),
+        ("response-1", "response"),
+        ("tool-request-1", "tool-request"),
+        ("tool-execution-1", "tool-execution"),
+        ("tool-result-1", "tool-result"),
+        ("response-2", "response"),
+        ("stop-1", "stop"),
+    ),
+    "error": (
+        ("prediction-1", "prediction"),
+        ("response-1", "response"),
+        ("tool-request-1", "tool-request"),
+        ("tool-execution-1", "tool-execution"),
+        ("tool-result-1", "tool-result"),
+        ("stop-1", "stop"),
+    ),
 }
 
 
@@ -353,9 +380,109 @@ def validate_foundation(root: Path) -> str:
     return version
 
 
+def validate_t02_evidence_checks(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list) or not value:
+        raise EvidenceError("T02 trace evidence checks must be a non-empty list")
+
+    seen: set[str] = set()
+    actual_ids: list[str] = []
+    for index, check in enumerate(value):
+        if not isinstance(check, dict):
+            raise EvidenceError(f"T02 trace evidence check {index} must be an object")
+        check_id = check.get("id")
+        if not isinstance(check_id, str) or not check_id:
+            raise EvidenceError(f"T02 trace evidence check {index} needs an id")
+        if check_id in seen:
+            raise EvidenceError(f"T02 trace evidence check ID repeated: {check_id}")
+        seen.add(check_id)
+        actual_ids.append(check_id)
+
+    expected_ids = list(T02_TRACE_CHECK_IDS)
+    if actual_ids != expected_ids:
+        missing = [check_id for check_id in expected_ids if check_id not in seen]
+        unknown = [check_id for check_id in actual_ids if check_id not in expected_ids]
+        raise EvidenceError(
+            "T02 trace evidence IDs must be exactly "
+            + ", ".join(expected_ids)
+            + (f"; missing: {', '.join(missing)}" if missing else "")
+            + (f"; unknown: {', '.join(unknown)}" if unknown else "")
+        )
+    return value
+
+
+def validate_t02_trace(trace: Any, *, document_result: str) -> dict[str, Any]:
+    if not isinstance(trace, dict):
+        raise EvidenceError("T02 completed evidence must include a trace object")
+    if trace.get("version") != T02_TRACE_VERSION:
+        raise EvidenceError("Unsupported T02 trace version")
+    outcome = trace.get("outcome")
+    if outcome not in T02_TRACE_CONTRACTS:
+        raise EvidenceError("T02 trace outcome must be success or error")
+    steps = trace.get("steps")
+    if not isinstance(steps, list):
+        raise EvidenceError("T02 trace steps must be a list")
+
+    expected = T02_TRACE_CONTRACTS[outcome]
+    expected_ids = [step_id for step_id, _ in expected]
+    expected_kinds = dict(expected)
+    if not steps:
+        if document_result in {"failed", "partial"}:
+            return {"version": T02_TRACE_VERSION, "outcome": outcome, "steps": []}
+        raise EvidenceError("Completed T02 evidence must include trace steps")
+    seen: set[str] = set()
+    actual_ids: list[str] = []
+    normalized_steps: list[dict[str, Any]] = []
+    for index, step in enumerate(steps):
+        if not isinstance(step, dict):
+            raise EvidenceError(f"T02 trace step {index} must be an object")
+        step_id = step.get("id")
+        if not isinstance(step_id, str) or not step_id:
+            raise EvidenceError(f"T02 trace step {index} needs an id")
+        if step_id not in expected_kinds:
+            raise EvidenceError(f"Unknown T02 trace step ID: {step_id}")
+        if step_id in seen:
+            raise EvidenceError(f"T02 trace step ID repeated: {step_id}")
+        seen.add(step_id)
+        actual_ids.append(step_id)
+
+        step_result = step.get("result")
+        if step_result not in {"passed", "failed"}:
+            raise EvidenceError(
+                f"T02 trace step {step_id}.result must be passed or failed"
+            )
+        kind = step.get("kind")
+        if kind != expected_kinds[step_id]:
+            raise EvidenceError(
+                f"T02 trace step {step_id}.kind does not match the fixed trace contract"
+            )
+        status = step.get("status")
+        if status is not None and status not in {"ok", "passed", "error"}:
+            raise EvidenceError(f"T02 trace step {step_id}.status is not supported")
+
+        normalized: dict[str, Any] = {
+            "id": step_id,
+            "kind": expected_kinds[step_id],
+            "result": step_result,
+        }
+        if status is not None:
+            normalized["status"] = status
+        normalized_steps.append(normalized)
+
+    prefix = expected_ids[: len(actual_ids)]
+    if actual_ids != prefix:
+        raise EvidenceError("T02 trace step IDs must follow the fixed order")
+    if document_result in {"passed", "alternative"} and actual_ids != expected_ids:
+        missing = expected_ids[len(actual_ids) :]
+        raise EvidenceError(
+            "Completed T02 evidence is missing trace steps: " + ", ".join(missing)
+        )
+
+    return {"version": T02_TRACE_VERSION, "outcome": outcome, "steps": normalized_steps}
+
+
 def load_evidence_checks(
-    evidence_file: Path, *, expected_lesson_id: str
-) -> list[dict[str, Any]]:
+    evidence_file: Path, *, expected_lesson_id: str, expected_course_version: str
+) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
     """Read only public check states from a local evidence fixture.
 
     Fixture details are intentionally discarded.  This lets a learner check a
@@ -374,12 +501,23 @@ def load_evidence_checks(
     fixture_lesson_id = value.get("lesson_id", expected_lesson_id)
     if fixture_lesson_id != expected_lesson_id:
         raise EvidenceError("Evidence fixture lesson_id does not match the requested lesson")
+    if "course_version" in value and value["course_version"] != expected_course_version:
+        raise EvidenceError("Evidence fixture course_version does not match the current course")
     if value.get("contract") == "agent-engineering-course/evidence":
-        return validate_evidence_document(value)["evidence"]
+        document = validate_evidence_document(value)
+        if expected_lesson_id == "t02-agent-loop":
+            checks = validate_t02_evidence_checks(document["evidence"])
+            trace = validate_t02_trace(value.get("trace"), document_result=document["result"])
+            return checks, trace
+        return document["evidence"], None
     checks = value.get("checks")
     if not isinstance(checks, list):
         raise EvidenceError("Evidence fixture checks must be a list")
-    return checks
+    if expected_lesson_id == "t02-agent-loop":
+        checks = validate_t02_evidence_checks(checks)
+        result = classify_checks([check["result"] for check in checks])
+        return checks, validate_t02_trace(value.get("trace"), document_result=result)
+    return checks, None
 
 
 def load_environment_checks(
@@ -638,20 +776,19 @@ def check_lesson(
     }:
         raise ContractError(f"Unsupported evidence lesson: {lesson_id}")
     course_version = validate_foundation(root)
+    trace: dict[str, Any] | None = None
     if lesson_id == "t01-foundation":
         checks: list[dict[str, Any]] = [
             {"id": "course-version-lock", "result": "passed"},
             {"id": "foundation-contract", "result": "passed"},
         ]
-        if evidence_file is not None:
-            checks = load_evidence_checks(evidence_file, expected_lesson_id=lesson_id)
     elif lesson_id == ENVIRONMENT_LESSON_ID:
         if evidence_file is None:
             raise EvidenceError(
                 "t05-environment requires --environment-file with the local diagnostic JSON"
             )
         checks = load_environment_checks(evidence_file)
-    else:
+    elif lesson_id == GIT_SAFETY_LESSON_ID:
         if evidence_file is None:
             raise EvidenceError(
                 "t06-git-safety requires --evidence-file with the local Git safety JSON"
@@ -677,14 +814,31 @@ def check_lesson(
                 if (root / "labs/agent-loop/README.md").is_file()
                 else "failed",
             },
+            {
+                "id": "agent-loop-trace-executed",
+                "result": "failed",
+            },
         ]
         if evidence_file is not None:
-            checks = load_evidence_checks(evidence_file, expected_lesson_id=lesson_id)
-    return build_evidence_document(
+            checks, trace = load_evidence_checks(
+                evidence_file,
+                expected_lesson_id=lesson_id,
+                expected_course_version=course_version,
+            )
+    if lesson_id == "t01-foundation" and evidence_file is not None:
+        checks, trace = load_evidence_checks(
+            evidence_file,
+            expected_lesson_id=lesson_id,
+            expected_course_version=course_version,
+        )
+    document = build_evidence_document(
         course_version=course_version,
         lesson_id=lesson_id,
         checks=checks,
     )
+    if trace is not None:
+        document["trace"] = trace
+    return document
 
 
 def build_parser() -> argparse.ArgumentParser:

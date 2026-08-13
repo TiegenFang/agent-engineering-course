@@ -53,6 +53,7 @@ import { parseLearningInput } from "./evidence-record.mjs";
  * @property {string} checked_on
  * @property {string} summary
  * @property {{id: string, result: string}[]} evidence
+ * @property {{version: string, outcome: "success" | "error", steps: {id: string, kind: string, result: string, status?: string}[]}} trace
  */
 
 export const AGENT_LOOP_LESSON_ID = "t02-agent-loop";
@@ -358,6 +359,34 @@ function classifyEvidence(results) {
   return "partial";
 }
 
+/**
+ * Reduce the learner session to the fixed, anonymous T02 trace contract.
+ * Predictions are represented by one aggregate step; event details never
+ * cross the checker boundary.
+ * @param {AgentLoopSession} current
+ * @returns {{version: string, outcome: "success" | "error", steps: {id: string, kind: string, result: string, status?: string}[]}}
+ */
+function buildAgentLoopTraceEvidence(current) {
+  const expectedOutcome = current.trace.steps.at(-1)?.status === "error" ? "error" : "success";
+  const steps = [];
+  if (current.predictions.length > 0) {
+    steps.push({
+      id: "prediction-1",
+      kind: "prediction",
+      result: current.predictions.every((prediction) => prediction.correct) ? "passed" : "failed",
+    });
+  }
+  for (const event of current.history) {
+    steps.push({
+      id: event.id,
+      kind: event.kind,
+      result: "passed",
+      status: event.status,
+    });
+  }
+  return { version: LOOP_TRACE_VERSION, outcome: expectedOutcome, steps };
+}
+
 /** Build the same anonymous evidence envelope accepted by EvidenceLoop. */
 /** @param {AgentLoopSession} session @param {{courseVersion: string, checkedOn?: string}} options @returns {AgentLoopEvidence} */
 export function buildAgentLoopEvidence(session, options = {}) {
@@ -394,5 +423,7 @@ export function buildAgentLoopEvidence(session, options = {}) {
     },
     courseVersion,
   );
-  return parsed.results[0];
+  const evidence = parsed.results[0];
+  evidence.trace = buildAgentLoopTraceEvidence(current);
+  return evidence;
 }
