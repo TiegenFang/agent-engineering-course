@@ -1,0 +1,337 @@
+---
+import courseVersion from "../../course-version.json";
+
+const expectedCourseVersion = courseVersion.course_version;
+---
+
+<section
+  class="hooks-tasks-lab"
+  data-hooks-tasks
+  data-course-version={expectedCourseVersion}
+  aria-labelledby="hooks-tasks-title"
+>
+  <div class="hooks-tasks-lab__heading">
+    <div>
+      <p class="eyebrow">模块 10A · 编排边界</p>
+      <h2 id="hooks-tasks-title">先触发，再问：谁有权继续？</h2>
+    </div>
+    <span class="hooks-tasks-lab__version">hooks/tasks v1 · {expectedCourseVersion}</span>
+  </div>
+
+  <p class="hooks-tasks-lab__lead">
+    这是一个离线、确定性的观察夹具。它把自动触发 Hook、显式 Task/Todo、schedule 和 background 放进同一条事件线上，刻意制造一次重复 Hook、一次失败恢复和一次被权限挡住的副作用；不会调用 Codex、Claude Code、模型、API、命令或真实文件。
+  </p>
+
+  <noscript>
+    <section class="hooks-tasks-lab__noscript" aria-labelledby="hooks-tasks-noscript-title">
+      <h3 id="hooks-tasks-noscript-title">交互控件需要 JavaScript</h3>
+      <p>
+        未启用 JavaScript 时仍可阅读固定判断：Hook 由生命周期事件自动触发；Task/Todo 由人或 Agent 显式创建；schedule 负责“何时再运行”；background 负责“是否在后台继续”。它们都不能绕过权限、人工确认、停止条件或副作用审阅。
+      </p>
+      <ul>
+        <li>相同 Hook 命令重复匹配时只计一次执行，并留下“去重”观察。</li>
+        <li>未信任或未允许的副作用保持 blocked，不能因为自动触发就变成 allowed。</li>
+        <li>失败必须可重试且有停止预算；达到停止条件后不再自动继续。</li>
+      </ul>
+    </section>
+  </noscript>
+
+  <div class="hooks-tasks-lab__model-grid" aria-label="Hook、Task、schedule 与 background 的边界">
+    <article data-concept="hook">
+      <span class="hooks-tasks-lab__tag">自动触发</span>
+      <h3>Hook</h3>
+      <p>生命周期事件发生时匹配规则并运行处理器。适合格式化、审计或阻断；不是模型的自由发挥，也不是安全沙箱本身。</p>
+    </article>
+    <article data-concept="task">
+      <span class="hooks-tasks-lab__tag">显式创建</span>
+      <h3>Task / Todo</h3>
+      <p>把待办拆成可观察的状态，必须有创建、完成、失败和停止证据。它不会因为“写在清单里”就自动执行。</p>
+    </article>
+    <article data-concept="schedule">
+      <span class="hooks-tasks-lab__tag">何时运行</span>
+      <h3>schedule</h3>
+      <p>把一次或重复工作放到未来触发。会话、机器、工作树、权限和成本边界仍然有效；错过时间不等于补跑成功。</p>
+    </article>
+    <article data-concept="background">
+      <span class="hooks-tasks-lab__tag">在哪里继续</span>
+      <h3>background</h3>
+      <p>让长任务在主交互之外继续或稍后回传。后台并不等于无人监管，完成、失败、超时和取消都要有证据。</p>
+    </article>
+  </div>
+
+  <form class="hooks-tasks-lab__form" data-hooks-tasks-form>
+    <fieldset>
+      <legend>1. 设置一次可重复的事件</legend>
+      <label for="hooks-tasks-mode">编排面</label>
+      <select id="hooks-tasks-mode" name="mode">
+        <option value="hook">Hook：生命周期自动触发</option>
+        <option value="task">Task：显式创建</option>
+        <option value="schedule">schedule：仅登记未来运行</option>
+        <option value="background">background：登记后台继续</option>
+      </select>
+
+      <label for="hooks-tasks-event">生命周期事件</label>
+      <select id="hooks-tasks-event" name="event">
+        <option value="PostToolUse">PostToolUse</option>
+        <option value="Stop">Stop</option>
+        <option value="TaskCreated">TaskCreated</option>
+      </select>
+
+      <label for="hooks-tasks-trigger-count">重复输入次数（0–3）</label>
+      <input id="hooks-tasks-trigger-count" name="triggerCount" type="number" min="0" max="3" step="1" value="2" required />
+
+      <label><input id="hooks-tasks-duplicate" name="duplicateDefinition" type="checkbox" checked /> 夹具含重复 Hook 定义</label>
+      <label><input id="hooks-tasks-task-requested" name="taskRequested" type="checkbox" checked /> 显式创建一个 Task/Todo</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>2. 先看权限和失败边界</legend>
+      <label for="hooks-tasks-permission">副作用权限</label>
+      <select id="hooks-tasks-permission" name="permissionState">
+        <option value="blocked">blocked：不允许发布/写出</option>
+        <option value="allowed">allowed：已审阅并允许（仅用于观察风险）</option>
+      </select>
+
+      <label for="hooks-tasks-failure">故障注入</label>
+      <select id="hooks-tasks-failure" name="failureMode">
+        <option value="once">失败一次，再允许恢复</option>
+        <option value="none">不注入失败</option>
+        <option value="persistent">持续失败，应该停止</option>
+      </select>
+
+      <label for="hooks-tasks-max-steps">停止预算（步数）</label>
+      <input id="hooks-tasks-max-steps" name="maxSteps" type="number" min="1" max="8" step="1" value="4" required />
+      <button type="submit" data-hooks-tasks-run>运行离线夹具</button>
+    </fieldset>
+  </form>
+
+  <div class="hooks-tasks-lab__presets" aria-labelledby="hooks-tasks-presets-title">
+    <h3 id="hooks-tasks-presets-title">快速复现实验分支</h3>
+    <p>按钮只填入固定输入，不会触发任何真实工具或副作用。</p>
+    <div class="hooks-tasks-lab__preset-buttons">
+      <button type="button" data-hooks-tasks-preset="safe">安全默认：全证据</button>
+      <button type="button" data-hooks-tasks-preset="permission">允许副作用：看风险</button>
+      <button type="button" data-hooks-tasks-preset="failure">持续失败：看停止</button>
+      <button type="button" data-hooks-tasks-preset="explicitTask">只创建显式 Task</button>
+      <button type="button" data-hooks-tasks-preset="schedule">只登记 schedule</button>
+      <button type="button" data-hooks-tasks-preset="background">只登记 background</button>
+    </div>
+  </div>
+
+  <p class="hooks-tasks-lab__status" data-hooks-tasks-status role="status" aria-live="polite">
+    先预测：默认设置会触发一次 Hook、去重一次、阻止副作用，并在失败后停止或恢复？
+  </p>
+
+  <section class="hooks-tasks-lab__result" aria-labelledby="hooks-tasks-result-title">
+    <div class="hooks-tasks-lab__result-heading">
+      <h3 id="hooks-tasks-result-title">可解释结果</h3>
+      <span data-hooks-tasks-primary>尚未运行</span>
+    </div>
+    <dl class="hooks-tasks-lab__metrics" data-hooks-tasks-metrics>
+      <div><dt>自动触发</dt><dd data-metric="trigger">—</dd></div>
+      <div><dt>去重次数</dt><dd data-metric="deduplicated">—</dd></div>
+      <div><dt>权限</dt><dd data-metric="permission">—</dd></div>
+      <div><dt>失败/恢复</dt><dd data-metric="recovery">—</dd></div>
+      <div><dt>停止条件</dt><dd data-metric="stop">—</dd></div>
+      <div><dt>副作用</dt><dd data-metric="side-effect">—</dd></div>
+    </dl>
+    <div class="hooks-tasks-lab__findings" aria-live="polite">
+      <h4>观察信号（文字不是颜色的替代品）</h4>
+      <ul data-hooks-tasks-findings>
+        <li>运行后会显示触发、去重、权限、恢复和停止证据。</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="hooks-tasks-lab__controls">
+    <button type="button" data-hooks-tasks-record>记录本次观察</button>
+    <button type="button" data-hooks-tasks-create-task>单独记录一次显式 Task/Todo</button>
+    <button type="button" data-hooks-tasks-export>导出匿名证据</button>
+  </div>
+  <p class="hooks-tasks-lab__evidence" data-hooks-tasks-evidence-status role="status" aria-live="polite">
+    已记录 0 次观察；需要覆盖触发、去重、权限、停止、恢复、显式 Task 和副作用保护后再导出。
+  </p>
+  <p class="hooks-tasks-lab__privacy">
+    证据只记录稳定枚举、布尔状态和计数，不记录命令、路径、任务正文、凭据、模型响应或原始遥测；“副作用”始终是夹具内的布尔观察，不会真实执行。
+  </p>
+</section>
+
+<script>
+  // @ts-nocheck
+  import {
+    DEFAULT_HOOKS_TASKS_INPUT,
+    HOOKS_TASKS_PRESETS,
+    buildHooksTasksEvidence,
+    createHooksTasksSession,
+    recordHooksTasksObservation,
+    updateHooksTasksSession,
+  } from "../lib/hooks-tasks.mjs";
+
+  const root = document.querySelector("[data-hooks-tasks]");
+  if (root instanceof HTMLElement) {
+    const form = root.querySelector("[data-hooks-tasks-form]");
+    const status = root.querySelector("[data-hooks-tasks-status]");
+    const evidenceStatus = root.querySelector("[data-hooks-tasks-evidence-status]");
+    const primary = root.querySelector("[data-hooks-tasks-primary]");
+    const findings = root.querySelector("[data-hooks-tasks-findings]");
+    const sessionInput = {
+      mode: root.querySelector("#hooks-tasks-mode"),
+      event: root.querySelector("#hooks-tasks-event"),
+      triggerCount: root.querySelector("#hooks-tasks-trigger-count"),
+      duplicateDefinition: root.querySelector("#hooks-tasks-duplicate"),
+      taskRequested: root.querySelector("#hooks-tasks-task-requested"),
+      permissionState: root.querySelector("#hooks-tasks-permission"),
+      failureMode: root.querySelector("#hooks-tasks-failure"),
+      maxSteps: root.querySelector("#hooks-tasks-max-steps"),
+    };
+    let session = createHooksTasksSession(DEFAULT_HOOKS_TASKS_INPUT);
+
+    const setMessage = (element, message, kind = "") => {
+      if (!(element instanceof HTMLElement)) return;
+      element.textContent = message;
+      element.dataset.status = kind;
+    };
+
+    const readInput = () => Object.fromEntries(Object.entries(sessionInput).map(([key, element]) => [
+      key,
+      element instanceof HTMLInputElement && element.type === "checkbox"
+        ? element.checked
+        : element instanceof HTMLInputElement
+          ? Number(element.value)
+          : element?.value,
+    ]));
+
+    const writeInput = (input) => {
+      for (const [key, element] of Object.entries(sessionInput)) {
+        if (!element) continue;
+        if (element instanceof HTMLInputElement && element.type === "checkbox") element.checked = Boolean(input[key]);
+        else element.value = String(input[key]);
+      }
+    };
+
+    const render = () => {
+      const result = session.result;
+      const values = {
+        trigger: result.triggered ? `是（${result.triggerCount}）` : "否",
+        deduplicated: String(result.deduplicated),
+        permission: result.permission,
+        recovery: result.failureInjected ? (result.recovered ? "失败后已恢复" : "未恢复") : "未注入",
+        stop: result.stopped ? result.stopReason : "未停止",
+        "side-effect": result.sideEffect ? "已允许（风险）" : "未触发（受保护）",
+      };
+      for (const [key, value] of Object.entries(values)) {
+        const element = root.querySelector(`[data-metric="${key}"]`);
+        if (element) element.textContent = value;
+      }
+      if (primary instanceof HTMLElement) {
+        primary.textContent = result.failureUnresolved ? "应停止并恢复" : result.sideEffect ? "权限已放行" : "安全边界成立";
+      }
+      if (findings instanceof HTMLElement) {
+        findings.replaceChildren();
+        const labels = {
+          trigger: "Hook 已按事件触发",
+          deduplication: "重复 Hook 已去重",
+          permission: "副作用被权限边界挡住",
+          stop: `停止条件：${result.stopReason}`,
+          "failure-recovery": "故障注入后完成恢复",
+          "side-effect-guard": "没有自动触发副作用",
+          "explicit-task": "显式 Task/Todo 已记录",
+        };
+        for (const finding of result.findings) {
+          const item = document.createElement("li");
+          item.dataset.finding = finding;
+          item.textContent = labels[finding] ?? finding;
+          findings.append(item);
+        }
+        if (result.scheduleArmed) {
+          const item = document.createElement("li");
+          item.dataset.finding = "schedule-armed";
+          item.textContent = "schedule 只登记未来运行，本次没有自动触发。";
+          findings.append(item);
+        }
+        if (result.backgroundStarted) {
+          const item = document.createElement("li");
+          item.dataset.finding = "background-armed";
+          item.textContent = "background 只登记后台继续，本次没有越过权限。";
+          findings.append(item);
+        }
+      }
+      if (evidenceStatus instanceof HTMLElement) {
+        const observed = new Set(session.runs.flatMap((run) => [
+          ...(run.trigger ? ["trigger"] : []),
+          ...(run.deduplicated ? ["deduplication"] : []),
+          ...(run.permission === "blocked" ? ["permission"] : []),
+          ...(run.stopped ? ["stop"] : []),
+          ...(run.recovered ? ["failure-recovery"] : []),
+          ...(run.sideEffect === false ? ["side-effect-guard"] : []),
+          ...(run.taskCreated ? ["explicit-task"] : []),
+        ]));
+        evidenceStatus.textContent = `已记录 ${session.runs.length} 次观察；覆盖 ${observed.size} / 7 类核心信号。`;
+      }
+    };
+
+    const runInput = () => {
+      try {
+        session = updateHooksTasksSession(session, readInput());
+        const result = session.result;
+        const message = result.failureUnresolved
+          ? "已观察到持续失败；停止后应检查权限、重试条件和恢复路径。"
+          : result.sideEffect
+            ? "权限已放行：这是风险演示，真实环境必须先审阅副作用。"
+            : "夹具运行完成：自动触发、显式任务、权限和停止边界均可观察。";
+        setMessage(status, message, result.failureUnresolved ? "warning" : result.sideEffect ? "warning" : "success");
+        render();
+      } catch (error) {
+        setMessage(status, `无法运行模拟：${error instanceof Error ? error.message : "输入无效"}`, "error");
+      }
+    };
+
+    form?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      runInput();
+    });
+
+    root.querySelectorAll("[data-hooks-tasks-preset]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const name = button.getAttribute("data-hooks-tasks-preset");
+        const preset = name ? HOOKS_TASKS_PRESETS[name] : null;
+        if (!preset) return;
+        writeInput(preset);
+        runInput();
+      });
+    });
+
+    root.querySelector("[data-hooks-tasks-record]")?.addEventListener("click", () => {
+      session = recordHooksTasksObservation(session);
+      setMessage(status, "已记录本次匿名观察；可以换一个分支继续。", "success");
+      render();
+    });
+
+    root.querySelector("[data-hooks-tasks-create-task]")?.addEventListener("click", () => {
+      writeInput({ ...readInput(), mode: "task", taskRequested: true, triggerCount: 0 });
+      runInput();
+      session = recordHooksTasksObservation(session);
+      setMessage(status, "已单独记录一个显式 Task/Todo；它没有被 Hook 自动创建。", "success");
+      render();
+    });
+
+    root.querySelector("[data-hooks-tasks-export]")?.addEventListener("click", () => {
+      try {
+        const evidence = buildHooksTasksEvidence(session, { courseVersion: root.dataset.courseVersion ?? "" });
+        const blob = new Blob([`${JSON.stringify(evidence, null, 2)}\n`], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "t21-hooks-tasks-evidence.json";
+        link.click();
+        URL.revokeObjectURL(url);
+        window.dispatchEvent(new CustomEvent("hooks-tasks:evidence", { detail: evidence }));
+        setMessage(evidenceStatus, `已导出 ${evidence.result} 匿名证据；可交给本地 course_check。`, "success");
+      } catch (error) {
+        setMessage(evidenceStatus, `无法导出证据：${error instanceof Error ? error.message : "请先记录观察"}`, "error");
+      }
+    });
+
+    render();
+  }
+</script>

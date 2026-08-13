@@ -661,6 +661,76 @@
       "usage": "Skill/脚本/Tool/Plugin 边界、manifest 与组件组合、离线审计夹具、风险信号、匿名 evidence 和不执行未知包的安全边界",
       "license_or_terms": "project-original; no copied assets",
       "copied_assets": false
+    },
+    {
+      "id": "openai-codex-hooks-t21",
+      "title": "Codex Hooks",
+      "url": "https://learn.chatgpt.com/docs/hooks",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "page observed 2026-08-13; current docs page; client version not asserted",
+      "usage": "核验 Codex Hook 生命周期、匹配来源合并、并发启动、非托管 Hook review/trust 和 Stop continuation 边界；正文为原创改写",
+      "license_or_terms": "reference-only; OpenAI documentation and product terms apply",
+      "copied_assets": false
+    },
+    {
+      "id": "openai-codex-automations-t21",
+      "title": "Scheduled tasks in ChatGPT/Codex",
+      "url": "https://learn.chatgpt.com/docs/automations",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "page observed 2026-08-13; current docs page; client and workspace settings not asserted",
+      "usage": "核验 scheduled task 与 Codex CLI/IDE 的管理面边界、local project/worktree、后台执行和 sandbox/approval 风险；正文为原创改写",
+      "license_or_terms": "reference-only; OpenAI documentation and product terms apply",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-code-hooks-guide-t21",
+      "title": "Claude Code Automate workflows with hooks",
+      "url": "https://code.claude.com/docs/en/hooks-guide",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "official page observed 2026-08-13; client version not asserted",
+      "usage": "核验 Claude Code Hook 事件、自动去重、权限阻断和生命周期触发；正文为原创改写",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-code-hooks-reference-t21",
+      "title": "Claude Code Hooks reference",
+      "url": "https://code.claude.com/docs/en/hooks",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "official page observed 2026-08-13; client version not asserted",
+      "usage": "核验 Hook command/async/asyncRewake 字段、TaskCreated/TaskCompleted/Stop 事件和 async 不可阻断边界；正文为原创改写",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-code-scheduled-tasks-t21",
+      "title": "Claude Code Run prompts on a schedule",
+      "url": "https://code.claude.com/docs/en/scheduled-tasks",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "official page observed 2026-08-13; scheduled tasks require current-version check",
+      "usage": "核验 /loop、cron、session-scoped task、恢复/过期、机器/会话前提和 unattended 风险；正文为原创改写",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-code-tools-reference-t21",
+      "title": "Claude Code Tools reference",
+      "url": "https://code.claude.com/docs/en/tools-reference",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "official page observed 2026-08-13; client version not asserted",
+      "usage": "核验 TaskCreate/TaskUpdate/TaskGet/TaskList、TaskStop、CronCreate/CronDelete/CronList 和 TodoWrite 的产品适配层边界；正文为原创改写",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply",
+      "copied_assets": false
+    },
+    {
+      "id": "course-hooks-tasks-original-t21",
+      "title": "模块 10A Hooks 与 Tasks 原创实验设计",
+      "url": "docs/course-plan.md",
+      "source_role": "course-original",
+      "pinned_version": "T21 implementation baseline 240888d; deterministic fixture v1; checked 2026-08-13",
+      "usage": "Hook/Task/schedule/background 四问模型、触发去重、权限边界、失败恢复、停止条件、副作用保护和匿名 evidence 合同",
+      "license_or_terms": "project-original; no copied assets",
+      "copied_assets": false
     }
   ]
 }

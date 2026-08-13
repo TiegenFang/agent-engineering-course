@@ -217,6 +217,20 @@ CONTEXT_BUDGET_CHECK_IDS = (
     "boundary-tested",
     "offline-deterministic",
 )
+HOOKS_TASKS_LESSON_ID = "t21-hooks-tasks"
+HOOKS_TASKS_EXPERIMENT_VERSION = "1"
+HOOKS_TASKS_MODES = frozenset({"hook", "task", "schedule", "background"})
+HOOKS_TASKS_PERMISSIONS = frozenset({"blocked", "allowed"})
+HOOKS_TASKS_CHECK_IDS = (
+    "trigger-observed",
+    "deduplication-observed",
+    "permission-boundary",
+    "stop-condition",
+    "failure-recovered",
+    "side-effect-not-triggered",
+    "explicit-task-recorded",
+    "offline-deterministic",
+)
 CODEX_TASK_LESSON_ID = "t04-codex-repository-task"
 CODEX_TASK_TRACE_VERSION = "1"
 CODEX_TASK_ID = "telemetry-report-v1"
@@ -915,6 +929,32 @@ def validate_t14_evidence_checks(value: Any) -> list[dict[str, Any]]:
         raise EvidenceError(
             "T14 evidence IDs must be exactly " + ", ".join(CONTEXT_BUDGET_CHECK_IDS)
         )
+    return normalized
+
+
+def validate_hooks_tasks_checks(value: Any) -> list[dict[str, str]]:
+    """Validate the fixed public check list for T21."""
+
+    if not isinstance(value, list) or len(value) != len(HOOKS_TASKS_CHECK_IDS):
+        raise EvidenceError("T21 evidence checks must contain the complete fixed check list")
+    normalized: list[dict[str, str]] = []
+    actual_ids: list[str] = []
+    for index, check in enumerate(value):
+        if not isinstance(check, dict):
+            raise EvidenceError(f"T21 evidence check {index} must be an object")
+        _reject_sensitive_unknown_fields(check, f"T21 evidence check {index}")
+        if set(check) != {"id", "result"}:
+            raise EvidenceError(f"T21 evidence check {index} must contain only id and result")
+        check_id = check.get("id")
+        if not isinstance(check_id, str) or not check_id:
+            raise EvidenceError(f"T21 evidence check {index} needs an id")
+        result = check.get("result")
+        if result not in {"passed", "failed", "alternative"}:
+            raise EvidenceError(f"T21 evidence check {check_id}.result is not supported")
+        actual_ids.append(check_id)
+        normalized.append({"id": check_id, "result": result})
+    if actual_ids != list(HOOKS_TASKS_CHECK_IDS):
+        raise EvidenceError("T21 evidence IDs must be exactly " + ", ".join(HOOKS_TASKS_CHECK_IDS))
     return normalized
 
 
@@ -1900,6 +1940,135 @@ def validate_t18_audit(
     }
 
 
+def validate_hooks_tasks_experiment(
+    value: Any,
+    *,
+    document_result: str,
+) -> tuple[list[dict[str, str]], dict[str, Any]]:
+    """Validate T21's anonymous trigger/task observations and derive checks."""
+
+    if not isinstance(value, dict):
+        raise EvidenceError("T21 evidence requires an experiment object")
+    _reject_sensitive_unknown_fields(value, "T21 experiment")
+    if set(value) != {"version", "runs", "observed"}:
+        raise EvidenceError("T21 experiment must contain only version, runs and observed")
+    if value.get("version") != HOOKS_TASKS_EXPERIMENT_VERSION:
+        raise EvidenceError("Unsupported T21 Hooks/Tasks experiment version")
+    runs = value.get("runs")
+    if not isinstance(runs, list):
+        raise EvidenceError("T21 experiment runs must be a list")
+
+    allowed_fields = {
+        "id",
+        "mode",
+        "trigger",
+        "deduplicated",
+        "permission",
+        "stopped",
+        "failed",
+        "recovered",
+        "taskCreated",
+        "sideEffect",
+        "scheduleArmed",
+        "backgroundStarted",
+    }
+    seen_ids: set[str] = set()
+    normalized_runs: list[dict[str, Any]] = []
+    for index, raw_run in enumerate(runs):
+        if not isinstance(raw_run, dict):
+            raise EvidenceError(f"T21 experiment run {index} must be an object")
+        _reject_sensitive_unknown_fields(raw_run, f"T21 experiment run {index}")
+        if set(raw_run) != allowed_fields:
+            missing = sorted(allowed_fields - set(raw_run))
+            unknown = sorted(set(raw_run) - allowed_fields)
+            detail = []
+            if missing:
+                detail.append("missing: " + ", ".join(missing))
+            if unknown:
+                detail.append("unknown: " + ", ".join(unknown))
+            raise EvidenceError("T21 experiment run fields invalid" + (" (" + "; ".join(detail) + ")" if detail else ""))
+        run_id = raw_run["id"]
+        _require_identifier(run_id, f"T21 experiment run {index}.id")
+        if run_id in seen_ids:
+            raise EvidenceError(f"T21 experiment run id repeated: {run_id}")
+        seen_ids.add(run_id)
+        mode = raw_run["mode"]
+        if mode not in HOOKS_TASKS_MODES:
+            raise EvidenceError(f"T21 experiment run {run_id}.mode is not supported")
+        permission = raw_run["permission"]
+        if permission not in HOOKS_TASKS_PERMISSIONS:
+            raise EvidenceError(f"T21 experiment run {run_id}.permission is not supported")
+        bool_fields = [
+            "trigger",
+            "deduplicated",
+            "stopped",
+            "failed",
+            "recovered",
+            "taskCreated",
+            "sideEffect",
+            "scheduleArmed",
+            "backgroundStarted",
+        ]
+        if any(not isinstance(raw_run[field], bool) for field in bool_fields):
+            raise EvidenceError(f"T21 experiment run {run_id} contains a non-boolean state")
+        if raw_run["sideEffect"] and permission != "allowed":
+            raise EvidenceError(f"T21 experiment run {run_id} reports side effect without allowed permission")
+        if raw_run["recovered"] and not raw_run["failed"]:
+            raise EvidenceError(f"T21 experiment run {run_id} reports recovery without failure")
+        normalized_runs.append({field: raw_run[field] for field in ["id", *sorted(allowed_fields - {"id"})]})
+
+    observed = value.get("observed")
+    if not isinstance(observed, list) or any(item not in {
+        "trigger",
+        "deduplication",
+        "permission",
+        "stop",
+        "failure-recovery",
+        "side-effect-guard",
+        "explicit-task",
+    } for item in observed):
+        raise EvidenceError("T21 experiment observed contains an unsupported finding")
+    if len(observed) != len(set(observed)):
+        raise EvidenceError("T21 experiment observed must not repeat a finding")
+
+    derived_observed: set[str] = set()
+    for run in normalized_runs:
+        if run["trigger"]:
+            derived_observed.add("trigger")
+        if run["deduplicated"]:
+            derived_observed.add("deduplication")
+        if run["permission"] == "blocked":
+            derived_observed.add("permission")
+        if run["stopped"]:
+            derived_observed.add("stop")
+        if run["recovered"]:
+            derived_observed.add("failure-recovery")
+        if run["sideEffect"] is False:
+            derived_observed.add("side-effect-guard")
+        if run["taskCreated"]:
+            derived_observed.add("explicit-task")
+    if set(observed) != derived_observed:
+        raise EvidenceError("T21 experiment observed does not match its runs")
+
+    expected_checks = [
+        {"id": "trigger-observed", "result": "passed" if any(run["trigger"] for run in normalized_runs) else "failed"},
+        {"id": "deduplication-observed", "result": "passed" if any(run["deduplicated"] for run in normalized_runs) else "failed"},
+        {"id": "permission-boundary", "result": "passed" if any(run["permission"] == "blocked" for run in normalized_runs) else "failed"},
+        {"id": "stop-condition", "result": "passed" if any(run["stopped"] for run in normalized_runs) else "failed"},
+        {"id": "failure-recovered", "result": "passed" if any(run["recovered"] for run in normalized_runs) else "failed"},
+        {"id": "side-effect-not-triggered", "result": "passed" if normalized_runs and all(run["sideEffect"] is False for run in normalized_runs) else "failed"},
+        {"id": "explicit-task-recorded", "result": "passed" if any(run["taskCreated"] for run in normalized_runs) else "failed"},
+        {"id": "offline-deterministic", "result": "passed" if normalized_runs else "failed"},
+    ]
+    if document_result in {"passed", "alternative"} and any(check["result"] != "passed" for check in expected_checks):
+        raise EvidenceError("Completed T21 evidence is missing a required trigger/task observation")
+    return expected_checks, {
+        "version": HOOKS_TASKS_EXPERIMENT_VERSION,
+        "runs": normalized_runs,
+        "observed": sorted(derived_observed),
+    }
+
+
 def validate_claude_migration_checks(value: Any) -> list[dict[str, Any]]:
     """Validate the stable public checks for the Claude migration journey."""
 
@@ -2275,6 +2444,14 @@ def load_evidence_checks(
             if checks != expected_checks:
                 raise EvidenceError("T14 evidence checks do not match the recorded simulation")
             return checks, simulation
+        if expected_lesson_id == HOOKS_TASKS_LESSON_ID:
+            checks, experiment = validate_hooks_tasks_experiment(
+                value.get("experiment"), document_result=document["result"]
+            )
+            supplied_checks = validate_hooks_tasks_checks(document["evidence"])
+            if checks != supplied_checks:
+                raise EvidenceError("T21 evidence checks do not match the recorded experiment")
+            return checks, experiment
         if expected_lesson_id == CLAUDE_MIGRATION_LESSON_ID:
             return load_claude_migration_checks(
                 evidence_file,
@@ -2341,6 +2518,15 @@ def load_evidence_checks(
         if checks != expected_checks:
             raise EvidenceError("T14 evidence checks do not match the recorded simulation")
         return checks, simulation
+    if expected_lesson_id == HOOKS_TASKS_LESSON_ID:
+        checks = validate_hooks_tasks_checks(checks)
+        expected_checks, experiment = validate_hooks_tasks_experiment(
+            value.get("experiment"),
+            document_result=classify_checks([check["result"] for check in checks]),
+        )
+        if checks != expected_checks:
+            raise EvidenceError("T21 evidence checks do not match the recorded experiment")
+        return checks, experiment
     if expected_lesson_id == CLAUDE_MIGRATION_LESSON_ID:
         return load_claude_migration_checks(
             evidence_file,
@@ -2812,6 +2998,7 @@ def check_lesson(
         "t03-agent-instruction",
         PROJECT_RULES_LESSON_ID,
         CONTEXT_BUDGET_LESSON_ID,
+        HOOKS_TASKS_LESSON_ID,
         CODEX_TASK_LESSON_ID,
         CLAUDE_MIGRATION_LESSON_ID,
         T15_CONTEXT_RECOVERY_LESSON_ID,
@@ -2954,6 +3141,41 @@ def check_lesson(
                     else "failed",
                 },
                 {"id": "context-budget-evidence", "result": "failed"},
+            ]
+        else:
+            checks, trace = load_evidence_checks(
+                evidence_file,
+                expected_lesson_id=lesson_id,
+                expected_course_version=course_version,
+            )
+    elif lesson_id == HOOKS_TASKS_LESSON_ID:
+        if evidence_file is None:
+            checks = [
+                {
+                    "id": "hooks-tasks-page",
+                    "result": "passed"
+                    if (root / "site/src/content/docs/module-10-hooks-tasks.mdx").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "hooks-tasks-simulator",
+                    "result": "passed"
+                    if (root / "site/src/lib/hooks-tasks.mjs").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "hooks-tasks-contract",
+                    "result": "passed"
+                    if (root / "labs/hooks-tasks/README.md").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "hooks-tasks-sources",
+                    "result": "passed"
+                    if (root / "docs/sources/source-ledger.json").is_file()
+                    else "failed",
+                },
+                {"id": "hooks-tasks-evidence-executed", "result": "failed"},
             ]
         else:
             checks, trace = load_evidence_checks(
@@ -3199,6 +3421,8 @@ def check_lesson(
             document["simulation"] = trace
         elif lesson_id == PLUGIN_AUDIT_LESSON_ID:
             document["audit"] = trace
+        elif lesson_id == HOOKS_TASKS_LESSON_ID:
+            document["experiment"] = trace
         else:
             document["experiment"] = trace
     return document

@@ -1,0 +1,123 @@
+---
+title: 模块 10A：Hooks 与 Tasks
+description: 区分自动触发 Hook、显式 Task/Todo、schedule 与 background，并用离线夹具观察去重、权限、停止和恢复
+sidebar:
+  order: 11
+---
+
+import EvidenceLoop from '../../components/EvidenceLoop.astro';
+import HooksTasksLab from '../../components/HooksTasksLab.astro';
+
+# 模块 10A：Hooks 与 Tasks
+
+> 本课先解决一个常见误判：把“自动发生”“清单里有一项”“稍后再跑”和“后台继续”混成同一个自动化开关。主实验是离线确定性夹具，不调用真实 Codex、Claude Code、模型、API、命令、网络或文件；官方资料只用于核验工具适配层事实，不能替代真实客户端验收。
+
+## 你要解决的真实问题
+
+当一个 Agent 在工具调用后自动格式化、在清单里创建待办、每小时重新检查 PR，或者把测试放到后台运行时，团队需要知道：是什么触发了它、谁明确创建了它、它在哪个会话/工作树运行、失败后何时停止，以及它是否可能写文件、发消息、联网或产生费用。没有这些边界，“方便的自动化”很容易变成重复执行或无人监管的副作用。
+
+完成本课后，你应能：
+
+- 区分自动触发的 Hook、显式 Task/Todo、schedule 与 background，不把它们写成一个泛化的“自动运行”。
+- 对重复事件说明去重策略；对 Hook 的权限、trust、人工确认与副作用留下可核验证据。
+- 为显式任务写出完成、失败、重试、超时和停止条件；不能用“模型应该知道”替代停止规则。
+- 在一次失败中恢复，并证明持续失败会停下；证明安全默认不会自动触发外部副作用。
+- 把同一能力目标迁移到 Codex 或 Claude Code，同时如实标记未执行 live client 的边界。
+
+## 心智模型：四个问题，四类机制
+
+每次看见“自动化”先问四个问题：
+
+1. **触发（trigger）**：事件发生时是否自动匹配？这是 Hook 的问题。
+2. **意图（intent）**：谁显式创建了待办、依赖和完成标准？这是 Task/Todo 的问题。
+3. **时间（schedule）**：未来何时再次启动？它是否依赖会话、机器、网络或云端？
+4. **执行位置（background）**：主交互之外如何继续、回传、取消和恢复？后台不等于无人监管。
+
+| 机制 | 触发方式 | 适合做什么 | 不自动保证什么 |
+| --- | --- | --- | --- |
+| Hook | 生命周期事件匹配 | 审计、格式化、阻断或补充上下文 | 不自动获得权限；不替代沙箱、审批或停止预算 |
+| Task / Todo | 人或 Agent 显式创建 | 拆解目标、记录状态、依赖和验收 | 不会因为出现在清单里就执行 |
+| schedule | 时间/事件到点 | 定期检查、提醒、重复报告 | 不保证机器在线、上下文新鲜、错过补跑或零成本 |
+| background | 独立于当前交互继续 | 长测试、部署、轮询和并行工作 | 不保证可取消、可恢复、无副作用或有人工审阅 |
+
+这些是课程的稳定知识层。产品适配层必须单独记录版本和日期：同名事件、任务工具、调度入口和后台恢复策略并不构成跨厂商协议。
+
+## 操作前预测
+
+运行夹具前先写下“会发生什么”，只记录状态，不粘贴命令、路径、任务正文、账号或原始数据：
+
+1. 同一 `PostToolUse` 输入到两个相同 Hook 定义时，计数器会执行两次，还是去重为一次？
+2. 一个 Hook 已匹配但副作用权限是 `blocked` 时，发布动作会自动放行，还是留下 blocked 且不产生副作用？
+3. 一次失败允许重试时，怎样区分“恢复成功”和“无限重试”？把停止预算设为 1 会发生什么？
+4. 点击“创建 Task/Todo”与触发 Hook 的证据是否相同？选择 `schedule` 或 `background` 时，离线夹具是否应该擅自启动真实工作？
+
+## 主工具演示：离线确定性夹具
+
+<HooksTasksLab />
+
+先运行“安全默认：全证据”。观察：Hook 由 `PostToolUse` 自动触发；重复定义被去重；显式 Task/Todo 另有记录；失败一次后恢复；副作用被 `blocked`；达到完成或预算后停止。再依次运行“允许副作用：看风险”“持续失败：看停止”“只登记 schedule”，比较哪些观察改变，哪些安全不变量不能被省略。
+
+## 本地实验：留下匿名证据
+
+浏览器夹具不执行真实客户端。完成观察后点击“导出匿名证据”，把下载文件放在课程工作区外的临时位置，再用 Windows 11 + PowerShell 7 的本地 checker：
+
+```powershell
+Push-Location .\checker
+python -m course_check check t21-hooks-tasks `
+  --root .. `
+  --evidence-file $env:TEMP\t21-hooks-tasks-evidence.json `
+  --output $env:TEMP\t21-hooks-tasks-checked.json `
+  --json
+Get-Content -LiteralPath $env:TEMP\t21-hooks-tasks-checked.json
+Pop-Location
+```
+
+没有 `--evidence-file` 时，checker 只验证页面、夹具、README、来源和合同，结果为 `partial`；这表示结构接缝存在，不表示真实 Codex/Claude Code 已执行。checker 会根据匿名 experiment 重新推导检查状态，手改成 `passed` 的伪造清单不能绕过它。
+
+## 故障注入与恢复
+
+用“持续失败：看停止”观察失败不应变成无限重试：先记录失败、停止原因和未恢复状态，再切回“安全默认”，让一次失败恢复并再次记录。用“允许副作用：看风险”观察另一条边界：夹具会明确显示风险，但页面不会把它当作安全通过，也不会真的发布、写文件、联网或发送消息。
+
+| 观察到的证据 | 诊断 | 恢复动作 | 再验证 |
+| --- | --- | --- | --- |
+| Hook 重复执行 | 事件或定义没有去重键/身份 | 为同一事件和命令建立稳定去重语义；审阅并记录重复是否可接受 | 再运行相同输入，比较去重计数 |
+| Hook 匹配但动作 blocked | trust、权限或人工确认未满足 | 先停下，审阅精确 Hook 定义、路径和最小权限；不要把 Markdown 指令当授权 | 以安全、只读动作复核；不要先打开全权限 |
+| 失败后循环不止 | 没有重试上限、超时或停止条件 | 设最大尝试次数，分类可恢复/不可恢复错误并记录人工接管点 | 持续失败夹具应停在预算内 |
+| schedule/background 无法恢复 | 会话、机器、工作树、凭据或网络前提不成立 | 先确认运行位置和权限，再取消/重建任务；不要假设错过运行会自动补齐 | 记录取消、失败或恢复，不伪造成功 |
+
+## 迁移挑战：换工具，保留验收目标
+
+任选 Codex 或 Claude Code 做一次“概念迁移”，不要求调用模型：
+
+- 用官方文档确认该工具的 Hook 配置位置、事件、trust/permission 和停止语义；记录核验日期与客户端版本（若现场未执行就写 `not-verified`）。
+- 设计一个只读 `PostToolUse` 或 `Stop` Hook，给出重复触发、失败恢复和人工确认的验收标准。
+- 把同一目标改写成显式 Task/Todo；说明 schedule 和 background 会增加哪些会话、机器、工作树、成本与恢复约束。
+- 不运行发布、删除、联网或真实写出动作；若做 live client 实验，另存真实输出并让 checker 只接收匿名状态摘要。
+
+截至 2026-08-13，本课已现场打开并核对 Codex Hooks、Codex Scheduled tasks、Claude Code Hooks guide/reference、Claude Code Scheduled tasks 和 Tools reference 官方页面；本次制作没有执行真实 Codex 或 Claude Code Hook/Task/schedule/background，因此页面和 evidence 不声称 live client 成功。
+
+## 可核验成果：匿名 evidence
+
+记录至少一次安全默认观察；推荐再记录一次持续失败和一次显式 Task。成功证据应覆盖：
+
+- `trigger-observed`：自动触发有记录；
+- `deduplication-observed`：重复 Hook 被去重；
+- `permission-boundary`：权限边界被观察；
+- `stop-condition`：完成或预算停止；
+- `failure-recovered`：可恢复失败重新成功；
+- `side-effect-not-triggered`：安全路径没有自动触发副作用；
+- `explicit-task-recorded`：Task/Todo 由显式动作记录；
+- `offline-deterministic`：夹具没有连接真实工具或网络。
+
+<EvidenceLoop lessonId="t21-hooks-tasks" />
+
+## 风险、版本与来源卡片
+
+- **账号与成本**：离线夹具、checker、Node/Python 测试免费且不需要账号、API key、模型额度或网络；可选 live Codex/Claude Code、云端 schedule 或付费 API 可能需要账号、订阅或按量成本。
+- **权限与副作用**：夹具只在浏览器内计算；“允许副作用”分支只显示风险布尔值，不执行发布、写盘、联网、通知或删除。真实 Hook/Task/schedule/background 使用前必须人工审阅精确定义、工作树、权限、超时、停止和恢复方式。
+- **隐私边界**：匿名 evidence 只保留固定枚举、计数和布尔状态，不记录命令、路径、任务正文、会话日志、密钥、个人信息或研究/企业数据。
+- **官方事实**：Codex 与 Claude Code 官方链接用于工具适配层核验；Hook、Task、schedule、background 的四问模型、夹具输入、故障路径和证据合同是本课程原创判断。
+- **版本与验证边界**：课程夹具与 `agent-engineering-course/evidence v1` 随课程版本锁定；官方行为需在发布前复核。本次未验证真实 Codex/Claude Code 客户端、真实 Hook 进程、真实 Task/schedule/background、付费额度、跨平台浏览器或 live 外部副作用。
+- **许可**：正文采用 CC BY 4.0；夹具、组件、测试和 checker 采用 MIT；官方页面仅作引用，不复制第三方资产。
+
+下一步进入模块 10B：Subagents 与多 Agent。那里会把“显式任务拆分”扩展成隔离、并行、汇合和人工交付边界。

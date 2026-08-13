@@ -680,6 +680,61 @@
         "course-plugin-audit-original"
       ],
       "licenses": ["CC-BY-4.0", "MIT"]
+    },
+    {
+      "id": "t21-hooks-tasks",
+      "title": "模块 10A：Hooks 与 Tasks",
+      "stage": "alpha",
+      "duration_minutes": 55,
+      "prerequisites": ["t04-claude-migration"],
+      "outcomes": [
+        "区分自动触发 Hook、显式 Task/Todo、schedule 与 background 的触发、意图、时间和执行位置边界",
+        "在离线确定性夹具中观察 Hook 触发、重复去重、权限阻断、停止条件、失败恢复和副作用保护",
+        "把同一能力目标迁移到 Codex 或 Claude Code，记录官方事实与未执行 live client 的验证边界",
+        "生成不含命令、路径、任务正文、凭据、会话日志或原始数据的匿名 t21-hooks-tasks evidence JSON"
+      ],
+      "artifacts": [
+        "Hooks/Tasks 离线确定性观察记录",
+        "一次安全默认、失败停止与显式 Task/Todo 的状态证据",
+        "匿名 t21-hooks-tasks evidence JSON",
+        "官方资料核验日期与未验证边界记录"
+      ],
+      "primary_tool": "Deterministic browser Hooks/Tasks simulator (offline fixture)",
+      "migration_tool": "Codex or Claude Code (official Hook/Task/schedule/background comparison; live client optional)",
+      "platforms": {
+        "primary": "Desktop or mobile browser; Windows 11 + PowerShell 7 for course_check",
+        "secondary": ["macOS/Linux browser; checker path not yet cross-platform verified"]
+      },
+      "versions": {
+        "client": "Codex Hooks/Scheduled tasks and Claude Code Hooks/Scheduled tasks official docs observed 2026-08-13; live client versions not asserted",
+        "sdk": "not-applicable",
+        "model": "deterministic Hooks/Tasks fixture v1; no model call",
+        "protocol": "agent-engineering-course/evidence v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [
+          "Codex account only for optional live migration",
+          "Claude subscription or Anthropic Console account only for optional live migration"
+        ],
+        "cost": "fixture/checker free; optional live clients, schedules and API usage depend on provider account, plan and quota",
+        "network": "offline page, fixture, tests and checker need no network; official docs and optional live migration need network"
+      },
+      "risk": {
+        "permissions": "夹具只在浏览器内计算；真实 Hook/Task/schedule/background 使用前必须审阅精确定义、trust/permission、工作树、停止预算和人工确认",
+        "side_effects": "默认安全分支保持 sideEffect=false；允许分支只显示风险，不执行写盘、发布、删除、联网或通知；checker 只输出匿名 JSON",
+        "staleness": "Codex/Claude Code Hook 事件、去重、trust、Task 工具、schedule、background 与恢复策略属于快速变化的工具适配层，发布前重新核验"
+      },
+      "sources": [
+        "openai-codex-hooks-t21",
+        "openai-codex-automations-t21",
+        "anthropic-claude-code-hooks-guide-t21",
+        "anthropic-claude-code-hooks-reference-t21",
+        "anthropic-claude-code-scheduled-tasks-t21",
+        "anthropic-claude-code-tools-reference-t21",
+        "course-hooks-tasks-original-t21"
+      ],
+      "licenses": ["CC-BY-4.0", "MIT"]
     }
   ]
 }
