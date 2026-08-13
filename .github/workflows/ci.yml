@@ -28,6 +28,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Require PowerShell 7
+        shell: pwsh
+        run: |
+          if ($PSVersionTable.PSVersion.Major -ne 7) {
+            throw "PowerShell 7 is required for the environment journey; found $($PSVersionTable.PSVersion)"
+          }
+          Write-Host "Using PowerShell $($PSVersionTable.PSVersion)"
       - name: Install site dependencies
         run: npm ci
       - name: Validate course contracts

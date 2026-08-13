@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 const scriptDirectory = fileURLToPath(new URL(".", import.meta.url));
 const siteRoot = resolve(scriptDirectory, "..");
 const distRoot = resolve(siteRoot, "dist");
+const workspaceRoot = resolve(siteRoot, "..");
+const courseVersionPath = resolve(workspaceRoot, "course-version.json");
 const sharedDataPath = resolve(siteRoot, "src", "data", "t03-content.ts");
 
 const directions = [
@@ -27,6 +29,8 @@ const requiredSharedContent = [
   "前置技能补给站",
   "风险与验证卡片",
 ];
+
+const courseVersion = JSON.parse(await readFile(courseVersionPath, "utf8"));
 
 const fail = (message) => {
   console.error(`Design directions contract failed: ${message}`);
@@ -61,6 +65,7 @@ try {
     "同一份真实课程内容",
     "从 Codex 与 Claude Code，到 Memory、Skills、MCP 与 API 实战",
     "等待维护者视觉选择",
+    courseVersion.course_version,
   ]) {
     if (!indexPage.includes(value)) {
       fail(`/t03/ is missing index content ${value}`);
@@ -91,7 +96,7 @@ for (const direction of directions) {
   }
 
   const page = await readFile(pagePath, "utf8");
-  for (const value of requiredSharedContent) {
+  for (const value of [...requiredSharedContent, courseVersion.course_version]) {
     if (!page.includes(value)) {
       fail(`/t03/${direction}/ is missing shared content ${value}`);
     }

@@ -106,6 +106,8 @@ class EnvironmentEvidenceCommandTests(unittest.TestCase):
     ) -> subprocess.CompletedProcess[str]:
         pwsh = shutil.which("pwsh")
         if pwsh is None:
+            if os.environ.get("CI", "").lower() == "true":
+                self.fail("PowerShell 7 is required in CI; pwsh was not found")
             self.skipTest("PowerShell 7 is unavailable on this runner")
         return subprocess.run(
             [pwsh, "-NoProfile", "-File", str(DIAGNOSTIC_SCRIPT), *args],
@@ -242,6 +244,10 @@ class EnvironmentEvidenceCommandTests(unittest.TestCase):
         self.assertTrue(
             all(set(check) == {"id", "result"} for check in diagnostic["checks"])
         )
+        powershell_check = next(
+            check for check in diagnostic["checks"] if check["id"] == "powershell-7"
+        )
+        self.assertEqual(powershell_check["result"], "passed")
         for forbidden in ("C:\\Users\\", "USERNAME", "USERPROFILE", "api_key", "token"):
             self.assertNotIn(forbidden.lower(), result.stdout.lower())
 

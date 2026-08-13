@@ -1,9 +1,11 @@
+import courseVersion from "../../../course-version.json";
+
 export const t03Content = {
   course: {
     name: "Agent 工程入门",
     subtitle: "从 Codex 与 Claude Code，到 Memory、Skills、MCP 与 API 实战",
     positioning: "面向科研与企业团队中技术型初学者的中文 Agent 工程课程",
-    version: "0.1.0-foundation",
+    version: courseVersion.course_version,
     coreDuration: "20–24 小时",
     advancedDuration: "8–12 小时",
   },
