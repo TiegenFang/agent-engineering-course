@@ -1,0 +1,115 @@
+---
+title: 模块 12C：企业进阶 API 结课
+description: 在 Issue-to-PR 工作流中交付一个受权限、评测和成本约束的可回退 API Agent 子流程。
+sidebar:
+  order: 14
+---
+
+import EnterpriseApiCapstoneLab from "../../components/EnterpriseApiCapstoneLab.astro";
+
+# 模块 12C：企业进阶 API 结课
+
+> 这是一条企业进阶轨道。API Agent 只负责一个可回退的验证计划草稿；合并、推送、发布和其他高影响操作保留给人。页面和实验完全离线，不调用 OpenAI、Anthropic 或其他付费 API。
+
+## 你要解决的真实问题
+
+团队希望把一个小的 Issue-to-PR 步骤交给 API Agent，却不能把仓库写权限、预算和最终发布决定一并交给模型。你需要设计一个边界清楚的子流程：输入是什么，输出如何结构化，什么时候必须停下请人确认，发生工具错误或预算不足时如何恢复。
+
+完成后，你应能：
+
+- 只委托 `draft-validation-plan`，并明确它不是 `merge-or-push`；
+- 在请求前设置预算，在模型调用前停止超预算运行；
+- 用固定 `issue-plan-v1` 校验结构化输出，不把模型自称成功当作证据；
+- 注入一次工具超时，执行一次有界重试并记录可恢复状态；
+- 为高影响操作保留人工批准点，不把离线夹具通过写成真实 API 验收。
+
+## 心智模型：API Agent 是受控子流程
+
+```text
+Issue 摘要 → 目标/非目标 → 预算门禁 → API Agent 草稿
+                                  ↓
+             结构化校验 ← 工具失败恢复 ← 失败证据
+                                  ↓
+                    人工批准 → 才能进入高影响步骤
+```
+
+`draft-validation-plan` 是本课唯一允许的动作；`merge-or-push` 只是被记录的高影响动作，不会由夹具执行。API、SDK 或 Coding Agent 客户端可以改变字段和权限界面，但“谁拥有停止、审批和最终验证”不能被适配层悄悄接管。
+
+## 操作前预测
+
+先写下答案，再运行实验：
+
+1. 如果预算已超限，为什么应该在模型调用前停止，而不是调用后再把结果标成失败？
+2. `approval_required=true` 但 `approval_granted=false` 时，为什么可以完成草稿，却不能执行 `merge-or-push`？
+3. 结构化输出通过后，为什么仍然需要应用侧验证版本、必需字段和副作用边界？
+4. 一次有界重试与“无限重试直到成功”在成本和故障恢复上有什么不同？
+
+## 主工具演示：从 Issue 到草稿
+
+主实验使用标准库离线 runner。它读取的是合成 Issue 状态，而不是当前仓库内容；输出只包含稳定 ID、状态、版本和估算成本：
+
+```powershell
+$output = Join-Path ([System.IO.Path]::GetTempPath()) 't31-enterprise-api.json'
+python .\labs\enterprise-api\run_fixture.py --scenario baseline --output $output
+python -m course_check check t31-enterprise-api --root . --evidence-file $output --json
+Get-Content -LiteralPath $output
+```
+
+成功证据必须同时显示范围受限、人工审批闸门、结构化输出、预算、恢复、脱敏和离线状态。`live_api_called: false` 是安全事实，不是 OpenAI 或 Anthropic 的成功证明。
+
+<EnterpriseApiCapstoneLab />
+
+## 本地实验：预算与权限
+
+用预算停止情形重复实验：
+
+```powershell
+python .\labs\enterprise-api\run_fixture.py --scenario budget-stop --output $output
+python -m course_check check t31-enterprise-api --root . --evidence-file $output --json
+```
+
+预期结果是 `partial`：范围、审批、结构化输出、脱敏和离线边界仍可通过，但预算停止和恢复相关证据不能冒充完成。检查器会重算结果；修改 JSON 中的 `result` 或 check 列表不会绕过校验。
+
+## 故障注入与恢复
+
+- **工具超时**：只允许一次 `bounded-retry`；第二次失败应回到人工处理，不扩大权限或预算。
+- **无效结构化输出**：拒绝缺失字段或错误 schema 版本，不用自然语言补齐。
+- **预算不足**：在调用开始前设置 `model_call_started=false` 与 `budget_status=stopped`，缩小任务或请人批准，不偷偷继续。
+- **高影响请求**：即使 Agent 能生成命令，也必须保持 `high_impact_executed=false`，直到人明确批准。
+
+恢复记录只保存故障类别和结果，不保存隐藏推理、完整 prompt、工具参数、路径或异常正文。
+
+## 迁移挑战：换 API 或换 Coding Agent
+
+选择 T27 OpenAI Responses 或 T28 Anthropic Messages 的离线适配实验之一，把同一 `draft-validation-plan` 迁移为 provider adapter。再用 Codex 或 Claude Code 进行一次只读的 Issue 澄清，比较：
+
+| 边界 | 必须保持不变 | 允许适配层变化 |
+| --- | --- | --- |
+| 权限 | 高影响操作需人工批准 | provider auth、工具声明字段 |
+| 输出 | `issue-plan-v1` 应用侧校验 | response/message 的具体字段 |
+| 成本 | 调用前预算闸门 | 当天模型价卡和 usage 字段 |
+| 恢复 | 有界重试、停止和 handoff | SDK exception/event 类型 |
+
+不要提交真实 key、真实 Issue 内容或现场账单。若没有账号，提交离线 runner 的对照和明确的 `not-run` 现场验证边界即可。
+
+## 可核验成果
+
+提交以下材料：
+
+- `t31-enterprise-api` 匿名 evidence JSON；
+- 一份只包含验证计划草稿的 Issue-to-PR 子流程记录；
+- 一次工具故障与有界恢复记录；
+- 一次预算停止记录，证明模型调用没有开始；
+- 高影响操作的人工批准点与未执行证据；
+- provider、SDK、模型、日期、账号、成本和权限的现场验证边界说明。
+
+检查器只接受固定 check ID 并拒绝敏感字段。机器可读评价维度见 [`labs/enterprise-api/rubric.json`](../../../labs/enterprise-api/rubric.json)，课程 runner 与安全边界见 [`labs/enterprise-api/README.md`](../../../labs/enterprise-api/README.md)。
+
+## 风险、版本与来源卡片
+
+- **账号与成本**：本课离线实验、网页和 checker 免费；真实 OpenAI/Anthropic API 需要单独账号、额度和人工批准，本课不代为调用。
+- **权限与副作用**：runner 只写入用户指定的新 JSON；不读密钥、不联网、不写仓库、不执行 Git 或外部消息。
+- **隐私**：公共证据只保留稳定 ID、状态、版本和估算成本；不要把真实 Issue、prompt、payload 或路径放入导出文件。
+- **版本**：`enterprise-api-runner-v1`、`issue-to-pr-api-v1`、`issue-plan-v1` 与 `agent-engineering-course/evidence v1`；价格和供应商字段必须在现场当天重核。
+- **验证边界**：已验证离线 runner、checker、Node fixture 与浏览器接缝；未验证真实 API、供应商限流/账单、Codex/Claude Code live 调用、生产仓库写入或跨平台现场通关。
+- **来源**：API 字段和错误边界参考 T27/T28 的官方来源；本课叙事、rubric、fixture、页面和 checker 为课程原创，来源与许可证见 [`docs/sources/source-ledger.json`](../../../docs/sources/source-ledger.json)。

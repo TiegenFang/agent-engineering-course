@@ -1,0 +1,17 @@
+{
+  "rubric_version": "1",
+  "lesson_id": "t31-enterprise-api",
+  "bounded_step": "draft-validation-plan",
+  "high_impact_actions": ["merge-or-push"],
+  "checks": [
+    "scope-bounded",
+    "approval-gated",
+    "structured-output",
+    "budget-enforced",
+    "recovery-observed",
+    "evidence-redacted",
+    "offline-deterministic"
+  ],
+  "live_api_called": false,
+  "notes": "课程夹具只演示控制平面，不代表 OpenAI 或 Anthropic 的现场行为。"
+}

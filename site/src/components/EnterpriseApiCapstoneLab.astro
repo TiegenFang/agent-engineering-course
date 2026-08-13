@@ -1,0 +1,132 @@
+---
+import courseVersion from "../../../course-version.json";
+---
+
+<section
+  class="enterprise-api-lab"
+  data-enterprise-api-lab
+  data-course-version={courseVersion.course_version}
+  aria-labelledby="enterprise-api-title"
+>
+  <div class="enterprise-api-lab__heading">
+    <div>
+      <p class="eyebrow">Issue-to-PR / 离线控制平面</p>
+      <h2 id="enterprise-api-title">企业 API 子流程沙盒</h2>
+    </div>
+    <span class="enterprise-api-lab__badge">no live API</span>
+  </div>
+  <p>
+    让 Agent 只写一份验证计划草稿。合并、推送等高影响操作必须人工批准；预算停止发生在模型调用之前，故障恢复只允许一次有界重试。
+  </p>
+  <div class="enterprise-api-lab__controls">
+    <label>
+      情形
+      <select data-enterprise-api-scenario>
+        <option value="baseline">基线：超时后恢复</option>
+        <option value="budget-stop">预算不足：调用前停止</option>
+      </select>
+    </label>
+    <button type="button" data-enterprise-api-run>运行离线子流程</button>
+    <button type="button" data-enterprise-api-export disabled>导出匿名证据</button>
+  </div>
+  <p data-enterprise-api-status role="status" aria-live="polite">尚未运行离线子流程。</p>
+  <div data-enterprise-api-output hidden>
+    <dl class="enterprise-api-lab__metrics">
+      <div><dt>结果</dt><dd data-enterprise-api-result>—</dd></div>
+      <div><dt>审批闸门</dt><dd data-enterprise-api-approval>—</dd></div>
+      <div><dt>预算状态</dt><dd data-enterprise-api-budget>—</dd></div>
+      <div><dt>现场 API</dt><dd data-enterprise-api-live>—</dd></div>
+    </dl>
+    <ul data-enterprise-api-checks class="enterprise-api-lab__checks"></ul>
+  </div>
+  <noscript>
+    <p>浏览器交互不是正式完成证据；请按本页 PowerShell 命令运行 <code>run_fixture.py</code>，再使用本地 checker。</p>
+  </noscript>
+</section>
+
+<script>
+  import { ENTERPRISE_API_CHECK_IDS, evaluateEnterpriseFixture } from "../lib/enterprise-api.mjs";
+
+  const root = document.querySelector("[data-enterprise-api-lab]");
+  if (root instanceof HTMLElement) {
+    const scenario = root.querySelector("[data-enterprise-api-scenario]");
+    const run = root.querySelector("[data-enterprise-api-run]");
+    const exportButton = root.querySelector("[data-enterprise-api-export]");
+    const status = root.querySelector("[data-enterprise-api-status]");
+    const output = root.querySelector("[data-enterprise-api-output]");
+    let evidence: Record<string, unknown> | undefined;
+    const setText = (selector: string, value: string): void => {
+      const element = root.querySelector(selector);
+      if (element) element.textContent = value;
+    };
+    run?.addEventListener("click", () => {
+      const selected = scenario instanceof HTMLSelectElement ? scenario.value : "baseline";
+      const result = evaluateEnterpriseFixture({ scenario: selected });
+      const passed = result.checks.every((check) => check.result === "passed");
+      evidence = {
+        contract: "agent-engineering-course/evidence",
+        contract_version: "1",
+        course_version: root.dataset.courseVersion ?? "",
+        lesson_id: "t31-enterprise-api",
+        result: passed ? "passed" : "partial",
+        anonymous: true,
+        checked_on: new Date().toISOString().slice(0, 10),
+        summary: passed ? "所有必需证据均已通过。" : "部分证据已通过，仍有证据需要补齐。",
+        evidence: result.checks,
+        experiment: result.experiment,
+      };
+      setText("[data-enterprise-api-result]", passed ? "passed" : "partial");
+      setText("[data-enterprise-api-approval]", "required / high-impact blocked");
+      setText("[data-enterprise-api-budget]", result.budgetStatus);
+      setText("[data-enterprise-api-live]", "false / 未调用");
+      const checks = root.querySelector("[data-enterprise-api-checks]");
+      if (checks) {
+        checks.innerHTML = result.checks
+          .map((check, index) => `<li><code>${ENTERPRISE_API_CHECK_IDS[index]}</code>：${check.result}</li>`)
+          .join("");
+      }
+      if (output instanceof HTMLElement) output.hidden = false;
+      if (exportButton instanceof HTMLButtonElement) exportButton.disabled = false;
+      if (status instanceof HTMLElement) status.textContent = `已完成 ${passed ? "passed" : "partial"} 离线子流程；现场 API 未调用。`;
+      window.dispatchEvent(new CustomEvent("enterprise-api:evidence", { detail: evidence }));
+    });
+    exportButton?.addEventListener("click", () => {
+      if (!evidence) return;
+      const blob = new Blob([JSON.stringify(evidence, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "t31-enterprise-api-evidence.json";
+      link.click();
+      URL.revokeObjectURL(url);
+      if (status instanceof HTMLElement) status.textContent = "已导出匿名证据；请再用本地 course_check 验证。";
+    });
+  }
+</script>
+
+<style>
+  .enterprise-api-lab {
+    border: 1px solid var(--sl-color-gray-5, #b6c0c9);
+    border-radius: 1rem;
+    padding: 1.25rem;
+    margin: 2rem 0;
+    background: color-mix(in srgb, var(--sl-color-gray-7, #172027) 88%, #7fe7c4);
+  }
+  .enterprise-api-lab__heading,
+  .enterprise-api-lab__controls { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .enterprise-api-lab__controls label { display: grid; gap: 0.35rem; }
+  .enterprise-api-lab select,
+  .enterprise-api-lab button { font: inherit; min-height: 2.5rem; padding: 0.45rem 0.7rem; border-radius: 0.5rem; }
+  .enterprise-api-lab button { cursor: pointer; background: var(--sl-color-accent, #7fe7c4); color: #0d1b1e; border: 1px solid transparent; font-weight: 700; }
+  .enterprise-api-lab button:disabled { cursor: not-allowed; opacity: 0.55; }
+  .enterprise-api-lab__badge { border: 1px solid currentColor; border-radius: 999px; padding: 0.25rem 0.6rem; font-size: 0.8rem; }
+  .enterprise-api-lab__metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.75rem; margin: 1.25rem 0; }
+  .enterprise-api-lab__metrics div { padding: 0.7rem; border-radius: 0.6rem; background: color-mix(in srgb, currentColor 8%, transparent); }
+  .enterprise-api-lab__metrics dt { font-size: 0.8rem; opacity: 0.75; }
+  .enterprise-api-lab__metrics dd { margin: 0.2rem 0 0; font-weight: 700; }
+  .enterprise-api-lab__checks { columns: 2; column-gap: 2rem; }
+  @media (max-width: 600px) { .enterprise-api-lab__checks { columns: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .enterprise-api-lab *, .enterprise-api-lab *::before, .enterprise-api-lab *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+</style>
