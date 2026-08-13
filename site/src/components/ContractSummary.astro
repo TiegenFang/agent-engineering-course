@@ -7,7 +7,7 @@ const boundaries = Object.entries(courseVersion.boundaries);
 <section class="contract-summary" aria-labelledby="foundation-contract-title">
   <p class="eyebrow">当前课程版本</p>
   <h2 id="foundation-contract-title">{courseVersion.course.name}</h2>
-  <p>{courseVersion.course.positioning}</p>
+  <p><strong>受众</strong>：{courseVersion.course.positioning}</p>
   <p class="version"><code>{courseVersion.course_version}</code></p>
 
   <dl class="duration-grid">
@@ -20,6 +20,8 @@ const boundaries = Object.entries(courseVersion.boundaries);
       <dd>{courseVersion.course.advanced_duration}</dd>
     </div>
   </dl>
+
+  <p class="cost-note"><strong>成本</strong>：阅读、概念和本地 mock/checker 路径免费；核心实战至少需要一种 Coding Agent，双工具和 API 进阶可能需要账号或付费额度。</p>
 
   <h3>同一版本锁定的工作区</h3>
   <ul class="boundary-list">

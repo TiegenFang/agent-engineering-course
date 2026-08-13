@@ -2,52 +2,9 @@
 title: Agent 工程入门
 description: 从 Codex 与 Claude Code，到 Memory、Skills、MCP 与 API 实战
 template: splash
-hero:
-  tagline: 用真实仓库、可恢复故障和验证证据，建立可以迁移的 Agent 工程能力。
-  actions:
-    - text: 阅读课程规划
-      link: https://github.com/TiegenFang/agent-engineering-course/blob/main/docs/course-plan.md
-      icon: right-arrow
-    - text: 查看 v1 规格
-      link: https://github.com/TiegenFang/agent-engineering-course/issues/1
-      variant: minimal
-      icon: external
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
-import ContractSummary from '../../components/ContractSummary.astro';
-import EvidenceLoop from '../../components/EvidenceLoop.astro';
+import CourseShell from '../../components/CourseShell.astro';
 
-<ContractSummary />
-
-<EvidenceLoop />
-
-## 课程首先解决什么
-
-<CardGrid>
-  <Card title="理解 Agent，而不是背功能" icon="open-book">
-    从模型、指令、上下文和工具开始，逐步理解 Memory、Skill、Plugin、MCP 与最小 API Agent loop。
-  </Card>
-  <Card title="Codex 与 Claude Code 交替主讲" icon="seti:shell">
-    一个工具完成主实验，另一个工具承担变化输入的迁移挑战；共同能力和产品差异分别说明。
-  </Card>
-  <Card title="每课留下验证证据" icon="approve-check-circle">
-    学习成果由文件、配置、测试、运行记录或提交证明，而不是只记录“页面已读”。
-  </Card>
-  <Card title="Windows 主路径" icon="laptop">
-    正式实验以 Windows 11 与 PowerShell 7 为主，macOS 与 Linux 差异单独标注和复核。
-  </Card>
-</CardGrid>
-
-## 当前 Alpha 纵向切片边界
-
-这一版本在 Foundation 的版本、内容、来源、许可和匿名学习记录闭环上，加入模块 0 环境诊断页、只读诊断脚本与本地 checker 证据旅程。其余模块、设备遥测数据和更完整的实战会沿已批准 tickets 逐个进入后续版本。
-
-## T03 可见方向评审
-
-在正式视觉实现前，先用同一份真实课程内容比较三种可见、可交互的方向：
-
-[打开三版方向索引](/agent-engineering-course/t03/)
-
-它们共享课程版本、能力地图、模块 0–3、Codex 与 Claude Code 的关系以及可核验成果边界；维护者可以选择、混合或否决，不会在本阶段默认定稿。
+<CourseShell />
 

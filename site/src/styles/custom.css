@@ -56,6 +56,13 @@
   font-weight: 700;
 }
 
+.contract-summary .cost-note {
+  border-inline-start: 0.2rem solid var(--sl-color-accent);
+  padding-inline-start: 0.75rem;
+  color: var(--sl-color-gray-2);
+  font-size: 0.9rem;
+}
+
 .boundary-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));

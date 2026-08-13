@@ -1,0 +1,525 @@
+---
+import courseVersion from "../../../course-version.json";
+import { t03Products } from "../data/t03-content";
+import CapabilityMap from "./CapabilityMap.astro";
+import ContractSummary from "./ContractSummary.astro";
+import EvidenceLoop from "./EvidenceLoop.astro";
+
+const base = import.meta.env.BASE_URL;
+
+const chapterDirectory = [
+  {
+    id: "M0",
+    title: "前置技能补给站",
+    description: "先诊断环境，再练习可恢复的 Git 安全修改。",
+    status: "现在可学",
+    links: [
+      { label: "环境诊断", href: `${base}module-0-environment/` },
+      { label: "Git 安全修改", href: `${base}module-0-git-safety/` },
+    ],
+  },
+  {
+    id: "M1",
+    title: "Agent、模型与 Harness",
+    description: "用确定性 trace 看见响应、工具、结果回填和停止条件。",
+    status: "现在可学",
+    links: [{ label: "打开 Agent loop", href: `${base}module-1-agent-loop/` }],
+  },
+  {
+    id: "M2",
+    title: "Agent 指令工程",
+    description: "把目标、上下文、约束、输出契约和验收标准写成可执行指令。",
+    status: "后续 ticket",
+    links: [],
+  },
+  {
+    id: "M3",
+    title: "Codex 与 Claude Code 安全起步",
+    description: "在真实仓库里完成澄清、计划、执行、验证和迁移挑战。",
+    status: "后续 ticket",
+    links: [],
+  },
+  {
+    id: "M4–M10",
+    title: "规则、上下文、Memory、Skill、Plugin、MCP 与编排",
+    description: "围绕同一公共练习仓库继续累积能力和证据。",
+    status: "Core Beta",
+    links: [],
+  },
+  {
+    id: "M11–M12",
+    title: "最小 API Agent loop 与双轨结课",
+    description: "在核心结业线之后，进入 Python API 和科研/企业结课轨道。",
+    status: "v1",
+    links: [],
+  },
+] as const;
+
+const evidencePoints = [
+  "页面上的阅读状态不是课程成果；成果必须回到文件、配置、测试、运行证据或提交记录。",
+  "核心线至少需要一种 Coding Agent；双工具对照、API 进阶和付费额度按课节明确标注。",
+  "本地 checker 只在学员机器上运行，网页主动导入匿名 JSON，不上传源码、密钥或原始研究数据。",
+];
+---
+
+<div class="course-shell" data-course-shell>
+  <header class="shell-hero" aria-labelledby="course-shell-title">
+    <div class="hero-copy">
+      <p class="shell-eyebrow">公开 · 中文 · 可版本化 · {courseVersion.course_version}</p>
+      <h1 id="course-shell-title">把 Agent 能力，变成可核验的工作流。</h1>
+      <p class="shell-subtitle">{courseVersion.course.subtitle}</p>
+      <p class="shell-lede">
+        面向科研与企业团队中的技术型 Agent 初学者，从 Windows 11 与 PowerShell 7 的安全基线开始，在真实代码仓库中练习澄清、计划、执行、恢复、验证和交付，再把方法迁移到另一种 Coding Agent 与最小 API Agent loop。
+      </p>
+      <div class="shell-actions">
+        <a class="shell-button shell-button-primary" href="#path">沿学习路径开始</a>
+        <a class="shell-button shell-button-quiet" href={`${base}module-0-environment/`}>先做环境诊断</a>
+      </div>
+    </div>
+
+    <aside class="hero-note" aria-labelledby="hero-note-title">
+      <p class="shell-eyebrow">课程合同 / 先知道边界</p>
+      <h2 id="hero-note-title">不是功能说明书，也不是 Prompt 清单。</h2>
+      <p>先建立厂商无关的 Agent 能力模型，再把易变的产品操作放入工具适配层。</p>
+      <a href="#map">查看稳定知识层与工具适配层 →</a>
+    </aside>
+  </header>
+
+  <nav class="shell-nav" aria-label="课程首页章节导航">
+    <a href="#contract">课程合同</a>
+    <a href="#map">能力地图</a>
+    <a href="#path">章节目录</a>
+    <a href="#adapters">工具适配</a>
+    <a href="#proof">可核验成果</a>
+    <a href="#record">本地记录</a>
+  </nav>
+
+  <div class="shell-main" id="course-shell-main">
+    <section class="shell-section contract-section" id="contract" aria-labelledby="contract-heading">
+      <div class="section-heading">
+        <div>
+          <p class="shell-eyebrow">00 / 课程合同</p>
+          <h2 id="contract-heading">先确认投入、受众和结业线。</h2>
+        </div>
+        <p>阅读与概念层保持公开免费；需要工具、账号或额度的部分在每课的风险与验证卡片中单独说明。</p>
+      </div>
+
+      <ContractSummary />
+
+      <div class="graduation-grid">
+        <article>
+          <p class="graduation-label">核心课程结业线</p>
+          <h3>真实仓库里的工程节奏</h3>
+          <p>预计 20–24 小时。完成真实仓库任务，并掌握上下文管理、Memory、Skill 与 MCP；科研和企业学员再选择对应结课轨道。</p>
+        </article>
+        <article>
+          <p class="graduation-label">进阶实战线</p>
+          <h3>自己拥有最小 Agent loop</h3>
+          <p>在核心线之后额外 8–12 小时，用 Python 和官方 API/SDK 手写并验证最小 Agent Application；现场 API 成本按当天模型和额度核验。</p>
+        </article>
+        <article>
+          <p class="graduation-label">成本与路径</p>
+          <h3>免费阅读，按需使用工具</h3>
+          <p>阅读、概念和本地 mock/checker 路径免费；核心实战至少需要一种 Coding Agent，双工具和 API 进阶可能需要账号或付费额度，并提供替代路径。</p>
+        </article>
+      </div>
+    </section>
+
+    <CapabilityMap />
+
+    <section class="shell-section path-section" id="path" aria-labelledby="path-heading">
+      <div class="reading-layout">
+        <aside class="reading-rail" aria-label="学习路径章节目录">
+          <p class="rail-label">Contents</p>
+          <nav>
+            <a href="#contract">课程合同</a>
+            <a href="#map">能力地图</a>
+            <a href="#path">章节目录</a>
+            <a href="#adapters">工具适配</a>
+            <a href="#proof">可核验成果</a>
+          </nav>
+          <p class="rail-note">右上角 Search 可以搜索正文、命令和课节标题；移动端目录会变成可横向阅读的路径条。</p>
+        </aside>
+
+        <div class="reading-column">
+          <div class="section-heading">
+            <div>
+              <p class="shell-eyebrow">02 / Editorial Manual chapter directory</p>
+              <h2 id="path-heading">从安全基线走到可迁移的交付。</h2>
+            </div>
+            <p>同一公共练习仓库逐步增强。当前只把已经实现并可核验的课节标成“现在可学”，未实现内容保留为带状态的路线图。</p>
+          </div>
+
+          <ol class="chapter-list">
+            {chapterDirectory.map((chapter) => (
+              <li>
+                <span class="chapter-id">{chapter.id}</span>
+                <div class="chapter-body">
+                  <h3>{chapter.title}</h3>
+                  <p>{chapter.description}</p>
+                  {chapter.links.length > 0 && (
+                    <p class="chapter-links">
+                      {chapter.links.map((link) => <a href={link.href}>{link.label} ↗</a>)}
+                    </p>
+                  )}
+                </div>
+                <span class:list={["chapter-status", chapter.status === "现在可学" && "is-live"]}>{chapter.status}</span>
+              </li>
+            ))}
+          </ol>
+
+          <div class="path-notes">
+            <p><strong>移动阅读路径</strong> 手机可以完整阅读、搜索、完成知识检查和使用浏览器模拟器；真实 PowerShell、Git、Coding Agent、Python 与 MCP 实验要求桌面环境。</p>
+            <p><strong>桌面实战路径</strong> 从 <a href={`${base}module-0-environment/`}>环境诊断</a> 开始，再进入 <a href={`${base}module-0-git-safety/`}>Git 安全修改</a> 和 <a href={`${base}module-1-agent-loop/`}>Agent loop</a>。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="shell-section adapter-section" id="adapters" aria-labelledby="adapters-heading">
+      <div class="section-heading">
+        <div>
+          <p class="shell-eyebrow">03 / 工具适配层</p>
+          <h2 id="adapters-heading">共同能力目标，不抹平产品差异。</h2>
+        </div>
+        <p>具名产品只作为真实工具的适配入口出现。没有当天官方来源和现场验证，就不写死版本、模型、价格、权限或 UI 行为。</p>
+      </div>
+
+      <div class="product-grid">
+        <article class="product-entry">
+          <p class="product-overline">{t03Products[0].company}</p>
+          <h3>{t03Products[0].name}</h3>
+          <p>课程的主要 Coding Agent 实例之一；正式课节在当天核验客户端、账号、成本和权限。</p>
+          <a href={t03Products[0].officialUrl} target="_blank" rel="noreferrer">打开官方产品页 ↗</a>
+        </article>
+        <article class="product-entry">
+          <p class="product-overline">{t03Products[1].company}</p>
+          <h3>{t03Products[1].name}</h3>
+          <p>另一条等权重的产品实践路径，承担主实验或变化输入的迁移挑战。</p>
+          <a href={t03Products[1].officialUrl} target="_blank" rel="noreferrer">打开官方文档 ↗</a>
+        </article>
+      </div>
+
+      <p class="asset-boundary"><strong>事实边界</strong> 本页不嵌入官方 UI 截图，不虚构产品面板、价格或性能；产品事实以课节当天的官方来源和验证记录为准。</p>
+    </section>
+
+    <section class="shell-section proof-section" id="proof" aria-labelledby="proof-heading">
+      <div class="proof-grid">
+        <div>
+          <p class="shell-eyebrow">04 / 证据先行</p>
+          <h2 id="proof-heading">完成不是“看过”，而是能拿出证据。</h2>
+          <p>每课都说明成功证据、预期失败、恢复动作、权限、副作用、成本、版本与来源。页面上的学习状态不能代替本地成果。</p>
+        </div>
+        <ul>
+          {evidencePoints.map((point) => <li><span aria-hidden="true">→</span><p>{point}</p></li>)}
+        </ul>
+      </div>
+    </section>
+
+    <section class="shell-section record-section" id="record" aria-labelledby="record-heading">
+      <div class="section-heading">
+        <div>
+          <p class="shell-eyebrow">05 / 本地学习记录</p>
+          <h2 id="record-heading">把 checker 证据带回课程。</h2>
+        </div>
+        <p>导入只在浏览器本地完成；版本不匹配时拒绝覆盖，未知字段会被忽略。</p>
+      </div>
+      <EvidenceLoop lessonId="t01-foundation" />
+    </section>
+  </div>
+
+  <footer class="shell-footer">
+    <span>{courseVersion.course.name} · {courseVersion.course_version}</span>
+    <span>内容 CC BY 4.0 · 自有代码与 checker MIT</span>
+    <a href="https://github.com/TiegenFang/agent-engineering-course" target="_blank" rel="noreferrer">GitHub ↗</a>
+  </footer>
+</div>
+
+<style>
+  .course-shell {
+    --shell-ink: #141715;
+    --shell-muted: #52615b;
+    --shell-line: #c9d2cd;
+    --shell-accent: #087f68;
+    --shell-paper: #f5f7f3;
+    --shell-soft: #e7eee9;
+    width: 100%;
+    margin-inline: auto;
+    background: var(--shell-paper);
+    color: var(--shell-ink);
+    font-family: "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.75;
+    font-synthesis: none;
+    line-break: strict;
+  }
+
+  .course-shell :global(*) { box-sizing: border-box; }
+  .course-shell :global(a) { color: inherit; }
+  .course-shell :global(h1),
+  .course-shell :global(h2),
+  .course-shell :global(h3),
+  .course-shell :global(h4),
+  .course-shell :global(p) { text-wrap: pretty; }
+  .course-shell :global(h1),
+  .course-shell :global(h2),
+  .course-shell :global(h3) { text-wrap: balance; }
+
+  .shell-hero,
+  .shell-nav,
+  .shell-main,
+  .shell-footer {
+    width: min(1240px, calc(100% - 3rem));
+    margin-inline: auto;
+  }
+
+  .shell-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(17rem, 0.65fr);
+    gap: clamp(2rem, 7vw, 7rem);
+    padding-block: clamp(4.5rem, 11vw, 9rem) clamp(4rem, 8vw, 7rem);
+  }
+
+  .shell-eyebrow,
+  .graduation-label,
+  .product-overline,
+  .rail-label,
+  .chapter-id {
+    margin: 0 0 0.8rem;
+    color: var(--shell-accent);
+    font-family: "Cascadia Mono", "Geist Mono", Consolas, monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .hero-copy h1 {
+    max-width: 10ch;
+    margin: 0;
+    color: var(--shell-ink);
+    font-family: "Newsreader", Georgia, "Noto Serif SC", serif;
+    font-size: clamp(3.2rem, 8vw, 7.4rem);
+    font-weight: 500;
+    letter-spacing: -0.06em;
+    line-height: 0.98;
+  }
+
+  .shell-subtitle {
+    max-width: 40rem;
+    margin: 1rem 0 0;
+    color: var(--shell-accent);
+    font-family: "Cascadia Mono", "Geist Mono", Consolas, monospace;
+    font-size: 0.82rem;
+    line-height: 1.6;
+  }
+
+  .shell-lede {
+    max-width: 43rem;
+    margin: 1.7rem 0 0;
+    color: var(--shell-muted);
+    font-size: clamp(1rem, 1.2vw, 1.15rem);
+  }
+
+  .shell-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 2rem; }
+
+  .shell-button,
+  .shell-nav a,
+  .hero-note a,
+  .chapter-links a,
+  .product-entry a,
+  .shell-footer a,
+  .reading-rail nav a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    text-underline-offset: 0.3em;
+  }
+
+  .shell-button {
+    justify-content: center;
+    border: 1px solid var(--shell-ink);
+    padding: 0.65rem 1rem;
+    font: inherit;
+    font-size: 0.88rem;
+    text-decoration: none;
+  }
+
+  .shell-button-primary { background: var(--shell-ink); color: #fff !important; }
+  .shell-button-primary:hover,
+  .shell-button-primary:focus-visible { border-color: var(--shell-accent); background: var(--shell-accent); }
+  .shell-button-quiet { border-color: var(--shell-line); }
+  .shell-button-quiet:hover,
+  .shell-button-quiet:focus-visible { border-color: var(--shell-accent); color: var(--shell-accent); }
+
+  .hero-note {
+    align-self: end;
+    border-block: 1px solid var(--shell-ink);
+    padding-block: 1.25rem;
+  }
+
+  .hero-note h2 {
+    margin: 0.8rem 0 0;
+    color: var(--shell-ink);
+    font-family: "Newsreader", Georgia, "Noto Serif SC", serif;
+    font-size: clamp(1.7rem, 3vw, 2.7rem);
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    line-height: 1.08;
+  }
+
+  .hero-note p:not(.shell-eyebrow) { color: var(--shell-muted); font-size: 0.9rem; }
+  .hero-note a { margin-top: 0.7rem; color: var(--shell-accent); font-size: 0.86rem; font-weight: 700; }
+
+  .shell-nav {
+    display: flex;
+    gap: 1.2rem;
+    overflow-x: auto;
+    border-block: 1px solid var(--shell-line);
+    padding-block: 0.4rem;
+  }
+
+  .shell-nav a { flex: 0 0 auto; color: var(--shell-muted); font-size: 0.84rem; text-decoration: none; }
+  .shell-nav a:hover,
+  .shell-nav a:focus-visible { color: var(--shell-accent); text-decoration: underline; }
+
+  .shell-section { padding-block: clamp(3.5rem, 8vw, 7rem); border-top: 1px solid var(--shell-line); }
+
+  .section-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(15rem, 0.45fr);
+    gap: 2rem;
+    align-items: end;
+    margin-bottom: 2.2rem;
+  }
+
+  .section-heading h2,
+  .proof-grid h2 {
+    margin: 0;
+    color: var(--shell-ink);
+    font-family: "Newsreader", Georgia, "Noto Serif SC", serif;
+    font-size: clamp(2.2rem, 5vw, 4.8rem);
+    font-weight: 500;
+    letter-spacing: -0.055em;
+    line-height: 1.02;
+  }
+
+  .section-heading > p,
+  .proof-grid > div > p:not(.shell-eyebrow) { margin: 0; color: var(--shell-muted); font-size: 0.92rem; }
+
+  .contract-summary {
+    border-color: var(--shell-line) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 1.2rem 0 !important;
+  }
+
+  .contract-summary .eyebrow { color: var(--shell-accent); }
+  .contract-summary h2 { color: var(--shell-ink); font-family: "Newsreader", Georgia, serif; font-weight: 500; }
+  .contract-summary p:not(.eyebrow):not(.version) { color: var(--shell-muted); }
+  .contract-summary .version { color: var(--shell-ink); }
+  .contract-summary h3 { color: var(--shell-ink); }
+  .contract-summary .boundary-list li { border-color: var(--shell-line); border-radius: 0; }
+
+  .graduation-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    margin-top: 2rem;
+    border: 1px solid var(--shell-line);
+    background: var(--shell-line);
+  }
+
+  .graduation-grid article { min-height: 13rem; padding: 1.3rem; background: var(--shell-paper); }
+  .graduation-grid h3 { margin: 1.2rem 0 0.55rem; color: var(--shell-ink); font-size: 1.25rem; }
+  .graduation-grid p:not(.graduation-label) { margin: 0; color: var(--shell-muted); font-size: 0.88rem; }
+
+  .path-section { padding-top: 0; }
+  .reading-layout { display: grid; grid-template-columns: minmax(12rem, 0.35fr) minmax(0, 1fr); gap: clamp(2rem, 8vw, 8rem); }
+  .reading-rail { position: sticky; top: 1rem; align-self: start; padding-top: 1rem; }
+  .reading-rail nav { display: grid; gap: 0.3rem; }
+  .reading-rail nav a { color: var(--shell-ink); font-family: "Newsreader", Georgia, serif; font-size: 1.1rem; text-decoration: none; }
+  .reading-rail nav a:hover,
+  .reading-rail nav a:focus-visible { color: var(--shell-accent); text-decoration: underline; }
+  .rail-note { max-width: 18ch; margin-top: 2.5rem; color: var(--shell-muted); font-size: 0.78rem; line-height: 1.7; }
+  .reading-column { min-width: 0; }
+  .reading-column .section-heading { margin-bottom: 2.2rem; }
+
+  .chapter-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--shell-ink); }
+  .chapter-list li { display: grid; grid-template-columns: 4rem minmax(0, 1fr) 7rem; gap: 1rem; padding-block: 1.2rem; border-bottom: 1px solid var(--shell-line); }
+  .chapter-id { margin: 0; font-size: 0.78rem; }
+  .chapter-body h3 { margin: 0; color: var(--shell-ink); font-size: 1.18rem; }
+  .chapter-body p { margin: 0.35rem 0 0; color: var(--shell-muted); font-size: 0.9rem; }
+  .chapter-links { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 0.65rem !important; }
+  .chapter-links a { color: var(--shell-accent); font-size: 0.82rem; font-weight: 700; }
+  .chapter-status { justify-self: end; color: var(--shell-muted); font-size: 0.75rem; text-align: right; }
+  .chapter-status.is-live { color: var(--shell-accent); font-weight: 700; }
+
+  .path-notes { margin-top: 2rem; border-top: 1px solid var(--shell-ink); padding-top: 1rem; }
+  .path-notes p { margin: 0.6rem 0 0; color: var(--shell-muted); font-size: 0.86rem; }
+  .path-notes strong { color: var(--shell-ink); }
+
+  .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; border: 1px solid var(--shell-line); background: var(--shell-line); }
+  .product-entry { min-height: 14rem; padding: 1.4rem; background: var(--shell-paper); }
+  .product-entry h3 { margin: 1.4rem 0 0.55rem; color: var(--shell-ink); font-family: "Newsreader", Georgia, serif; font-size: 2.3rem; font-weight: 500; }
+  .product-entry p:not(.product-overline) { max-width: 28rem; margin: 0; color: var(--shell-muted); font-size: 0.9rem; }
+  .product-entry a { margin-top: 1rem; color: var(--shell-accent); font-size: 0.84rem; font-weight: 700; }
+  .asset-boundary { margin: 1rem 0 0; border-inline-start: 2px solid #a45d00; padding-inline-start: 0.9rem; color: var(--shell-muted); font-size: 0.82rem; }
+  .asset-boundary strong { color: #8a4e00; }
+
+  .proof-section { padding-bottom: 4rem; }
+  .proof-grid { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 4rem; }
+  .proof-grid h2 { margin-top: 0.5rem; }
+  .proof-grid ul { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--shell-ink); }
+  .proof-grid li { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); gap: 0.7rem; border-bottom: 1px solid var(--shell-line); padding-block: 1rem; }
+  .proof-grid li > span { color: var(--shell-accent); font-family: "Cascadia Mono", Consolas, monospace; }
+  .proof-grid li p { margin: 0; color: var(--shell-muted); font-size: 0.9rem; }
+
+  .record-section { padding-bottom: 3rem; }
+  .record-section .evidence-loop { border-radius: 0; background: var(--shell-soft); }
+  .shell-footer { display: flex; justify-content: space-between; gap: 1rem; border-top: 1px solid var(--shell-line); padding-block: 1.5rem 3rem; color: var(--shell-muted); font-size: 0.76rem; }
+  .shell-footer a { color: var(--shell-ink); }
+
+  .course-shell :global(:focus-visible) { outline: 3px solid #a45d00; outline-offset: 3px; }
+
+  @media (max-width: 760px) {
+    .course-shell { font-size: 16px; }
+    .shell-hero,
+    .shell-nav,
+    .shell-main,
+    .shell-footer { width: min(100% - 2rem, 1240px); }
+    .shell-hero { display: block; padding-block: 3.5rem 3rem; }
+    .hero-copy h1 { max-width: 9ch; font-size: clamp(3.3rem, 16vw, 5.2rem); }
+    .hero-note { margin-top: 3.5rem; }
+    .shell-nav { gap: 0.9rem; }
+    .section-heading,
+    .proof-grid { display: block; }
+    .section-heading > p,
+    .proof-grid > div > p:not(.shell-eyebrow) { margin-top: 1rem; }
+    .graduation-grid,
+    .product-grid { grid-template-columns: 1fr; }
+    .graduation-grid article { min-height: auto; }
+    .reading-layout { display: block; }
+    .reading-rail { position: static; padding-block: 1.2rem 0.6rem; border-bottom: 1px solid var(--shell-line); }
+    .reading-rail nav { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 0.7rem; }
+    .reading-rail nav a { flex: 0 0 auto; font-size: 1rem; }
+    .rail-note { display: none; }
+    .reading-column { margin-top: 2rem; }
+    .chapter-list li { grid-template-columns: 2.6rem minmax(0, 1fr); gap: 0.7rem; }
+    .chapter-status { grid-column: 2; justify-self: start; text-align: left; }
+    .shell-footer { display: block; }
+    .shell-footer span,
+    .shell-footer a { display: block; margin-top: 0.55rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .course-shell :global(*),
+    .course-shell :global(*::before),
+    .course-shell :global(*::after) {
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+</style>

@@ -1,0 +1,470 @@
+---
+import { t03Content } from "../data/t03-content";
+
+const adapterLayers = [
+  {
+    index: "A1",
+    title: "Codex 与 Claude Code",
+    description:
+      "两种 Coding Agent 共享能力目标，但由不同课节交替主讲；另一工具通过变化输入的迁移挑战出现。",
+    evidence:
+      "正式课节当天记录客户端、账号、成本、权限和迁移结果；没有现场验证的产品行为不会写成事实。",
+  },
+  {
+    index: "A2",
+    title: "客户端、模型与 SDK",
+    description:
+      "安装入口、客户端表面、模型标识和 SDK/API 版本属于易变适配内容，与跨版本仍成立的概念分开阅读。",
+    evidence:
+      "每个适配单元带最后核验日期、版本、来源、成本和替代路径；本页不固定当前模型、价格或 UI。",
+  },
+  {
+    index: "A3",
+    title: "PowerShell、Git 与 MCP",
+    description:
+      "真实本地实验以 Windows 11 + PowerShell 7 为主；Git、Python、MCP transport 和检查工具按课节边界接入。",
+    evidence:
+      "可核验成果来自命令输出、文件、提交、检查器或协议调用证据；移动端不伪造终端实验。",
+  },
+] as const;
+---
+
+<section class="capability-map" id="map" data-capability-map aria-labelledby="capability-map-title">
+  <header class="map-heading">
+    <div>
+      <p class="map-eyebrow">01 / Agent 能力模型</p>
+      <h2 id="capability-map-title">先分清稳定知识，再接工具适配。</h2>
+      <p class="map-lede">
+        稳定知识层回答“问题是什么、证据是什么”；工具适配层回答“今天在哪个客户端、版本和权限边界里完成”。两层相连，但不把产品功能列表当成课程骨架。
+      </p>
+    </div>
+    <div class="map-mode-switch" role="group" aria-label="能力地图阅读模式">
+      <button type="button" class="mode-button is-active" data-mode="read" aria-pressed="true">READ</button>
+      <button type="button" class="mode-button" data-mode="verify" aria-pressed="false">VERIFY</button>
+    </div>
+  </header>
+
+  <p class="map-mode-note" data-mode-note role="status" aria-live="polite">
+    READ · 先理解每一层要解决的问题。
+  </p>
+
+  <div class="map-workspace">
+    <div
+      class="layer-tabs"
+      id="layer-listbox"
+      role="listbox"
+      aria-label="稳定知识层八层能力"
+      aria-orientation="vertical"
+    >
+      {t03Content.capabilityLayers.map((layer, index) => (
+        <button
+          type="button"
+          role="option"
+          aria-selected={index === 0 ? "true" : "false"}
+          aria-controls="layer-output"
+          data-layer-index={index}
+          tabindex={index === 0 ? "0" : "-1"}
+        >
+          <span>{layer.index}</span>
+          <strong>{layer.title}</strong>
+          <i aria-hidden="true">↗</i>
+        </button>
+      ))}
+    </div>
+
+    <div class="layer-output" id="layer-output" aria-live="polite">
+      {t03Content.capabilityLayers.map((layer, index) => (
+        <article class:list={["layer-output-item", index === 0 && "is-active"]} data-layer-output={index}>
+          <div class="output-label"><span data-output-mode>问题</span><span>{layer.index}</span></div>
+          <h3>{layer.title}</h3>
+          <p class="output-description" data-read-copy>{layer.description}</p>
+          <p class="output-description verify-copy" data-verify-copy>
+            <strong>可核验成果</strong>{layer.evidence}
+          </p>
+          <div class="output-foot"><span>STABLE / KNOWLEDGE</span><span>→ 可观察，不靠猜</span></div>
+        </article>
+      ))}
+    </div>
+  </div>
+
+  <div class="layer-boundaries" aria-label="能力层边界说明">
+    <article class="boundary-card stable-boundary">
+      <p class="boundary-label">STABLE / 稳定知识层</p>
+      <h3>八层跨版本骨架</h3>
+      <p>
+        模型与 API、指令与规则、上下文与状态、Memory、工具与 MCP、Skill 与 Plugin、编排与多 Agent，以及评测、安全、成本与运维。
+      </p>
+      <p class="boundary-note">它们是可以迁移到不同工具的概念、方法和验收语言。</p>
+    </article>
+    <article class="boundary-card adapter-boundary">
+      <p class="boundary-label">ADAPTER / 工具适配层</p>
+      <h3>版本化的操作表面</h3>
+      <p>
+        Codex、Claude Code、模型、SDK、API、安装命令和配置都在这里；每课标出适用版本、核验日期、账号、成本、权限、副作用和来源。
+      </p>
+      <p class="boundary-note">产品会变化，课程只在当天核验范围内做出诚实说明。</p>
+    </article>
+  </div>
+
+  <div class="adapter-list" aria-labelledby="adapter-list-title">
+    <div>
+      <p class="map-eyebrow">工具适配层 / 读取边界</p>
+      <h3 id="adapter-list-title">同一能力目标，不抹平产品差异。</h3>
+    </div>
+    <ol>
+      {adapterLayers.map((layer) => (
+        <li>
+          <span class="adapter-index">{layer.index}</span>
+          <div>
+            <h4>{layer.title}</h4>
+            <p>{layer.description}</p>
+            <p class="adapter-evidence"><strong>VERIFY</strong>{layer.evidence}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  </div>
+
+  <noscript>
+    <p class="map-noscript">
+      当前浏览器未启用 JavaScript，能力地图保持 READ 的第一层内容。八层稳定知识和工具适配边界仍可完整阅读；VERIFY 只负责切换证据说明，不会改变课程事实。
+    </p>
+  </noscript>
+</section>
+
+<script>
+  const root = document.querySelector("[data-capability-map]");
+  if (root instanceof HTMLElement) {
+    const layerButtons = [...root.querySelectorAll<HTMLButtonElement>("[data-layer-index]")];
+    const layerOutputs = [...root.querySelectorAll<HTMLElement>("[data-layer-output]")];
+    const listbox = root.querySelector<HTMLElement>("#layer-listbox");
+    const modeButtons = [...root.querySelectorAll<HTMLButtonElement>("[data-mode]")];
+    const modeNote = root.querySelector<HTMLElement>("[data-mode-note]");
+
+    const setListboxOrientation = () => {
+      listbox?.setAttribute(
+        "aria-orientation",
+        window.matchMedia("(max-width: 760px)").matches ? "horizontal" : "vertical",
+      );
+    };
+
+    const activateLayer = (button: HTMLButtonElement, moveFocus = false) => {
+      const target = button.dataset.layerIndex;
+      layerButtons.forEach((item) => {
+        const selected = item === button;
+        item.setAttribute("aria-selected", String(selected));
+        item.setAttribute("tabindex", selected ? "0" : "-1");
+      });
+      layerOutputs.forEach((item) => item.classList.toggle("is-active", item.dataset.layerOutput === target));
+      if (moveFocus) button.focus();
+    };
+
+    layerButtons.forEach((button, index) => {
+      button.addEventListener("click", () => activateLayer(button));
+      button.addEventListener("keydown", (event: KeyboardEvent) => {
+        const horizontal = listbox?.getAttribute("aria-orientation") === "horizontal";
+        const forward = horizontal ? "ArrowRight" : "ArrowDown";
+        const backward = horizontal ? "ArrowLeft" : "ArrowUp";
+        let nextIndex = index;
+        if (event.key === forward) nextIndex = (index + 1) % layerButtons.length;
+        if (event.key === backward) nextIndex = (index - 1 + layerButtons.length) % layerButtons.length;
+        if (event.key === "Home") nextIndex = 0;
+        if (event.key === "End") nextIndex = layerButtons.length - 1;
+        if (nextIndex !== index || event.key === "Home" || event.key === "End") {
+          event.preventDefault();
+          activateLayer(layerButtons[nextIndex], true);
+        }
+        if (event.key === " " || event.key === "Enter") activateLayer(button);
+      });
+    });
+
+    const setMode = (button: HTMLButtonElement) => {
+      const mode = button.dataset.mode === "verify" ? "verify" : "read";
+      modeButtons.forEach((item) => {
+        const active = item === button;
+        item.setAttribute("aria-pressed", String(active));
+        item.classList.toggle("is-active", active);
+      });
+      root.dataset.mode = mode;
+      root.querySelectorAll("[data-output-mode]").forEach((label) => {
+        label.textContent = mode === "verify" ? "证据" : "问题";
+      });
+      if (modeNote) {
+        modeNote.textContent = mode === "verify"
+          ? "VERIFY · 查看每一层要留下的可核验成果。"
+          : "READ · 先理解每一层要解决的问题。";
+      }
+    };
+
+    modeButtons.forEach((button) => button.addEventListener("click", () => setMode(button)));
+    setListboxOrientation();
+    const mediaQuery = window.matchMedia("(max-width: 760px)");
+    mediaQuery.addEventListener?.("change", setListboxOrientation);
+  }
+</script>
+
+<style>
+  .capability-map {
+    --map-ink: #141715;
+    --map-muted: #52615b;
+    --map-line: #c9d2cd;
+    --map-accent: #087f68;
+    --map-paper: #f5f7f3;
+    --map-soft: #e7eee9;
+    color: var(--map-ink);
+  }
+
+  .map-heading,
+  .map-workspace,
+  .layer-boundaries,
+  .adapter-list {
+    margin-inline: auto;
+  }
+
+  .map-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(11rem, 0.32fr);
+    gap: 2rem;
+    align-items: end;
+  }
+
+  .map-eyebrow,
+  .boundary-label,
+  .adapter-index,
+  .output-label,
+  .output-foot {
+    margin: 0;
+    color: var(--map-accent);
+    font-family: "Cascadia Mono", "Geist Mono", Consolas, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .map-heading h2,
+  .adapter-list h3 {
+    margin: 0.5rem 0 0;
+    color: var(--map-ink);
+    font-family: "Newsreader", Georgia, "Noto Serif SC", serif;
+    font-size: clamp(2rem, 4.8vw, 4.5rem);
+    font-weight: 500;
+    letter-spacing: -0.05em;
+    line-height: 1.04;
+  }
+
+  .map-lede {
+    max-width: 43rem;
+    margin: 1.25rem 0 0;
+    color: var(--map-muted);
+    font-size: 0.96rem;
+  }
+
+  .map-mode-switch {
+    display: flex;
+    justify-content: flex-end;
+    border-bottom: 1px solid var(--map-ink);
+  }
+
+  .mode-button {
+    min-width: 5.5rem;
+    min-height: 44px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    padding: 0.55rem 0.75rem;
+    background: transparent;
+    color: var(--map-muted);
+    font: inherit;
+    font-family: "Cascadia Mono", "Geist Mono", Consolas, monospace;
+    font-size: 0.72rem;
+    cursor: pointer;
+  }
+
+  .mode-button.is-active {
+    border-bottom-color: var(--map-accent);
+    color: var(--map-ink);
+    font-weight: 700;
+  }
+
+  .map-mode-note {
+    margin: 1rem 0 0;
+    color: var(--map-muted);
+    font-size: 0.85rem;
+  }
+
+  .map-workspace {
+    display: grid;
+    grid-template-columns: minmax(15rem, 0.7fr) minmax(0, 1.3fr);
+    gap: 1px;
+    margin-top: 1.5rem;
+    border: 1px solid var(--map-line);
+    background: var(--map-line);
+  }
+
+  .layer-tabs {
+    background: var(--map-paper);
+  }
+
+  .layer-tabs button {
+    width: 100%;
+    min-height: 4rem;
+    display: grid;
+    grid-template-columns: 2.2rem minmax(0, 1fr) auto;
+    gap: 0.7rem;
+    align-items: center;
+    border: 0;
+    border-bottom: 1px solid var(--map-line);
+    padding: 0.8rem 1rem;
+    background: transparent;
+    color: var(--map-muted);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .layer-tabs button:last-child { border-bottom: 0; }
+
+  .layer-tabs button:hover,
+  .layer-tabs button:focus-visible,
+  .layer-tabs button[aria-selected="true"] {
+    background: var(--map-soft);
+    color: var(--map-ink);
+  }
+
+  .layer-tabs button[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--map-accent); }
+  .layer-tabs button > span { color: var(--map-accent); font-family: "Cascadia Mono", Consolas, monospace; font-size: 0.72rem; }
+  .layer-tabs button > strong { font-size: 0.9rem; font-weight: 650; }
+  .layer-tabs button > i { color: var(--map-accent); font-style: normal; }
+
+  .layer-output { min-height: 31rem; background: var(--map-soft); }
+
+  .layer-output-item {
+    display: none;
+    min-height: 31rem;
+    padding: clamp(1.4rem, 4vw, 3rem);
+  }
+
+  .layer-output-item.is-active { display: block; }
+  .output-label,
+  .output-foot { display: flex; justify-content: space-between; gap: 1rem; }
+  .output-label span:first-child { color: #a45d00; }
+
+  .layer-output h3 {
+    max-width: 12ch;
+    margin: 4rem 0 1rem;
+    color: var(--map-ink);
+    font-family: "Newsreader", Georgia, "Noto Serif SC", serif;
+    font-size: clamp(2.3rem, 5vw, 5rem);
+    font-weight: 500;
+    letter-spacing: -0.06em;
+    line-height: 0.98;
+  }
+
+  .output-description {
+    max-width: 38rem;
+    margin: 0;
+    color: var(--map-muted);
+    font-size: 1rem;
+  }
+
+  .verify-copy {
+    display: none;
+    border-inline-start: 2px solid var(--map-accent);
+    padding-inline-start: 1rem;
+  }
+
+  .verify-copy strong,
+  .adapter-evidence strong {
+    display: block;
+    margin-bottom: 0.45rem;
+    color: var(--map-accent);
+    font-family: "Cascadia Mono", Consolas, monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .capability-map[data-mode="verify"] .output-description[data-read-copy] { display: none; }
+  .capability-map[data-mode="verify"] .verify-copy { display: block; }
+
+  .output-foot {
+    margin-top: 5rem;
+    border-top: 1px solid var(--map-line);
+    padding-top: 0.8rem;
+  }
+
+  .output-foot span:last-child { color: var(--map-accent); }
+
+  .layer-boundaries {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    margin-top: 2.5rem;
+    border: 1px solid var(--map-line);
+    background: var(--map-line);
+  }
+
+  .boundary-card {
+    min-height: 13rem;
+    padding: 1.4rem;
+    background: var(--map-paper);
+  }
+
+  .boundary-card h3 { margin: 1.5rem 0 0.55rem; font-size: 1.35rem; }
+  .boundary-card p:not(.boundary-label):not(.boundary-note) { max-width: 34rem; margin: 0; color: var(--map-muted); font-size: 0.92rem; }
+  .boundary-note { margin: 1.2rem 0 0; color: var(--map-ink); font-size: 0.8rem; }
+  .adapter-boundary .boundary-label { color: #a45d00; }
+
+  .adapter-list {
+    display: grid;
+    grid-template-columns: minmax(15rem, 0.7fr) minmax(0, 1.3fr);
+    gap: 2rem;
+    margin-top: 2.5rem;
+    border-top: 1px solid var(--map-ink);
+    padding-top: 1.5rem;
+  }
+
+  .adapter-list h3 { font-size: clamp(1.8rem, 3vw, 3rem); }
+  .adapter-list ol { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--map-ink); }
+  .adapter-list li { display: grid; grid-template-columns: 3rem minmax(0, 1fr); gap: 1rem; padding-block: 1rem; border-bottom: 1px solid var(--map-line); }
+  .adapter-list h4 { margin: 0; font-size: 1.1rem; }
+  .adapter-list p { margin: 0.35rem 0 0; color: var(--map-muted); font-size: 0.88rem; }
+  .adapter-evidence { margin-top: 0.75rem !important; padding-inline-start: 0.8rem; border-inline-start: 2px solid #a45d00; }
+  .adapter-evidence strong { color: #a45d00; }
+
+  .map-noscript { margin-top: 1.5rem; border-inline-start: 2px solid #a45d00; padding: 0.75rem 1rem; background: var(--map-paper); color: var(--map-muted); }
+
+  :global(.capability-map a),
+  :global(.capability-map button) { -webkit-tap-highlight-color: transparent; }
+
+  :global(.capability-map :focus-visible) { outline: 3px solid #a45d00; outline-offset: 3px; }
+
+  @media (max-width: 760px) {
+    .map-heading,
+    .adapter-list { display: block; }
+    .map-mode-switch { justify-content: flex-start; margin-top: 1.2rem; }
+    .map-workspace { display: block; }
+    .layer-tabs { display: flex; overflow-x: auto; }
+    .layer-tabs button { min-width: 9rem; min-height: 5.5rem; display: block; border-right: 1px solid var(--map-line); border-bottom: 0; padding: 0.75rem; }
+    .layer-tabs button[aria-selected="true"] { box-shadow: inset 0 -3px 0 var(--map-accent); }
+    .layer-tabs button > strong { display: block; margin-top: 0.45rem; font-size: 0.78rem; }
+    .layer-tabs button > i { display: none; }
+    .layer-output,
+    .layer-output-item { min-height: 24rem; }
+    .layer-output h3 { margin-top: 2.8rem; font-size: clamp(2.4rem, 14vw, 4.5rem); }
+    .output-foot { margin-top: 3rem; }
+    .layer-boundaries { grid-template-columns: 1fr; }
+    .adapter-list ol { margin-top: 1.5rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(.capability-map),
+    :global(.capability-map *),
+    :global(.capability-map *::before),
+    :global(.capability-map *::after) {
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+</style>
