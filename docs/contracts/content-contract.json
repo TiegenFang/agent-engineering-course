@@ -242,6 +242,105 @@
       "licenses": ["CC-BY-4.0", "MIT"]
     },
     {
+      "id": "t22-multi-agent",
+      "title": "模块 10B：受控多 Agent 对照实验",
+      "stage": "core-beta",
+      "duration_minutes": 55,
+      "prerequisites": ["t16-memory", "t17-skill", "t18-plugin-audit"],
+      "outcomes": [
+        "用同一 telemetry-report-v2 验收目标比较单 Agent 与子代理路径",
+        "声明子任务边界、最小共享上下文、汇合点和最终验证责任",
+        "同时比较墙钟时间、使用单位、验证单位、冲突和恢复成本",
+        "在冲突恢复后仍能以证据支持不采用多 Agent 的决定"
+      ],
+      "artifacts": [
+        "两个固定子代理情形的单 Agent / 子代理对照记录",
+        "边界、共享上下文、汇合、冲突与恢复说明",
+        "t22-multi-agent-evidence.json（匿名 evidence contract）",
+        "一份明确真实客户端未验证的迁移挑战记录"
+      ],
+      "primary_tool": "Deterministic browser single-agent / subagent comparison fixture",
+      "migration_tool": "Codex or Claude Code（optional controlled real-tool comparison; no live call from page）",
+      "platforms": {
+        "primary": "Desktop browser; Windows 11 + PowerShell 7 for course_check",
+        "secondary": ["macOS/Linux browser; checker path not yet cross-platform verified"]
+      },
+      "versions": {
+        "client": "Codex and Claude Code official subagent/parallel-work docs observed 2026-08-13; no live client version asserted",
+        "sdk": "not-applicable",
+        "model": "mock/deterministic multi-agent fixture v1; model_calls=0",
+        "protocol": "agent-engineering-course/evidence v1; multi-agent-fixture v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free for fixture, checker and browser tests; optional live comparison may require account, quota or paid usage",
+        "network": "offline page and checker need no network after dependencies are installed; official links need network when refreshed"
+      },
+      "risk": {
+        "permissions": "页面和 checker 只读取 deterministic fixture 与用户显式指定的 evidence JSON；不启动 agent、worktree、进程或网络",
+        "side_effects": "浏览器只下载用户主动导出的匿名 JSON；checker 只读取该 JSON 并可写入显式输出路径；不调用真实模型或客户端",
+        "staleness": "Codex/Claude Code subagent、team、worktree、成本和权限行为属于易变产品层；发布前重新核验官方文档和真实客户端，不能由固定夹具推断"
+      },
+      "sources": [
+        "openai-codex-subagents-t22",
+        "anthropic-claude-code-parallel-agents-t22",
+        "course-multi-agent-original-t22"
+      ],
+      "licenses": ["CC-BY-4.0", "MIT"]
+    },
+    {
+      "id": "t27-openai-responses",
+      "title": "模块 11B：OpenAI Responses API 适配实验",
+      "stage": "v1",
+      "duration_minutes": 65,
+      "prerequisites": ["t26-offline-agent-loop"],
+      "outcomes": [
+        "把官方 Responses API/SDK 的 response source 适配到 T26 的最小 Python Agent loop",
+        "区分 function_call、function_call_output/call_id、工具执行、状态回填与 loop 所有权",
+        "使用严格 JSON Schema 表达最终 structured output，并保留应用侧输出校验",
+        "在不读取凭据或调用真实 API 的前提下验证无效参数、结构化输出和连接错误边界",
+        "记录 SDK、模型、日期、成本和限制的 not-run 现场 smoke 元数据"
+      ],
+      "artifacts": [
+        "labs/openai-responses/openai_responses_adapter.py 的可注入 ResponsesResponseSource",
+        "四条录制离线 adapter 状态与 t27-openai-responses-fixture.json",
+        "t27-openai-responses-checked.json（匿名 checker 输出）",
+        "一份明确 not-run、未调用真实 API 的现场 smoke 元数据"
+      ],
+      "primary_tool": "Python Responses API adapter and recorded offline fixture",
+      "migration_tool": "Anthropic API adapter comparison (conceptual contract migration; no live API call)",
+      "platforms": {
+        "primary": "Windows 11 + PowerShell 7; desktop browser for the lab",
+        "secondary": ["macOS/Linux path and live API smoke not yet release-gate verified"]
+      },
+      "versions": {
+        "client": "OpenAI Responses API official docs observed 2026-08-13; live service behavior not asserted",
+        "sdk": "official openai Python SDK call shape observed 2026-08-13; SDK not installed or invoked by this fixture",
+        "model": "gpt-5.6 adapter identifier; availability, price and behavior require a live recheck",
+        "protocol": "Responses API function calling and Structured Outputs; agent-engineering-course/evidence v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free for the offline adapter, fixture, checker and browser lab; an optional live smoke needs a separately approved OpenAI project and may incur usage cost",
+        "network": "offline fixture, checker and browser lab use no network after dependencies are installed; official docs and any optional live smoke need network"
+      },
+      "risk": {
+        "permissions": "离线路径不读取 API key、不安装 SDK、不调用网络；live client 仅在调用者显式传入 key 后构造，真实请求仍需人工批准",
+        "side_effects": "浏览器与 Python fixture 只写入用户显式指定的匿名 JSON；不写入项目状态、不执行真实工具、不发送请求",
+        "staleness": "Responses 参数、SDK 类型、模型可用性、价格、速率限制和错误行为属于易变工具适配层；发布前必须按官方文档和批准的现场 smoke 重新核验"
+      },
+      "sources": [
+        "openai-responses-api-t27",
+        "openai-function-calling-t27",
+        "openai-structured-outputs-t27",
+        "openai-error-codes-t27",
+        "course-openai-responses-original-t27"
+      ],
+      "licenses": ["CC-BY-4.0", "MIT"]
+    },
+    {
       "id": "t04-project-rules",
       "title": "模块 4：项目指令与规则作用域",
       "stage": "core-beta",
@@ -889,6 +988,157 @@
         "python-json-library-t26",
         "openai-responses-function-calling-t26",
         "anthropic-tool-use-t26"
+      ],
+      "licenses": ["CC-BY-4.0", "MIT"]
+    },
+    {
+      "id": "t23-research-capstone",
+      "title": "模块 12A：科研核心结课轨道",
+      "stage": "core-beta",
+      "duration_minutes": 120,
+      "prerequisites": ["t16-memory", "t17-skill", "t20-mcp-call"],
+      "outcomes": [
+        "在合成设备遥测主题上定义问题、范围、上下文、Memory 和停止条件",
+        "交付可复现的数据检查、分析脚本、图表、实验记录和报告",
+        "在 MCP 只读边界和安全默认下记录故障、恢复和验证证据",
+        "用夜班压力变化输入完成迁移挑战，并使用公共评分量表解释证据强度"
+      ],
+      "artifacts": [
+        "analysis.py（可重复执行的合成分析脚本）",
+        "figure.svg（由脚本生成的合成图表）",
+        "experiment-record.json（上下文、Memory、Skill、MCP 和恢复状态）",
+        "report.md（输入、方法、限制和结果摘要）",
+        "t23-research-capstone-evidence.json（匿名证据）",
+        "一份压力夜班变化输入迁移与评分记录"
+      ],
+      "primary_tool": "Python 标准库离线科研结课实验 + course_check",
+      "migration_tool": "Codex 或 Claude Code（概念迁移挑战；真实调用可选且不由 checker 伪造）",
+      "platforms": {
+        "primary": "Windows 11 + PowerShell 7; desktop browser for the lab",
+        "secondary": ["macOS/Linux：仅复核 Python 离线脚本语义，未在本轮现场验收"]
+      },
+      "versions": {
+        "client": "课程离线 lab v1; Codex/Claude Code live client not asserted",
+        "sdk": "not-applicable; Python standard library only",
+        "model": "not-applicable; no model or paid API call",
+        "protocol": "agent-engineering-course/evidence v1; telemetry-research-v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free for the offline lab, checker and browser fixture; optional live tool migration may require an account or paid quota",
+        "network": "lab, checker and browser fixture need no network after dependencies are installed; official links and optional live tools need network"
+      },
+      "risk": {
+        "permissions": "只在学员显式指定的新输出目录写入合成产物；MCP 观察保持只读，任何真实写出必须单独人工确认",
+        "side_effects": "不读取真实研究数据、不调用模型/API/远端 MCP、不发送消息；本地 lab 只写脚本、图表、记录、报告和匿名 JSON",
+        "staleness": "课程实验合同和工具适配信息随课程版本锁定；Codex、Claude Code、MCP 和研究软件现场行为发布前必须重新核验"
+      },
+      "sources": [
+        "course-research-capstone-original-t23",
+        "course-skill-original",
+        "course-mcp-call-original-t20"
+      ],
+      "licenses": ["CC-BY-4.0", "MIT"]
+    },
+    {
+      "id": "t28-anthropic-messages",
+      "title": "模块 11C：Anthropic Messages API 迁移实验",
+      "stage": "v1",
+      "duration_minutes": 70,
+      "prerequisites": ["t26-offline-agent-loop"],
+      "outcomes": [
+        "把 T26 最小 Agent loop 的 response_source seam 迁移到 Anthropic Messages API，而不交出工具执行、状态、重试或停止条件的所有权",
+        "解释 tool_use/tool_result 与应用重放 message history 的关联边界，并区分 API 无状态请求与 Claude Agent SDK 的待核验 runtime 会话",
+        "比较工具、状态、JSON Schema structured output、request/loop budget 和错误类别，避免把 provider 字段当作跨厂商协议",
+        "生成不含 prompt、content blocks、工具参数/结果、路径、凭据或原始数据的确定性离线 T28 evidence，并明确 live smoke 未执行"
+      ],
+      "artifacts": [
+        "labs/anthropic-messages/anthropic_messages_adapter.py 与 run_fixture.py",
+        "五条固定离线状态和 t28-anthropic-messages-fixture.json",
+        "checker 重推后的匿名 t28-anthropic-messages evidence JSON",
+        "工具、状态、structured output、budget、errors 与 Claude Agent SDK 边界的迁移说明"
+      ],
+      "primary_tool": "Anthropic Messages API Python SDK adapter boundary with deterministic offline fixture",
+      "migration_tool": "T26 framework-free Python loop and Claude Agent SDK comparison-only boundary",
+      "platforms": {
+        "primary": "Windows 11 + PowerShell 7; Python standard-library fixture and local course_check",
+        "secondary": ["macOS/Linux conceptual migration; no live API or Agent SDK path verified"]
+      },
+      "versions": {
+        "client": "Anthropic Messages API and Claude Agent SDK official documentation observed 2026-08-13; no client/session live result asserted",
+        "sdk": "anthropic Python SDK not invoked; Claude Agent SDK comparison-only-not-invoked",
+        "model": "claude-sonnet-4-5 adapter identifier; deterministic fixture only",
+        "protocol": "Anthropic Messages API tool_use/tool_result and JSON Schema structured output observed 2026-08-13; agent-engineering-course/evidence v1; t28 fixture v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "fixture, browser lab and checker are free; optional live Messages API smoke needs an approved Anthropic account, credential and bounded paid quota",
+        "network": "offline fixture, browser lab and checker require no network after dependencies are installed; official docs and any optional live smoke require network"
+      },
+      "risk": {
+        "permissions": "默认 fixture 不读取环境变量、凭据、文件或真实设备，不导入/调用 Anthropic SDK 或 Claude Agent SDK；未来 live client 只接受调用者显式传入的已审核 key",
+        "side_effects": "runner 只向学员明确指定的临时路径写匿名 JSON；网页只生成本地下载；没有真实 API、网络、工具服务、外部消息或自动重试",
+        "staleness": "Messages 请求字段、tool_use/tool_result、structured outputs、模型、Python SDK、Claude Agent SDK 会话/权限/预算与价格均属于快速变化的工具适配层；发布前必须重新核验官方文档和受预算现场结果"
+      },
+      "sources": [
+        "anthropic-api-primer-t28",
+        "anthropic-messages-api-t28",
+        "anthropic-tool-use-t28",
+        "anthropic-structured-outputs-t28",
+        "anthropic-errors-t28",
+        "anthropic-rate-limits-t28",
+        "anthropic-agent-sdk-overview-t28",
+        "course-anthropic-messages-original-t28"
+      ],
+      "licenses": ["CC-BY-4.0", "MIT"]
+    },
+    {
+      "id": "t29-production",
+      "title": "模块 12B：生产评测、成本与发布门禁",
+      "stage": "v1",
+      "duration_minutes": 75,
+      "prerequisites": ["t26-offline-agent-loop", "t27-openai-responses", "t28-anthropic-messages"],
+      "outcomes": [
+        "用固定 evaluator、变化输入、故障恢复和预算门禁替代一次性演示判断",
+        "把 OpenAI 与 Anthropic 适配层放在共同 rubric 下比较，同时保留 provider-specific 字段",
+        "输出匿名聚合评测与日志证据，并拒绝凭据、原始 prompt、工具 payload 与 live API 伪装",
+        "区分离线 fixture、checker、浏览器验收与真实 API/生产验收边界"
+      ],
+      "artifacts": [
+        "labs/production-evaluation/evaluate.py 与 run-evaluation.ps1",
+        "production-evaluator-v1 的 rubric、预算和故障恢复记录",
+        "t29-production evidence JSON（evaluation 与 logs 聚合字段）",
+        "一份 OpenAI/Anthropic 共同 rubric 与现场验证边界说明"
+      ],
+      "primary_tool": "Deterministic production evaluator and browser gate",
+      "migration_tool": "OpenAI Responses / Anthropic Messages adapters; live calls optional and separately approved",
+      "platforms": {
+        "primary": "Windows 11 + PowerShell 7; desktop browser for the lab",
+        "secondary": ["macOS/Linux conceptual migration; live production path not verified"]
+      },
+      "versions": {
+        "client": "production-evaluator-v1; no Codex/Claude Code live client asserted",
+        "sdk": "provider SDKs not invoked by the offline evaluator",
+        "model": "offline-model-v1; no model or paid API call",
+        "protocol": "agent-engineering-course/evidence v1; production evaluator fixture v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free for evaluator, checker and browser fixture; optional live API validation needs approved account and bounded quota",
+        "network": "offline evaluator and checker need no network after dependencies are installed; official docs and optional live validation need network"
+      },
+      "risk": {
+        "permissions": "离线 evaluator 不读取凭据、不调用模型或外部工具；live validation 必须单独人工批准权限和预算",
+        "side_effects": "只向用户显式指定的新 JSON 输出聚合状态；不发送请求、不执行真实工具、不写生产数据",
+        "staleness": "价格、模型、SDK、限流、SLO 和供应商错误属于易变适配层；发布前按当天官方资料和批准的 smoke 重新核验"
+      },
+      "sources": [
+        "course-production-evaluation-original-t29",
+        "openai-responses-evaluation-t29",
+        "anthropic-messages-evaluation-t29"
       ],
       "licenses": ["CC-BY-4.0", "MIT"]
     }

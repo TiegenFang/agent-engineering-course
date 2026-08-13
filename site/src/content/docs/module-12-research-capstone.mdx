@@ -1,0 +1,111 @@
+---
+title: 模块 12A：科研核心结课轨道
+description: 用统一设备遥测主题完成数据检查、分析、图表、实验记录和报告的可复现科研工作流。
+sidebar:
+  order: 13
+---
+
+import ResearchCapstoneLab from '../../components/ResearchCapstoneLab.astro';
+
+# 模块 12A：科研核心结课轨道
+
+> 这是一条核心课程结课路径，不要求付费 API。你要把前面学过的 Context、Memory、Skill、MCP 和 Coding Agent 方法收束为一份可复核的科研交付，而不是提交一段“看起来合理”的自然语言答案。
+
+## 真实问题：结果能否被另一个人复现？
+
+合成的设备遥测数据仍然会有缺失值、单位混乱、时间戳和过期说明。科研工作流的风险不是“没有一个聪明的回答”，而是分析过程没有留下输入边界、版本、失败证据、脚本、图表、实验记录和报告。结课交付必须让另一位学习者可以从同一课程版本重新运行并解释差异。
+
+完成本轨道后，你应能：
+
+- 用 Context 记录研究问题、输入范围、非目标、验收标准和停止条件；
+- 用受控 Memory 记录可复用的假设、来源和寿命，不把原始数据或秘密写入 Memory；
+- 用 Skill 固定数据检查、分析和报告步骤，并说明触发边界；
+- 通过 MCP 只读边界读取合成快照，任何写出或外部副作用都要单独确认；
+- 留下脚本、图表、实验记录、报告和匿名 evidence，能够在 Windows 11 + PowerShell 7 重跑；
+- 用变化输入完成迁移挑战，并按公共评分量表解释证据强度。
+
+## 心智模型：一条有证据的研究流水线
+
+```text
+研究问题 + 范围
+      │ Context / Memory
+      ▼
+固定输入 ──> 数据检查 ──> 分析脚本 ──> 图表
+      │          │             │          │
+      └── Skill ──┴──── MCP 只读 ┴──记录───┘
+                                      ▼
+                               报告 + evidence
+```
+
+Context 是这一轮工作集；Memory 是有 owner、用途和寿命的受控记录；Skill 是按需加载的程序性知识；MCP 是工具/资源交换边界。它们都不能替代脚本、版本锁定和可观察的失败恢复。
+
+## 操作前预测
+
+在运行实验前写下预测：
+
+1. 如果 Memory 使用了过期的单位假设，哪一条证据会先变成失败？
+2. 如果 MCP 没有人工确认，研究助手应继续写报告，还是保持只读并留下阻塞记录？
+3. 为什么“图表生成了”仍然不足以证明分析可复现？
+4. 把日间温度迁移到夜班压力时，哪些验收目标应保持不变，哪些输入契约必须改变？
+
+## 主工具演示：离线科研助手
+
+本课的确定性 lab 使用 Python 标准库生成合成结果；它不会启动 Codex、Claude Code、模型、付费 API、远端 MCP 或真实研究数据。页面里的互动实验只让你观察状态，不会替你声称完成本地交付。
+
+<ResearchCapstoneLab />
+
+## 本地实验：交付五类证据
+
+在课程仓库根目录使用 Windows 11 + PowerShell 7：
+
+```powershell
+$out = Join-Path ([System.IO.Path]::GetTempPath()) 't23-research-capstone'
+python .\labs\research-capstone\run_lab.py --output $out --variant temperature-daily
+Get-ChildItem -LiteralPath $out
+python -m course_check check t23-research-capstone --root . --evidence-file (Join-Path $out 't23-research-capstone-evidence.json') --json
+```
+
+检查输出目录中的 `analysis.py`、`figure.svg`、`experiment-record.json`、`report.md` 和 `t23-research-capstone-evidence.json`。检查器只接收状态摘要，不接收路径、原始遥测、报告正文、命令日志或密钥；它会从实验字段重新推导通过/部分状态。
+
+## 故障注入与恢复
+
+先运行一个故障，再恢复到安全默认：
+
+```powershell
+python .\labs\research-capstone\run_lab.py --output $out --variant temperature-daily --fault missing-values
+python .\labs\research-capstone\run_lab.py --output $out --variant temperature-daily
+```
+
+还可以使用 `stale-memory` 和 `mcp-denied`。前者要求确认 Memory 的版本、owner 和 lifetime 后再重建上下文；后者要求保持 MCP 只读，不能把“未批准”当作失败后继续写出的理由。故障输出是 `partial`，恢复输出才可能达到完整证据；不得修改 JSON 中的 `result` 来伪造通过。
+
+## 迁移挑战：换输入，不换验收目标
+
+用变化输入重新运行：
+
+```powershell
+python .\labs\research-capstone\run_lab.py --output $out --variant pressure-night
+```
+
+夜班压力输入把主题改为 `pressure`、单位改为 `kPa`、最近记录限制改为 3。你仍然要交付数据检查、分析、图表、记录、报告和 evidence；页面不会要求把主路径的命令逐字复制。可以把“调用前检查单”交给 Codex 或 Claude Code 做概念迁移，但真实客户端实验必须单独记录版本、账号、权限、成本和日期，本课不把未执行调用标为成功。
+
+## 可核验成果与公共评分量表
+
+完成成果包括：脚本、图表、实验记录、报告、匿名 evidence，以及一份迁移挑战记录。公共评分量表沿用两条结课轨道的共同维度：问题定义、上下文质量、操作安全、验证证据、可复现性、迁移能力和交付清晰度。每项都要给出文件或运行证据；网页阅读状态不算结课成果。
+
+| 维度 | 通过证据 | 常见失败 | 恢复问题 |
+| --- | --- | --- | --- |
+| 问题定义 | 输入、非目标、停止条件明确 | 把研究问题写成泛化聊天 | 哪些数据不在本次范围？ |
+| 上下文质量 | Context 与 Memory 的 owner/lifetime 可追踪 | 过期假设混入当前工作集 | 哪条记录需要重新核验？ |
+| 操作安全 | MCP 只读，写出有确认 | 把 Tool 发现当作授权 | 谁批准了哪一个副作用？ |
+| 验证证据 | 数据检查、测试和报告状态一致 | 只提交截图或自然语言 | 另一个人如何重跑？ |
+| 可复现性 | 固定输入、脚本、版本和记录齐全 | 使用隐含本地状态 | 缺少哪一个依赖或参数？ |
+| 迁移能力 | 压力夜班变化输入保持目标不变 | 原样复制温度答案 | 哪些字段应变、哪些不应变？ |
+| 交付清晰度 | 报告限制、失败和恢复可读 | 把 partial 写成 passed | 读者能否辨别证据强度？ |
+
+## 风险、版本与来源卡片
+
+- **账号与成本**：离线 lab、页面、checker、Node/Python 测试免费且不需要账号；可选 Codex/Claude Code 迁移或 API 现场实验可能需要账号、订阅和按量额度。
+- **权限与副作用**：本实验只写入学员显式指定的新输出目录，使用合成数据；MCP 只读边界和报告写出边界是教学合同，不要将其默认扩展到真实研究目录。
+- **隐私**：不要把真实研究数据、个人信息、企业文本、令牌或绝对路径放入 lab 输出、截图或 evidence。checker 只输出匿名枚举与布尔状态。
+- **版本与验证边界**：实验合同为 `telemetry-research-v1` / evidence v1，核验日期 2026-08-13；本课验证的是离线确定性路径，不声称真实 Coding Agent、模型 API、远端 MCP 或科研数据现场成功。
+- **来源与许可**：正文、页面、fixture、checker 和测试为课程原创；课程规划与既有 Context/Memory/Skill/MCP 课节提供能力边界。第三方官方文档仅作事实核验，不复制资产。

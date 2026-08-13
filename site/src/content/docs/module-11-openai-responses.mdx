@@ -1,0 +1,106 @@
+---
+title: 模块 11B：OpenAI Responses API 适配实验
+description: 在不调用真实 API 的前提下，用 Python adapter 将 T26 最小 Agent loop 对接官方 Responses API/SDK 的 function calling、structured outputs、预算与错误边界。
+sidebar:
+  order: 12
+---
+
+import OpenAIResponsesLab from '../../components/OpenAIResponsesLab.astro';
+import EvidenceLoop from '../../components/EvidenceLoop.astro';
+
+# 模块 11B：OpenAI Responses API 适配实验
+
+> 本课只验证一个**离线、录制的适配夹具**。它不读取 `OPENAI_API_KEY`，不安装或调用 SDK，不连接网络，也不把“代码形状正确”说成真实 OpenAI API 已通过。
+
+## 你要解决的真实问题
+
+T26 已经让应用自己拥有最小 loop：收到响应、判断工具、执行工具、回填状态、验证输出、处理失败并在预算处停止。接入模型 SDK 时，最常见的退化是让 provider response 直接接管循环：模型的 function call ID、原始 output、工具结果和错误文字混到业务状态里；重试次数和 output token 上限也没有明确的所有者。
+
+本课的目标是把 OpenAI Responses API 放在一个窄 adapter 后面：SDK 负责一次 `responses.create` 请求；T26 继续拥有工具执行、状态回填、重试和 `max_steps`。完成后你能够：
+
+1. 用官方 Responses API 的 function calling 形状把 `function_call` 转为 T26 的 `FixtureResponse`。
+2. 用 `function_call_output` 关联正确 `call_id`，把工具结果回填到下一次 Responses 请求。
+3. 用严格 JSON Schema 定义最终 structured output，并让 T26 的既有验证器保持最终裁决权。
+4. 将输出 token 上限、loop 步数、工具尝试与错误分类分开记录，不把录制夹具冒充 live smoke。
+
+## 心智模型：SDK 是一个 response source，不是 loop 的所有者
+
+```text
+T26 loop owns: state · tool executor · retry budget · max_steps · output validation
+                    │ inject respond(state)
+                    ▼
+Responses adapter: request shape · call_id bridge · output JSON parsing · SDK error category
+                    │ explicit client.responses.create(...)
+                    ▼
+OpenAI API: model response / function_call / output_text
+```
+
+Responses API 的工具调用是多步往返：应用先发送可用 tools；模型返回 tool call；应用在自己的环境执行代码；应用带 `call_id` 回传 `function_call_output`；模型再返回最终响应。官方文档明确这是一段应用与模型之间的多步会话，而不是模型自行执行本地工具。 [Function calling（官方 OpenAI 文档）](https://developers.openai.com/api/docs/guides/function-calling)
+
+`Structured Outputs` 用 JSON Schema 约束文本输出，能够让下游程序检查所需字段与枚举，而不是只依赖自然语言。SDK 也提供面向 Pydantic/Zod 的辅助接口；本课刻意使用可见的 JSON Schema，便于同 T26 的纯 Python output contract 对照。 [Structured model outputs（官方 OpenAI 文档）](https://developers.openai.com/api/docs/guides/structured-outputs)
+
+## 操作前预测
+
+在运行夹具前，写下你的预测：
+
+- `function_call_output` 为什么必须携带上一步的 `call_id`？如果只回填工具结果文本，循环还知道它回答了哪个调用吗？
+- `max_output_tokens` 与 T26 的 `max_steps` 分别限制什么？哪个不能替代另一个？
+- 当 SDK 报连接错误时，为什么不应把异常全文或完整 request 直接写入学习 evidence？
+- 如果最终 JSON 解析失败，谁应判定“结构化输出无效”：SDK、adapter 还是 loop 的输出契约？
+
+## 主工具演示：官方 SDK/Responses 适配层
+
+本仓库的 Python adapter 使用官方 Python SDK 的预期接口 `client.responses.create(...)`，声明一个严格的 `function` tool，并在回填后构造 `type: "function_call_output"` 与 `call_id`。正式方法见官方 Responses function-calling 文档中的 Python 流程；此页的实现、夹具和中文叙事均为课程原创，没有复制官方示例代码。 [Function calling（官方 OpenAI 文档）](https://developers.openai.com/api/docs/guides/function-calling)
+
+最终响应声明 `text.format.type: "json_schema"`、名字、schema 和 `strict: true`。这不是“模型永远不出错”的承诺：应用仍应处理拒绝、协议错误、超时/连接失败、工具执行失败和自己的停止条件。OpenAI 的错误代码指南列出了认证、限流、额度、连接等类别；本课离线夹具只模拟连接错误类别，不把真实故障或费用记录伪造出来。 [Error codes（官方 OpenAI 文档）](https://developers.openai.com/api/docs/guides/error-codes)
+
+## 本地实验：四条不联网的 adapter 状态
+
+<OpenAIResponsesLab />
+
+完成网页记录后，也运行 Python 夹具并让本地 checker 重新推导结果：
+
+```powershell
+python .\labs\openai-responses\run_fixture.py --output .\t27-openai-responses-fixture.json
+Set-Location -LiteralPath .\checker
+python -m course_check check t27-openai-responses --root .. --evidence-file ..\t27-openai-responses-fixture.json --output ..\t27-openai-responses-checked.json --json
+Get-Content -LiteralPath ..\t27-openai-responses-checked.json
+```
+
+成功证据必须覆盖：成功的 function-call round trip、无效参数的 containment、无效 structured output 的拒绝、连接错误分类、请求级 output token budget、T26 的 loop budget 所有权，以及 `live_smoke.status: not-run`。没有 `--evidence-file` 时 checker 只报告页面/lab 是否存在和“未执行 evidence”，结果是 `partial`。
+
+## 故障注入与恢复
+
+四个固定夹具不会调用 API：
+
+1. **成功路径**：录制的 `function_call` 在 T26 工具完成后以同一 `call_id` 回填，第二个录制响应才产生可验证 JSON。
+2. **无效参数**：adapter 只解析 JSON；T26 继续校验 `device_id` 类型/模式，并把 `invalid-arguments` 作为状态回填。
+3. **无效 structured output**：adapter 不输出原始模型文本；它只交给 T26 一个无效标记，输出契约负责安全停止。
+4. **连接错误**：adapter 把 SDK 风格异常归为 transport 类别；恢复顺序是检查网络/代理/证书/项目策略，并在获得人工许可后重新进行一条小额 live smoke，而不是无限自动重试。
+
+若遇到真实 401、429、连接或服务错误，先保留不含密钥的错误类别和请求时间，再按官方错误文档与本项目预算/权限策略恢复。不要把自动重试当作成本控制策略，也不要把环境变量内容写到文件、截图或 evidence 中。
+
+## 迁移挑战：只替换 response source
+
+在下一课的另一家 API 适配中，保持以下稳定契约不变：`respond(state)`、工具执行器、状态回填、structured output contract、`max_steps`、retry budget 和匿名 evidence。只比较 provider-specific request shape、tool-call ID、tool-output message、structured output 声明和 SDK 错误类型。
+
+迁移成果是一张接口边界表：每一行明确“provider 负责什么 / T26 loop 负责什么 / 现场验证尚未做什么”。它不要求购买第二个 API，也不允许把两个 provider 的 raw response 混进课程记录。
+
+## 可核验成果
+
+- `labs/openai-responses/openai_responses_adapter.py` 中的可注入 `ResponsesResponseSource` 与 `create_live_openai_client` 边界；
+- 四条确定性状态记录和 `t27-openai-responses-fixture.json`；
+- checker 重推后的 `t27-openai-responses-checked.json`；
+- 一份写明 SDK、模型、日期、成本和限制但状态为 `not-run` 的 live-smoke metadata；
+- 一段说明 T26 而非 adapter 拥有工具执行、重试与 loop budget 的迁移挑战记录。
+
+<EvidenceLoop lessonId="t27-openai-responses" />
+
+## 风险、版本与来源卡片
+
+- **账号与成本**：离线 fixture、网页和 checker 免费、零账号、零 API key、零网络。真实 API smoke 需要单独的 OpenAI 项目/凭据，可能产生成本；本课不要求也没有执行。
+- **权限与副作用**：网页只计算内置状态并提供本地下载；Python fixture 只写入你显式提供的输出路径。adapter 的 live client 工厂不会在 import 时读环境或发请求，真实请求需要调用者显式传入 key 和人工批准。
+- **隐私边界**：匿名 evidence 只保留 IDs、结果、计数、模型标识、预算、错误类别和 `not-run` metadata；不保留 prompt、路径、工具参数/值、原始 output、请求 body、凭据或研究/企业数据。
+- **版本与验证边界**：工具适配层核验日期为 2026-08-13，模型标识为 `gpt-5.6`，SDK 版本在本轮为“not invoked”。离线 fixture 已验证；真实 SDK 安装、真实 credential、网络、模型可用性、价格、速率限制、Responses API 和跨平台现场行为均**未验证**。
+- **事实与课程判断**：官方文档支持 Responses function calling、`function_call_output`/`call_id`、JSON Schema structured outputs 与错误类别的事实。T26 ownership、脱敏 evidence、四条夹具、预算分工和恢复顺序是课程的原创工程判断。
+- **许可**：正文为 CC BY 4.0；adapter、fixture、网页交互和 checker 为 MIT；官方文档只作为链接引用，不复制第三方代码或响应样本。

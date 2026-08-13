@@ -1,0 +1,132 @@
+---
+title: 模块 12：生产验证、评测与成本控制
+description: 用确定性评测、故障恢复、日志脱敏、成本预算和版本锁定建立 Agent Application 的生产前门禁。
+sidebar:
+  order: 13
+---
+
+import ProductionEvaluationLab from "../../components/ProductionEvaluationLab.astro";
+
+# 模块 12：生产验证、评测与成本控制
+
+> 本课把“模型回答看起来不错”改成可复核的生产前门禁。主实验完全离线、确定性、合成数据，不调用 OpenAI、Anthropic、Codex、Claude Code 或付费 API；通过不代表真实服务已验收。
+
+## 你要解决的真实问题
+
+一个 API Agent Application 可能在一次演示中成功，却在变化输入、工具错误、预算不足或版本升级时悄悄失控。你需要先回答：成功的判据是什么？失败是否可恢复？日志是否会泄露？一次调用最多花多少？当前输出对应哪个 evaluator、模型和课程版本？
+
+完成后，你应能：
+
+- 用同一评价维度比较 OpenAI 与 Anthropic 路径：任务成功、结构化输出、工具/失败恢复、预算、隐私与版本记录；
+- 为成功、失败和变化输入分别建立可观察检查，不用“模型自称成功”作为证据；
+- 让不可恢复或超预算的运行在模型调用前停止，并给出人工批准点；
+- 只保存匿名聚合日志，不保存密钥、原始 prompt、工具 payload、敏感数据或隐藏推理；
+- 区分离线 evaluator 通过、源码/模拟检查通过、浏览器验收和真实 API 验收。
+
+## 心智模型：生产门禁是控制平面
+
+```text
+版本锁定 → 合成评测集 → 运行/故障 → 结构化检查 → 成本/权限门禁 → 人工批准 → 可观测交付
+                         │                    │
+                         └── 失败恢复证据     └── live API 另行验证，不由离线结果代替
+```
+
+评测（evaluation）回答“这次行为是否满足任务契约”；日志（logging）回答“发生了哪些可审计事件”；成本估算回答“是否允许继续”；版本锁定回答“这个结果能否复现”。它们相互支持，但不能相互冒充。
+
+## 操作前预测
+
+先写下你的判断，再运行实验：
+
+1. 如果成功样例通过，但变化输入失败，整体结果应是 `passed`、`partial` 还是“平均分通过”？为什么不能用平均值隐藏关键失败？
+2. 如果预算门禁已经超限，是否还应该先调用模型再记录成本？哪一个停止点更安全？
+3. 为什么日志里的 `evaluation-end`、计数和状态足够证明控制流，却不需要保存原始 prompt 或完整工具结果？
+4. OpenAI 和 Anthropic 的响应字段不同，哪些评价维度仍可共用，哪些字段必须留在厂商适配层？
+
+## 主工具演示：共同 rubric，分离适配层
+
+T27/T28 的 API 适配实验分别记录官方 SDK、模型、现场日期、成本和限制（页面入口会随前置 ticket 合并而加入）。本课不把任一厂商字段写成标准。共同 rubric 只比较外部行为：
+
+| 维度 | 可核验问题 | 适配层保留什么 |
+| --- | --- | --- |
+| 任务成功 | 结构化结果是否满足任务契约 | provider response 的具体字段 |
+| 工具与恢复 | 工具请求、错误分类、重试/停止是否可观察 | SDK event/type 与错误码 |
+| 预算 | 输入/输出 token 与上限是否在批准范围 | 当天价卡、usage 字段 |
+| 安全与隐私 | 是否有最小权限、日志脱敏和人工确认 | provider auth/role/headers |
+| 版本与复现 | fixture、evaluator、SDK、模型、课程版本是否锁定 | provider/version/date |
+
+不要因为两条 API 路径都输出“完成”就宣称等价；先对齐任务契约，再解释字段差异和未验证边界。
+
+## 本地实验：离线 evaluator
+
+### PowerShell 7 主路径
+
+```powershell
+$output = Join-Path ([System.IO.Path]::GetTempPath()) 't29-production-evaluation.json'
+& .\labs\production-evaluation\run-evaluation.ps1 -OutputPath $output
+Get-Content -LiteralPath $output
+python -m course_check check t29-production --root . --evidence-file $output --json
+```
+
+命令会产生成功、失败、变化输入、恢复、预算和日志脱敏的匿名状态。输出中的价格是教学价卡的估算，不是 OpenAI 或 Anthropic 的当前账单；`live_api_called: false` 是安全边界，不是 API 成功证据。
+
+<ProductionEvaluationLab />
+
+### 三种输入与一个门禁
+
+基线 fixture 同时打开一个合成故障和变化输入。你也可以复制 fixture 到临时位置后修改 `device`、`unit` 或 `budget-usd`，观察：
+
+```powershell
+$budgetOutput = Join-Path ([System.IO.Path]::GetTempPath()) 't29-budget-stop.json'
+python .\labs\production-evaluation\evaluate.py `
+  --fixture .\labs\production-evaluation\fixtures\baseline.json `
+  --budget-usd 0.0001 `
+  --output $budgetOutput
+python -m course_check check t29-production --root . --evidence-file $budgetOutput --json
+```
+
+预算不足时必须在模型调用前停止，结果是 `partial`，不能手工改成 `passed`。变化输入不是把基线答案复制一份：它应使用新的稳定 `input_id`，并保留相同评价维度。
+
+## 故障注入与恢复
+
+- **成功用例失败**：先检查结构化输出契约，再分类为输入、工具、模型或解析失败；不以自然语言补齐缺失字段。
+- **工具失败**：只对幂等、已知、受权限约束的工具重试；不可重试动作先停止并要求人工确认。离线 evaluator 记录 `failure-case` 与 `recovery-observed`，不保存异常正文。
+- **变化输入失败**：把失败样本加入评测集，说明预期行为和修复版本；不能只删除失败样本提高分数。
+- **预算超限**：在 API 调用前检查估算输入/输出上限；触发 `budget-stop`，缩小工作集或请求人工批准。
+
+恢复证据必须回答“看见了什么、做了什么、何时停止、如何确认”，而不是复制隐藏推理。真实服务的网络重试、限流、供应商错误码和实际账单仍需独立现场验证。
+
+## 迁移挑战：同 rubric 换 API
+
+选择 T27 OpenAI 或 T28 Anthropic 适配实验中的离线路径，提交一份对照表：同一个合成任务、三类输入、同一成本上限、同一匿名日志字段和同一恢复规则。允许 provider-specific adapter 记录各自 SDK 字段，但 rubric 必须保持一致。
+
+至少说明：
+
+1. 哪些响应字段只属于厂商适配层；
+2. 哪些成功/失败/变化输入结果能进入共同评测；
+3. 真实 API 运行需要什么账号、模型、SDK、日期、预算、权限与人工批准；
+4. 本地 fixture、浏览器模拟和“没有凭据”的替代路径分别证明什么、不能证明什么。
+
+## 可核验成果
+
+提交以下材料：
+
+- `t29-production` 匿名 evidence JSON；
+- 至少一份成功、失败恢复和变化输入记录；
+- evaluator 与 fixture 版本、课程版本、输入 ID、预算状态和估算 token；
+- 不含密钥、原始 prompt、工具 payload、原始设备记录、绝对路径和隐藏推理的日志摘要；
+- 一份 OpenAI/Anthropic 共同 rubric 对照与现场验证边界说明。
+
+共同评价维度的机器可读版本在 [`labs/production-evaluation/rubric.json`](../../../labs/production-evaluation/rubric.json)。检查器只接受固定 check ID 和聚合数字，拒绝敏感字段、错误版本和把 live API 伪装成 offline fixture 的输入：
+
+```powershell
+python -m course_check check t29-production --root . --evidence-file $output --json
+```
+
+## 风险、版本与来源卡片
+
+- **账号与成本**：本课 evaluator、页面和 checker 免费；不需要账号、API key、网络或付费 API。真实 T27/T28 API 运行可能产生按量费用，必须使用小额预算和人工批准。
+- **权限与副作用**：离线脚本只读合成 fixture，并写入用户显式指定的新 JSON；不联网、不读取环境变量中的凭据、不执行模型工具、不发送消息。不要把临时输出路径指向真实研究或企业数据目录。
+- **日志与隐私**：公共 evidence 只保留稳定 ID、状态、计数、版本和估算；不保存源码、绝对路径、原始数据、token、Authorization、API key、完整 prompt、工具 payload 或隐藏推理。
+- **版本**：`production-evaluator-v1`、fixture `1`、`agent-engineering-course/evidence v1` 与课程版本 `0.1.0-alpha` 锁定；价格只是教学估算，现场价卡必须在执行当天重新核验。
+- **验证边界**：验证离线 evaluator、checker、Node 单测和浏览器路径；未验证 OpenAI/Anthropic live API、真实账单、SLO、供应商限流、跨云部署、Codex/Claude Code live tool call 或生产数据。
+- **来源**：官方 API/SDK 文档只用于适配层事实核验；本课 rubric、fixture、evaluator、页面和 checker 为课程原创。第三方资料不直接复制正文、代码或模型输出。具体来源和许可证见 [`docs/sources/source-ledger.json`](../../../docs/sources/source-ledger.json)。

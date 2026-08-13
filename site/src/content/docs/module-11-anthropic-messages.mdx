@@ -1,0 +1,104 @@
+---
+title: Anthropic Messages API 迁移实验
+description: 保留 T26 Python loop，用离线 fixture 理解 Messages 的工具往返、应用状态与结构化输出边界。
+sidebar:
+  order: 12
+---
+
+import AnthropicMessagesLab from "../../components/AnthropicMessagesLab.astro";
+import EvidenceLoop from "../../components/EvidenceLoop.astro";
+
+# Anthropic Messages API 迁移实验
+
+本课是进阶线 M11 的迁移挑战，预计 45 分钟。你会把 T26 的最小 Python Agent loop 接到一个 Anthropic Messages API 的**离线适配器**，而不是再写一套循环。产物是匿名 fixture 证据、一个可审阅的 request/response 边界，以及对 Claude Agent SDK 的明确比较说明。
+
+> 风险、账号与成本：本页和 Python fixture 不读取 API key、不导入 Python SDK、不发起网络请求，因此不需要账号或付费 API。真实 live smoke 在本课程版本中标记为 `not-run`，不能把离线成功表述为真实服务成功。
+
+## 真实问题
+
+T26 已经拥有工具参数校验、步骤/重试预算、工具执行和最终 JSON Schema 校验。若直接把它替换成某个厂商 SDK loop，哪些控制权会悄悄改变？若只把它的 response source 改成 Messages API，谁负责保存对话状态、把工具结果接回历史、处理错误并证明结构化输出确实被校验？
+
+## 心智模型
+
+Messages API 是应用请求驱动的、无状态的接口：应用在每次调用时提交需要的 `messages` 历史。工具往返的关键不是一个“tool role”，而是：assistant 内容中的 `tool_use` 有 `id`、`name`、`input`；随后 user 内容中的 `tool_result` 用同一个 `tool_use_id` 回填结果。T28 的 adapter 只翻译这条协议边界，T26 harness 仍控制预算和最终验收。
+
+| 边界 | T26 loop | T28 Messages adapter | Claude Agent SDK（本课） |
+| --- | --- | --- | --- |
+| 工具参数、执行、重试、步骤预算 | 负责 | 不接管 | 仅比较，未调用 |
+| 消息历史 | loop state 的可观察输入 | 应用保存并重放 | 现场使用前重新核对 |
+| `tool_use` / `tool_result` | 接收统一 fixture 响应 | 映射请求与回填 | 不作为本实验实现 |
+| 结构化输出 | 最终 JSON Schema 校验 | 请求中记录 `json_schema` 意图 | 不推断共享预算 |
+
+## 操作前预测
+
+先不要运行。写下你的预测：
+
+1. 哪三个 fixture 会产生两次 Messages 请求？
+2. 无效工具参数时，为什么仍然要回填一个带 `is_error` 的 `tool_result`？
+3. “模型返回 JSON”与“已经通过 JSON Schema 校验”之间，缺少哪一层证据？
+4. 为什么 `refusal` 不能和 HTTP 认证/连接错误混为一个重试分支？
+
+## 主工具演示：离线适配器
+
+先运行一个不需要凭据的成功情形：
+
+```powershell
+python labs/anthropic-messages/run_fixture.py --case offline-success --output ./.artifacts/t28-anthropic-messages-evidence.json
+```
+
+打开输出，确认它只记录以下匿名结论：`input_schema`、`tool_use_id`、应用重放历史、`json_schema`、T26 的预算所有权、错误类别，以及 `live_smoke.status: not-run`。不应出现 API key、请求头、原始提示词或真实服务响应。
+
+## 本地实验
+
+按顺序运行五个情形。网页模拟器与 Python fixture 的结论相同，但前者不替代命令行证据。
+
+<AnthropicMessagesLab courseVersion="development" />
+
+运行完后，以显式证据文件验证：
+
+```powershell
+python -m course_check --lesson t28-anthropic-messages --evidence ./.artifacts/t28-anthropic-messages-evidence.json
+```
+
+检查器输出人类可读结果和匿名 JSON；它只验证课程约定的字段，不上传源码、绝对路径、凭据或原始遥测数据。
+
+## 故障注入与恢复
+
+依次执行下面四个情形，并解释恢复边界。
+
+- `invalid-arguments`：工具输入未通过 T26 参数校验。adapter 仍把失败回填为 `tool_result`，让后续模型回合能看到可恢复的错误。
+- `malformed-structured-output`：工具往返已完成，但 T26 对最终 JSON Schema 的校验拒绝结果。不要把“有 JSON 字符串”误称为结构化输出成功。
+- `transport-error`：连接类别错误在第一请求后被安全记录，不泄露底层异常文本，也不会伪造工具往返。
+- `authentication-error`：认证类别错误同样没有读取或导出任何凭据；离线 fixture 的身份只是错误分类，不是现场认证测试。
+
+恢复时先判断错误在 HTTP 调用前/后，还是在成功响应的 stop state 内。官方文档把 `refusal` 描述为成功响应中的停止原因；它不是 HTTP transport error。`pause_turn` 属于 server tool 的特定控制流，也不能直接套进客户端工具 loop。
+
+## 迁移挑战
+
+不要运行真实 API。只修改自己的副本或写设计说明，回答：若将来把 offline client 换为 `anthropic.Anthropic().messages.create`，如何保持以下不变量？
+
+1. 凭据由调用者显式提供，adapter 不扫描环境变量或写入证据；
+2. 应用保存完整 messages 历史，并按 tool result 的相邻顺序重放；
+3. T26 仍拥有 `max_steps`、重试上限和最终输出 JSON Schema；
+4. `Retry-After`、请求 ID、HTTP 分类和成功 stop reasons 分层记录；
+5. Claude Agent SDK 若被选用，单独验证会话权限、工具策略、模型和费用，不能从本 fixture 推断任何共享预算。
+
+## 可核验成果
+
+提交或保存以下证据：
+
+1. `labs/anthropic-messages/anthropic_messages_adapter.py` 中的离线 adapter；
+2. 五个 fixture 情形的匿名 JSON；
+3. `course_check` 的通过结果；
+4. 对一项错误恢复和一项 Agent SDK 差异的简短解释。
+
+<EvidenceLoop lessonId="t28-anthropic-messages" />
+
+## 风险、版本与来源卡片
+
+- 协议：Anthropic Messages API；adapter 示例模型标识为 `claude-sonnet-4-5`，只作为课程 fixture 元数据，未作现场验证。
+- 最后核对：2026-08-13；事实依据为 Anthropic 官方 API 文档，易变字段以官方当前文档为准。
+- 账号、权限与副作用：离线路径为无账号、无权限、无网络；未来 live smoke 需要维护者显式授权并单独记录成本。
+- 许可：课程叙事为 CC BY 4.0；adapter、fixture 和 checker 为 MIT；未复制第三方 SDK 源码。
+
+详细字段审计见仓库中的 `docs/research/t28-anthropic-api-sources.md`，并在实践前核对以下一手来源：[Messages API request](https://platform.claude.com/docs/en/api/messages/create)、[tool use](https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls)、[structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)、[error handling](https://platform.claude.com/docs/en/api/errors) 与 [Claude Agent SDK overview](https://code.claude.com/docs/en/agent-sdk/overview)。

@@ -178,6 +178,11 @@ const expectedCourseVersion = courseVersion.course_version;
     window.addEventListener("plugin-audit:evidence", handleGeneratedEvidence);
     window.addEventListener("hooks-tasks:evidence", handleGeneratedEvidence);
     window.addEventListener("mcp-discovery:evidence", handleGeneratedEvidence);
+    window.addEventListener("openai-responses:evidence", handleGeneratedEvidence);
+    window.addEventListener("research-capstone:evidence", handleGeneratedEvidence);
+    window.addEventListener("multi-agent:evidence", handleGeneratedEvidence);
+    window.addEventListener("anthropic-messages:evidence", handleGeneratedEvidence);
+    window.addEventListener("production:evidence", handleGeneratedEvidence);
 
     try {
       const saved = loadLearningRecord(localStorage, storageKey, courseVersion) as LearningRecord;

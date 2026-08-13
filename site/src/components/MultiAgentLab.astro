@@ -1,0 +1,264 @@
+---
+import courseVersion from "../../../course-version.json";
+
+const expectedCourseVersion = courseVersion.course_version;
+---
+
+<section
+  class="plugin-audit-lab multi-agent-lab"
+  data-multi-agent-lab
+  data-course-version={expectedCourseVersion}
+  aria-labelledby="multi-agent-lab-title"
+>
+  <div class="plugin-audit-lab__heading">
+    <div>
+      <p class="eyebrow">模块 10B · 受控多 Agent 对照</p>
+      <h2 id="multi-agent-lab-title">先保留单 Agent 基线，再判断是否值得并行</h2>
+    </div>
+    <span class="plugin-audit-lab__version">multi-agent-fixture v1 · {expectedCourseVersion}</span>
+  </div>
+
+  <p class="plugin-audit-lab__lead">
+    两条路径都必须完成同一个 <code>telemetry-report-v2</code> 验收目标。这里的时间、使用单位和验证单位是固定教学夹具，不是任何模型、订阅或账户的真实账单；页面不会调用 Codex、Claude Code、API、网络或本地项目。
+  </p>
+
+  <noscript>
+    <section class="plugin-audit-lab__noscript" aria-labelledby="multi-agent-noscript-title">
+      <h3 id="multi-agent-noscript-title">未启用 JavaScript 时的对照结论</h3>
+      <p>
+        只在子任务独立、共享上下文最小、汇合点可验证且没有共享写入时才考虑并行。若发生重叠写入冲突，应重新分区、重新验证；即使恢复成功，也可以结论为“不采用多 Agent”。
+      </p>
+      <p><strong>本页不启动子代理，也不伪造真实 Token、运行时间或模型质量。</strong></p>
+    </section>
+  </noscript>
+
+  <section class="multi-agent-lab__goal" aria-labelledby="multi-agent-goal-title">
+    <div class="plugin-audit-lab__section-heading">
+      <h3 id="multi-agent-goal-title">锁定的共同验收目标</h3>
+      <span>比较编排，不交换题目</span>
+    </div>
+    <p>
+      单 Agent 和子代理都必须：计数有效记录、归一化单位、产出报告，并通过同一组本地验证。任何一方只完成其中一项，都不能把更短的时间当作更好的结果。
+    </p>
+    <ul class="multi-agent-lab__acceptance" data-multi-agent-acceptance>
+      <li>valid-records-counted</li>
+      <li>units-normalized</li>
+      <li>report-produced</li>
+      <li>verification-passed</li>
+    </ul>
+  </section>
+
+  <section class="plugin-audit-lab__audit" aria-labelledby="multi-agent-controls-title">
+    <div class="plugin-audit-lab__section-heading">
+      <h3 id="multi-agent-controls-title">离线对照夹具</h3>
+      <span>先比成本，再决定是否采用</span>
+    </div>
+    <form data-multi-agent-form>
+      <label for="multi-agent-scenario">选择子代理情形</label>
+      <select id="multi-agent-scenario" name="scenario">
+        <option value="independent-review">边界清晰的并行复核</option>
+        <option value="overlap-conflict">故意重叠写入并恢复</option>
+      </select>
+      <button type="submit" data-run-multi-agent>运行受控对照</button>
+    </form>
+    <div class="plugin-audit-lab__presets">
+      <h4>快速复现</h4>
+      <div>
+        <button type="button" data-multi-agent-preset="independent-review">比较独立子任务</button>
+        <button type="button" data-multi-agent-preset="overlap-conflict">注入写入冲突</button>
+      </div>
+    </div>
+    <p class="plugin-audit-lab__status" data-multi-agent-status role="status" aria-live="polite">
+      先选择一个情形；两条路径都保持相同验收目标。
+    </p>
+
+    <div class="multi-agent-lab__result" aria-labelledby="multi-agent-result-title">
+      <div class="plugin-audit-lab__result-heading">
+        <h4 id="multi-agent-result-title">本次比较</h4>
+        <span data-multi-agent-recommendation>尚未运行</span>
+      </div>
+      <p data-multi-agent-summary>运行夹具后显示子任务边界、汇合点、冲突和恢复结论。</p>
+      <div class="multi-agent-lab__metrics" aria-label="单 Agent 与子代理成本对照">
+        <table>
+          <caption>固定教学单位：结果相同才允许比较成本</caption>
+          <thead><tr><th scope="col">路径</th><th scope="col">墙钟时间</th><th scope="col">使用单位</th><th scope="col">验证单位</th><th scope="col">验收</th></tr></thead>
+          <tbody data-multi-agent-metrics><tr><td colspan="5">运行对照后显示两条路径。</td></tr></tbody>
+        </table>
+      </div>
+      <div class="multi-agent-lab__details">
+        <article>
+          <h5>子任务边界与共享上下文</h5>
+          <ul data-multi-agent-boundaries><li>运行后显示每个子代理的唯一责任边界。</li></ul>
+          <p data-multi-agent-shared>共享上下文和汇合点会在这里显示。</p>
+        </article>
+        <article>
+          <h5>冲突与恢复</h5>
+          <p data-multi-agent-conflict data-conflict="none">运行后显示是否发生冲突。</p>
+          <p data-multi-agent-recovery>运行后显示恢复动作。</p>
+        </article>
+      </div>
+    </div>
+
+    <div class="plugin-audit-lab__controls">
+      <button type="button" data-record-multi-agent>记录本次对照</button>
+      <button type="button" data-export-multi-agent>导出匿名 evidence</button>
+    </div>
+    <p class="plugin-audit-lab__evidence" data-multi-agent-evidence-status role="status" aria-live="polite">
+      已记录 0 条对照；需要一条独立边界情形和一条冲突恢复情形，才能完成这个实验。
+    </p>
+    <p class="plugin-audit-lab__privacy">
+      evidence 只保留场景 ID、目标 ID、验收 ID、任务边界、共享上下文类别、汇合/冲突/恢复/决策 ID 和固定成本单位；不保留提示词、源码、路径、模型输出、账户、原始 Token 账单或个人数据。
+    </p>
+  </section>
+</section>
+
+<script>
+  // @ts-nocheck
+  import {
+    MULTI_AGENT_SCENARIOS,
+    buildMultiAgentEvidence,
+    createMultiAgentSession,
+    recommendationLabels,
+    recordMultiAgentComparison,
+    updateMultiAgentSession,
+  } from "../lib/multi-agent-lab.mjs";
+
+  const root = document.querySelector("[data-multi-agent-lab]");
+  if (root instanceof HTMLElement) {
+    const form = root.querySelector("[data-multi-agent-form]");
+    const select = root.querySelector("#multi-agent-scenario");
+    const status = root.querySelector("[data-multi-agent-status]");
+    const evidenceStatus = root.querySelector("[data-multi-agent-evidence-status]");
+    const recommendation = root.querySelector("[data-multi-agent-recommendation]");
+    const summary = root.querySelector("[data-multi-agent-summary]");
+    const metrics = root.querySelector("[data-multi-agent-metrics]");
+    const boundaries = root.querySelector("[data-multi-agent-boundaries]");
+    const shared = root.querySelector("[data-multi-agent-shared]");
+    const conflict = root.querySelector("[data-multi-agent-conflict]");
+    const recovery = root.querySelector("[data-multi-agent-recovery]");
+    let session = createMultiAgentSession("independent-review");
+
+    const message = (element, value, kind = "") => {
+      if (!(element instanceof HTMLElement)) return;
+      element.textContent = value;
+      element.dataset.status = kind;
+    };
+
+    const currentScenario = () => select instanceof HTMLSelectElement ? select.value : "independent-review";
+
+    const addCell = (row, value) => {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.append(cell);
+    };
+
+    const render = () => {
+      const comparison = session.current;
+      if (!comparison) return;
+      if (recommendation instanceof HTMLElement) {
+        recommendation.textContent = recommendationLabels[comparison.recommendation] ?? comparison.recommendation;
+        recommendation.dataset.recommendation = comparison.recommendation;
+      }
+      if (summary instanceof HTMLElement) summary.textContent = comparison.summary;
+      if (metrics instanceof HTMLElement) {
+        metrics.replaceChildren();
+        for (const run of [comparison.single, comparison.subagents]) {
+          const row = document.createElement("tr");
+          row.dataset.mode = run.mode;
+          addCell(row, run.mode === "single" ? "单 Agent" : "子代理");
+          addCell(row, `${run.elapsed_seconds} s`);
+          addCell(row, String(run.usage_units));
+          addCell(row, String(run.verification_units));
+          addCell(row, run.accepted ? "通过" : "未通过");
+          metrics.append(row);
+        }
+      }
+      if (boundaries instanceof HTMLElement) {
+        boundaries.replaceChildren();
+        for (const boundary of comparison.boundaries) {
+          const item = document.createElement("li");
+          item.dataset.boundary = boundary.owns;
+          item.textContent = `${boundary.id} → ${boundary.owns}`;
+          boundaries.append(item);
+        }
+      }
+      if (shared instanceof HTMLElement) {
+        shared.textContent = `共享：${comparison.shared_context.join("、")}；汇合点：${comparison.merge}。`;
+      }
+      if (conflict instanceof HTMLElement) {
+        conflict.dataset.conflict = comparison.conflict;
+        conflict.textContent = comparison.conflict === "none"
+          ? "无冲突：任务没有共享写入目标。"
+          : "检测到 shared-output-collision：两个子代理写入同一报告摘要。";
+      }
+      if (recovery instanceof HTMLElement) {
+        recovery.textContent = comparison.recovery === "not-required"
+          ? "恢复：不需要；保持协调者统一验证。"
+          : "恢复：repartition-and-revalidate；把摘要拆为两个唯一责任边界，再运行同一验收。";
+      }
+      if (evidenceStatus instanceof HTMLElement) {
+        const scenarios = new Set(session.comparisons.map((item) => item.scenario));
+        const targets = [
+          scenarios.has("independent-review"),
+          scenarios.has("overlap-conflict"),
+        ];
+        evidenceStatus.textContent = `已记录 ${session.comparisons.length} 条对照；已满足 ${targets.filter(Boolean).length} / 2 个实验情形。`;
+      }
+    };
+
+    const run = (scenario) => {
+      try {
+        session = updateMultiAgentSession(session, scenario);
+        render();
+        const current = session.current;
+        message(
+          status,
+          `${current.label}：单 Agent 与子代理均通过 ${current.goal}；${recommendationLabels[current.recommendation]}。`,
+          current.recommendation === "do-not-adopt" ? "warning" : "success",
+        );
+      } catch (error) {
+        message(status, `无法运行对照：${error instanceof Error ? error.message : "输入无效"}`, "error");
+      }
+    };
+
+    form?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      run(currentScenario());
+    });
+    root.querySelectorAll("[data-multi-agent-preset]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const scenario = button.getAttribute("data-multi-agent-preset");
+        if (!MULTI_AGENT_SCENARIOS.includes(scenario)) return;
+        if (select instanceof HTMLSelectElement) select.value = scenario;
+        run(scenario);
+      });
+    });
+    root.querySelector("[data-record-multi-agent]")?.addEventListener("click", () => {
+      try {
+        session = recordMultiAgentComparison(session);
+        render();
+        message(status, `已记录 ${session.lastComparison.id}；继续运行另一个情形以完成冲突恢复对照。`, "success");
+      } catch (error) {
+        message(status, `无法记录：${error instanceof Error ? error.message : "请先运行对照"}`, "error");
+      }
+    });
+    root.querySelector("[data-export-multi-agent]")?.addEventListener("click", () => {
+      try {
+        const evidence = buildMultiAgentEvidence(session, { courseVersion: root.dataset.courseVersion ?? "" });
+        const blob = new Blob([`${JSON.stringify(evidence, null, 2)}\n`], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "t22-multi-agent-evidence.json";
+        link.click();
+        URL.revokeObjectURL(url);
+        window.dispatchEvent(new CustomEvent("multi-agent:evidence", { detail: evidence }));
+        message(evidenceStatus, `已导出 ${evidence.result} 匿名 evidence；交给本地 course_check 重新推导。`, "success");
+      } catch (error) {
+        message(evidenceStatus, `无法导出 evidence：${error instanceof Error ? error.message : "证据生成失败"}`, "error");
+      }
+    });
+
+    render();
+  }
+</script>

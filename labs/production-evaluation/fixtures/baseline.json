@@ -1,0 +1,14 @@
+{
+  "lesson_id": "t29-production",
+  "fixture_version": "1",
+  "input_id": "baseline-pressure-v1",
+  "device": "synthetic-device-a",
+  "unit": "kPa",
+  "records": 6,
+  "inject_failure": true,
+  "change_input": true,
+  "max_output_tokens": 160,
+  "prompt_tokens": 240,
+  "model": "offline-model-v1",
+  "provider": "offline-fixture"
+}

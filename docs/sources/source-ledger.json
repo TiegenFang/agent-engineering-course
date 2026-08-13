@@ -13,6 +13,86 @@
       "copied_assets": false
     },
     {
+      "id": "openai-responses-api-t27",
+      "title": "OpenAI API: Responses",
+      "url": "https://developers.openai.com/api/docs/guides/responses",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "official page observed 2026-08-13; API/SDK/model behavior remains version-sensitive",
+      "usage": "核验 Responses API 作为应用侧 response interface 的当前文档语境；课程不复制示例代码，也不把离线 fixture 当真实服务验收",
+      "license_or_terms": "reference-only; OpenAI documentation terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "openai-function-calling-t27",
+      "title": "OpenAI API: Function calling",
+      "url": "https://developers.openai.com/api/docs/guides/function-calling",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "official page observed 2026-08-13; Python Responses examples show response.output preservation and function_call_output with call_id",
+      "usage": "核验 function tool、function_call、应用侧执行、call_id 与 function_call_output 的多步边界；adapter 和夹具为原创实现",
+      "license_or_terms": "reference-only; OpenAI documentation terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "openai-structured-outputs-t27",
+      "title": "OpenAI API: Structured model outputs",
+      "url": "https://developers.openai.com/api/docs/guides/structured-outputs",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "official page observed 2026-08-13; JSON Schema Structured Outputs and SDK helper APIs are version-sensitive",
+      "usage": "核验 JSON Schema structured output、strict schema adherence、显式拒绝和 Python SDK parse 语境；课程保留 T26 应用侧输出验证",
+      "license_or_terms": "reference-only; OpenAI documentation terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "openai-error-codes-t27",
+      "title": "OpenAI API: Error codes",
+      "url": "https://developers.openai.com/api/docs/guides/error-codes",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "official page observed 2026-08-13; rates, projects, credentials and service behavior require live recheck",
+      "usage": "核验认证、额度、限流、连接等错误类别与恢复方向；本课仅离线模拟连接错误类别，不声称真实错误或成本已验证",
+      "license_or_terms": "reference-only; OpenAI documentation terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "course-openai-responses-original-t27",
+      "title": "模块 11B OpenAI Responses API 适配原创实验设计",
+      "url": "docs/course-plan.md",
+      "source_role": "course-original",
+      "pinned_version": "T27 implementation v1; verified 2026-08-13; depends on T26 injection seam",
+      "usage": "T26 loop ownership、ResponsesResponseSource、录制 offline fixture、预算分工、脱敏 evidence、not-run smoke metadata 和错误恢复顺序",
+      "license_or_terms": "project-original; code MIT and content CC-BY-4.0; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "openai-codex-subagents-t22",
+      "title": "Codex: Subagents",
+      "url": "https://learn.chatgpt.com/docs/agent-configuration/subagents",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "page observed 2026-08-13; current docs page; no local client or model version asserted",
+      "usage": "核验 Codex 子代理的并行委派、独立上下文、结果汇总、写入密集工作冲突风险和额外 Token 使用边界；课程夹具和结论为原创",
+      "license_or_terms": "reference-only; OpenAI documentation terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-code-parallel-agents-t22",
+      "title": "Claude Code: Run agents in parallel",
+      "url": "https://code.claude.com/docs/en/agents",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "page observed 2026-08-13; current docs page; no Claude Code client version asserted",
+      "usage": "核验 Claude Code 的 subagents、agent view、agent teams、动态工作流、worktree 隔离和并行 Token 使用边界；课程不复制产品配置或界面",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "course-multi-agent-original-t22",
+      "title": "模块 10B 受控多 Agent 对照原创实验设计",
+      "url": "docs/course-plan.md",
+      "source_role": "course-original",
+      "pinned_version": "T22 multi-agent-fixture v1; verified 2026-08-13",
+      "usage": "同一 telemetry-report-v2 目标、单 Agent / 子代理固定夹具、边界/共享上下文/汇合、冲突恢复、时间/使用/验证成本和 do-not-adopt 决策的匿名 evidence 设计",
+      "license_or_terms": "project-original; no copied assets",
+      "copied_assets": false
+    },
+    {
       "id": "astro-package",
       "title": "Astro",
       "url": "https://www.npmjs.com/package/astro",
@@ -859,6 +939,126 @@
       "source_role": "official-api-fact-source",
       "pinned_version": "official page observed 2026-08-13; no SDK, model, price or live call asserted",
       "usage": "校准 tool_use/tool_result 的概念迁移边界；本课只教授厂商无关控制流，不复制 Anthropic 字段或声称 fixture 复现其 API",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "course-research-capstone-original-t23",
+      "title": "模块 12A 科研核心结课轨道原创实验设计",
+      "url": "docs/course-plan.md",
+      "source_role": "course-original",
+      "pinned_version": "T23 implementation baseline f964213; deterministic research fixture v1; verified 2026-08-13",
+      "usage": "定义科研结课轨道的数据检查、分析、图表、实验记录、报告、变化输入迁移、公共评分量表和匿名 evidence 边界；正文、fixture、checker 和测试为原创",
+      "license_or_terms": "project-original; code MIT and prose CC-BY-4.0; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-api-primer-t28",
+      "title": "Anthropic API primer",
+      "url": "https://platform.claude.com/docs/en/claude_api_primer",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "official page observed 2026-08-13; current API primer; no live model or SDK version asserted",
+      "usage": "核验 Messages API 的应用请求与多轮 history 回传边界；T28 把 provider message history 保持为应用拥有的短期状态，不把它写成长期 Memory",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-messages-api-t28",
+      "title": "Anthropic API: Create a Message",
+      "url": "https://platform.claude.com/docs/en/api/messages/create",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "official page observed 2026-08-13; current Messages API reference; no live model or SDK version asserted",
+      "usage": "核验 Messages request/response、max_tokens、无状态调用边界和由应用回传消息；T28 adapter、fixture 与中文讲解为原创",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-tool-use-t28",
+      "title": "Anthropic API: How tool use works",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/how-tool-use-works",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "official page observed 2026-08-13; current tool-use guide; no model or SDK version asserted",
+      "usage": "核验 tools/input_schema、assistant tool_use、user tool_result、tool_use_id 关联和应用执行工具的边界；课程不复制官方示例代码或原始响应",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-structured-outputs-t28",
+      "title": "Anthropic API: Structured outputs",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "official page observed 2026-08-13; current structured-output guide; field availability remains model/SDK-sensitive",
+      "usage": "核验 JSON Schema structured-output 适配层，并保留 T26 本地 output contract 作为独立最终验证；不主张一次请求即可免除应用错误处理",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-errors-t28",
+      "title": "Anthropic API: Errors",
+      "url": "https://platform.claude.com/docs/en/api/errors",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "official page observed 2026-08-13; current error guide; SDK exception classes remain version-sensitive",
+      "usage": "核验 HTTP/API 错误与成功响应 stop_reason 的边界，支持 T28 的脱敏 transport/authentication/protocol 错误分类；不复制错误正文或主张现场故障已验证",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-rate-limits-t28",
+      "title": "Anthropic API: Rate limits",
+      "url": "https://platform.claude.com/docs/en/api/rate-limits",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "official page observed 2026-08-13; current rate-limit guide; limits, headers and pricing context are subject to change",
+      "usage": "核验 429/retry-after 与受预算恢复的工具适配层边界；T28 fixture 不发送请求、不模拟真实限流或自动 retry",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-agent-sdk-overview-t28",
+      "title": "Claude Agent SDK overview",
+      "url": "https://code.claude.com/docs/en/agent-sdk/overview",
+      "source_role": "official-sdk-fact-source",
+      "pinned_version": "official page observed 2026-08-13; current Claude Agent SDK overview; no SDK install, session or permission result asserted",
+      "usage": "T28 仅在手写 Messages loop 之后比较 Agent SDK 可能封装的 runtime 边界；不导入或调用 SDK，也不把其会话/权限行为泛化为 Messages API 事实",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "course-anthropic-messages-original-t28",
+      "title": "模块 11C Anthropic Messages API 迁移原创实验设计",
+      "url": "docs/research/t28-anthropic-api-sources.md",
+      "source_role": "course-original",
+      "pinned_version": "T28 implementation fixture v1; verified 2026-08-13",
+      "usage": "T26 ownership 保留、五条离线夹具、匿名 evidence、错误恢复、预算分工、Agent SDK comparison-only 边界和 Windows PowerShell 7 主路径",
+      "license_or_terms": "project-original; code MIT and content CC-BY-4.0; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "course-production-evaluation-original-t29",
+      "title": "模块 12B 生产评测与成本门禁原创实验设计",
+      "url": "docs/course-plan.md",
+      "source_role": "course-original",
+      "pinned_version": "T29 production-evaluator-v1; deterministic fixture verified 2026-08-13",
+      "usage": "定义共同 rubric、成功/失败/变化输入、恢复、预算停止、日志脱敏、匿名 evidence 与 live API 验收边界；代码和正文为课程原创",
+      "license_or_terms": "project-original; code MIT and prose CC-BY-4.0; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "openai-responses-evaluation-t29",
+      "title": "OpenAI API: Evaluation best practices",
+      "url": "https://platform.openai.com/docs/guides/evals",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "official evaluation guidance observed 2026-08-13; pricing/model behavior not asserted",
+      "usage": "核验评测集、可重复 rubric 与模型行为检查的适配层背景；T29 evaluator 不调用 OpenAI 或复制官方代码",
+      "license_or_terms": "reference-only; OpenAI documentation and product terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-messages-evaluation-t29",
+      "title": "Anthropic API: Testing and evaluation boundary",
+      "url": "https://platform.claude.com/docs/en/test-and-evaluate",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "official evaluation guidance observed 2026-08-13; live pricing/limits not asserted",
+      "usage": "核验 Anthropic 适配层的测试与现场验证边界；T29 只比较匿名外部 rubric，不声称已完成 Messages API 验收",
       "license_or_terms": "reference-only; Anthropic documentation and product terms apply; no copied assets",
       "copied_assets": false
     }

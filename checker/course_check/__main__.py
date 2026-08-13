@@ -18,6 +18,31 @@ from .evidence import (
     validate_evidence_document,
 )
 from .project_rules import PROJECT_RULES_LESSON_ID, load_project_rules_checks
+from .openai_responses import (
+    OPENAI_RESPONSES_LESSON_ID,
+    adapter_package_result,
+    load_openai_responses_checks,
+)
+from .research_capstone import (
+    RESEARCH_CAPSTONE_LESSON_ID,
+    load_research_capstone_checks as load_research_capstone_checks_external,
+)
+from .anthropic_messages import (
+    ANTHROPIC_MESSAGES_LESSON_ID,
+    adapter_package_result as anthropic_messages_package_result,
+    load_anthropic_messages_checks,
+)
+from .multi_agent import (
+    MULTI_AGENT_LESSON_ID,
+    validate_multi_agent_evidence_checks,
+    validate_multi_agent_experiment,
+)
+from .production import (
+    PRODUCTION_CHECK_IDS,
+    PRODUCTION_LESSON_ID,
+    validate_production_evidence_checks,
+    validate_production_fixture,
+)
 from .skill import (
     SKILL_LESSON_ID,
     skill_package_result,
@@ -464,6 +489,31 @@ PLUGIN_AUDIT_CHECK_IDS = (
     "unsafe-package-contained",
     "lifecycle-reviewed",
     "offline-no-install",
+)
+
+RESEARCH_CAPSTONE_LESSON_ID = "t23-research-capstone"
+RESEARCH_CAPSTONE_VERSION = "1"
+RESEARCH_CAPSTONE_BASELINE_ID = "telemetry-research-v1"
+RESEARCH_CAPSTONE_INPUTS = {
+    "temperature-daily": {"subject": "temperature", "unit": "°C", "limit": 5},
+    "pressure-night": {"subject": "pressure", "unit": "kPa", "limit": 3},
+}
+RESEARCH_CAPSTONE_FAULTS = frozenset(
+    {"none", "missing-values", "stale-memory", "mcp-denied"}
+)
+RESEARCH_CAPSTONE_CHECK_IDS = (
+    "context-recorded",
+    "memory-governed",
+    "skill-applied",
+    "mcp-boundary",
+    "script-reproducible",
+    "figure-produced",
+    "record-complete",
+    "report-complete",
+    "evidence-exported",
+    "migration-complete",
+    "rubric-complete",
+    "offline-deterministic",
 )
 T26_OFFLINE_AGENT_LOOP_LESSON_ID = "t26-offline-agent-loop"
 T26_OFFLINE_AGENT_LOOP_VERSION = "1"
@@ -2484,6 +2534,186 @@ def validate_hooks_tasks_experiment(
     }
 
 
+def _research_capstone_expected_flags(input_id: str, fault: str) -> dict[str, bool]:
+    """Return the deterministic T23 flag contract for one safe fixture run."""
+
+    return {
+        "context": True,
+        "memory": fault != "stale-memory",
+        "skill": True,
+        "mcp": fault != "mcp-denied",
+        "script": True,
+        "figure": fault != "missing-values",
+        "record": True,
+        "report": fault == "none",
+        "evidence": True,
+        "migration": input_id == "pressure-night",
+        "rubric": fault == "none" and input_id == "pressure-night",
+        "offline": True,
+    }
+
+
+def _research_capstone_checks(flags: dict[str, bool]) -> list[dict[str, str]]:
+    fields = (
+        ("context-recorded", "context"),
+        ("memory-governed", "memory"),
+        ("skill-applied", "skill"),
+        ("mcp-boundary", "mcp"),
+        ("script-reproducible", "script"),
+        ("figure-produced", "figure"),
+        ("record-complete", "record"),
+        ("report-complete", "report"),
+        ("evidence-exported", "evidence"),
+        ("migration-complete", "migration"),
+        ("rubric-complete", "rubric"),
+        ("offline-deterministic", "offline"),
+    )
+    return [
+        {"id": check_id, "result": "passed" if flags[field] else "failed"}
+        for check_id, field in fields
+    ]
+
+
+def load_research_capstone_checks(
+    evidence_file: Path,
+    *,
+    expected_course_version: str,
+) -> tuple[list[dict[str, str]], dict[str, Any]]:
+    """Validate T23's status-only research delivery and derive its checks.
+
+    The checker accepts no raw telemetry, paths, prompts, model output, or
+    client logs. It recomputes the learner-facing checks from the fixed
+    synthetic input/fault contract so a hand-edited ``result`` cannot forge a
+    completed research delivery.
+    """
+
+    try:
+        value = json.loads(evidence_file.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise EvidenceError(
+            f"Research capstone evidence fixture not found: {evidence_file.name}"
+        ) from exc
+    except json.JSONDecodeError as exc:
+        raise EvidenceError(f"Invalid research capstone JSON: {exc.msg}") from exc
+    if not isinstance(value, dict):
+        raise EvidenceError("Research capstone evidence must be a JSON object")
+
+    document = validate_evidence_document(value)
+    if document["lesson_id"] != RESEARCH_CAPSTONE_LESSON_ID:
+        raise EvidenceError("Research capstone fixture lesson_id does not match the requested lesson")
+    if document["course_version"] != expected_course_version:
+        raise EvidenceError("Research capstone fixture course_version does not match the current course")
+
+    experiment = value.get("experiment")
+    if not isinstance(experiment, dict):
+        raise EvidenceError("Research capstone evidence requires an experiment object")
+    _reject_sensitive_unknown_fields(experiment, "Research capstone experiment")
+    expected_experiment_fields = {
+        "version",
+        "baseline_id",
+        "input",
+        "context",
+        "memory",
+        "skill",
+        "mcp",
+        "artifacts",
+        "migration",
+        "rubric",
+        "offline",
+        "fault",
+    }
+    if set(experiment) != expected_experiment_fields:
+        missing = sorted(expected_experiment_fields - set(experiment))
+        unknown = sorted(set(experiment) - expected_experiment_fields)
+        details = []
+        if missing:
+            details.append("missing: " + ", ".join(missing))
+        if unknown:
+            details.append("unknown: " + ", ".join(unknown))
+        raise EvidenceError(
+            "Research capstone experiment fields are invalid"
+            + (" (" + "; ".join(details) + ")" if details else "")
+        )
+    if experiment["version"] != RESEARCH_CAPSTONE_VERSION:
+        raise EvidenceError("Unsupported research capstone experiment version")
+    if experiment["baseline_id"] != RESEARCH_CAPSTONE_BASELINE_ID:
+        raise EvidenceError("Research capstone baseline_id is unsupported")
+    input_id = experiment["input"]
+    if input_id not in RESEARCH_CAPSTONE_INPUTS:
+        raise EvidenceError("Research capstone input variant is unsupported")
+    fault = experiment["fault"]
+    if fault not in RESEARCH_CAPSTONE_FAULTS:
+        raise EvidenceError("Research capstone fault is unsupported")
+
+    bool_fields = {
+        "context",
+        "memory",
+        "skill",
+        "mcp",
+        "migration",
+        "rubric",
+        "offline",
+    }
+    if any(not isinstance(experiment[field], bool) for field in bool_fields):
+        raise EvidenceError("Research capstone experiment flags must be booleans")
+    artifacts = experiment["artifacts"]
+    if not isinstance(artifacts, dict):
+        raise EvidenceError("Research capstone artifacts must be an object")
+    _reject_sensitive_unknown_fields(artifacts, "Research capstone artifacts")
+    expected_artifact_fields = {"script", "figure", "record", "report", "evidence"}
+    if set(artifacts) != expected_artifact_fields:
+        raise EvidenceError("Research capstone artifacts must cover script, figure, record, report and evidence")
+    if any(not isinstance(artifacts[field], bool) for field in expected_artifact_fields):
+        raise EvidenceError("Research capstone artifact flags must be booleans")
+
+    expected_flags = _research_capstone_expected_flags(input_id, fault)
+    actual_flags = {
+        "context": experiment["context"],
+        "memory": experiment["memory"],
+        "skill": experiment["skill"],
+        "mcp": experiment["mcp"],
+        "script": artifacts["script"],
+        "figure": artifacts["figure"],
+        "record": artifacts["record"],
+        "report": artifacts["report"],
+        "evidence": artifacts["evidence"],
+        "migration": experiment["migration"],
+        "rubric": experiment["rubric"],
+        "offline": experiment["offline"],
+    }
+    if actual_flags != expected_flags:
+        raise EvidenceError("Research capstone flags do not match the selected input and fault")
+    derived_checks = _research_capstone_checks(actual_flags)
+    supplied_checks = document["evidence"]
+    if [check["id"] for check in supplied_checks] != list(RESEARCH_CAPSTONE_CHECK_IDS):
+        raise EvidenceError(
+            "Research capstone evidence IDs must be exactly "
+            + ", ".join(RESEARCH_CAPSTONE_CHECK_IDS)
+        )
+    if supplied_checks != derived_checks:
+        raise EvidenceError("Research capstone checks do not match the recorded experiment")
+    expected_result = "passed" if all(check["result"] == "passed" for check in derived_checks) else "partial"
+    if document["result"] != expected_result:
+        raise EvidenceError("Research capstone result does not match its evidence")
+    return derived_checks, {
+        "version": RESEARCH_CAPSTONE_VERSION,
+        "baseline_id": RESEARCH_CAPSTONE_BASELINE_ID,
+        "input": input_id,
+        "context": actual_flags["context"],
+        "memory": actual_flags["memory"],
+        "skill": actual_flags["skill"],
+        "mcp": actual_flags["mcp"],
+        "artifacts": {
+            field: actual_flags[field]
+            for field in ("script", "figure", "record", "report", "evidence")
+        },
+        "migration": actual_flags["migration"],
+        "rubric": actual_flags["rubric"],
+        "offline": actual_flags["offline"],
+        "fault": fault,
+    }
+
+
 def validate_claude_migration_checks(value: Any) -> list[dict[str, Any]]:
     """Validate the stable public checks for the Claude migration journey."""
 
@@ -3247,6 +3477,26 @@ def load_evidence_checks(
                 document_result=document["result"],
             )
             return checks, experiment
+        if expected_lesson_id == MULTI_AGENT_LESSON_ID:
+            checks = validate_multi_agent_evidence_checks(document["evidence"])
+            expected_checks, experiment = validate_multi_agent_experiment(
+                value.get("experiment"), document_result=document["result"]
+            )
+            if checks != expected_checks:
+                raise EvidenceError("T22 evidence checks do not match the recorded comparison")
+            return checks, experiment
+        if expected_lesson_id == PRODUCTION_LESSON_ID:
+            checks, experiment = validate_production_fixture(
+                {
+                    "evaluation": value.get("evaluation"),
+                    "logs": value.get("logs"),
+                },
+                document_result=document["result"],
+            )
+            supplied_checks = validate_production_evidence_checks(document["evidence"])
+            if checks != supplied_checks:
+                raise EvidenceError("T29 evidence checks do not match the evaluation")
+            return checks, experiment
         return document["evidence"], None
     if expected_lesson_id == MCP_DISCOVERY_LESSON_ID:
         return validate_mcp_discovery(value)
@@ -3338,6 +3588,28 @@ def load_evidence_checks(
             checks=checks,
             document_result=result,
         )
+    if expected_lesson_id == MULTI_AGENT_LESSON_ID:
+        checks = validate_multi_agent_evidence_checks(checks)
+        result = classify_checks([check["result"] for check in checks])
+        expected_checks, experiment = validate_multi_agent_experiment(
+            value.get("experiment"), document_result=result
+        )
+        if checks != expected_checks:
+            raise EvidenceError("T22 evidence checks do not match the recorded comparison")
+        return checks, experiment
+    if expected_lesson_id == PRODUCTION_LESSON_ID:
+        result = classify_checks([check["result"] for check in checks])
+        expected_checks, experiment = validate_production_fixture(
+            {
+                "evaluation": value.get("evaluation"),
+                "logs": value.get("logs"),
+            },
+            document_result=result,
+        )
+        supplied_checks = validate_production_evidence_checks(checks)
+        if supplied_checks != expected_checks:
+            raise EvidenceError("T29 evidence checks do not match the evaluation")
+        return supplied_checks, experiment
     return checks, None
 
 
@@ -3776,7 +4048,13 @@ def check_lesson(
         PLUGIN_AUDIT_LESSON_ID,
         MCP_DISCOVERY_LESSON_ID,
         MCP_CALL_LESSON_ID,
+        RESEARCH_CAPSTONE_LESSON_ID,
         T26_OFFLINE_AGENT_LOOP_LESSON_ID,
+        OPENAI_RESPONSES_LESSON_ID,
+        RESEARCH_CAPSTONE_LESSON_ID,
+        ANTHROPIC_MESSAGES_LESSON_ID,
+        MULTI_AGENT_LESSON_ID,
+        PRODUCTION_LESSON_ID,
     }:
         raise ContractError(f"Unsupported evidence lesson: {lesson_id}")
     course_version = validate_foundation(root)
@@ -4135,6 +4413,144 @@ def check_lesson(
                 expected_lesson_id=lesson_id,
                 expected_course_version=course_version,
             )
+    elif lesson_id == MULTI_AGENT_LESSON_ID:
+        checks = [
+            {
+                "id": "multi-agent-page",
+                "result": "passed"
+                if (root / "site/src/content/docs/module-10-multi-agent.mdx").is_file()
+                else "failed",
+            },
+            {
+                "id": "multi-agent-simulator",
+                "result": "passed"
+                if (root / "site/src/lib/multi-agent-lab.mjs").is_file()
+                else "failed",
+            },
+            {
+                "id": "multi-agent-contract",
+                "result": "passed"
+                if (root / "labs/multi-agent/README.md").is_file()
+                else "failed",
+            },
+            {
+                "id": "multi-agent-sources",
+                "result": "passed"
+                if (root / "docs/sources/source-ledger.json").is_file()
+                else "failed",
+            },
+            {"id": "multi-agent-evidence", "result": "failed"},
+        ]
+        if evidence_file is not None:
+            checks, trace = load_evidence_checks(
+                evidence_file,
+                expected_lesson_id=lesson_id,
+                expected_course_version=course_version,
+            )
+    elif lesson_id == PRODUCTION_LESSON_ID:
+        if evidence_file is None:
+            checks = [
+                {
+                    "id": "production-page",
+                    "result": "passed"
+                    if (root / "site/src/content/docs/module-12-production.mdx").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "production-evaluator",
+                    "result": "passed"
+                    if (root / "labs/production-evaluation/evaluate.py").is_file()
+                    and (root / "labs/production-evaluation/run-evaluation.ps1").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "production-contract",
+                    "result": "passed"
+                    if (root / "labs/production-evaluation/README.md").is_file()
+                    and (root / "labs/production-evaluation/rubric.json").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "production-version-lock",
+                    "result": "passed"
+                    if (root / "course-version.json").is_file()
+                    else "failed",
+                },
+                {"id": "production-evidence-executed", "result": "failed"},
+            ]
+        else:
+            checks, trace = load_evidence_checks(
+                evidence_file,
+                expected_lesson_id=lesson_id,
+                expected_course_version=course_version,
+            )
+    elif lesson_id == RESEARCH_CAPSTONE_LESSON_ID:
+        if evidence_file is None:
+            checks = [
+                {
+                    "id": "research-capstone-page",
+                    "result": "passed"
+                    if (root / "site/src/content/docs/module-12-research-capstone.mdx").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "research-capstone-simulator",
+                    "result": "passed"
+                    if (root / "site/src/lib/research-capstone.mjs").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "research-capstone-lab",
+                    "result": "passed"
+                    if (root / "labs/research-capstone/run_lab.py").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "research-capstone-contract",
+                    "result": "passed"
+                    if (root / "labs/research-capstone/README.md").is_file()
+                    and (root / "checker/tests/test_research_capstone.py").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "research-capstone-sources",
+                    "result": "passed"
+                    if (root / "docs/sources/source-ledger.json").is_file()
+                    else "failed",
+                },
+                {"id": "research-capstone-evidence", "result": "failed"},
+            ]
+        else:
+            checks, trace = load_research_capstone_checks_external(
+                evidence_file,
+                expected_course_version=course_version,
+            )
+    elif lesson_id == OPENAI_RESPONSES_LESSON_ID:
+        package_check = adapter_package_result(root)
+        if evidence_file is None:
+            checks = [
+                {"id": "openai-responses-package", "result": package_check},
+                {"id": "openai-responses-evidence-executed", "result": "failed"},
+                {"id": "openai-responses-live-not-claimed", "result": "passed"},
+            ]
+        else:
+            checks, trace = load_openai_responses_checks(
+                evidence_file,
+                expected_course_version=course_version,
+            )
+    elif lesson_id == ANTHROPIC_MESSAGES_LESSON_ID:
+        package_check = anthropic_messages_package_result(root)
+        if evidence_file is None:
+            checks = [
+                {"id": "anthropic-messages-package", "result": package_check},
+                {"id": "anthropic-messages-evidence-executed", "result": "failed"},
+                {"id": "anthropic-messages-live-not-claimed", "result": "passed"},
+            ]
+        else:
+            checks, trace = load_anthropic_messages_checks(
+                evidence_file,
+                expected_course_version=course_version,
+            )
     elif lesson_id == "t03-agent-instruction":
         checks = [
             {
@@ -4299,6 +4715,47 @@ def check_lesson(
                 expected_lesson_id=lesson_id,
                 expected_course_version=course_version,
             )
+    elif lesson_id == RESEARCH_CAPSTONE_LESSON_ID:
+        if evidence_file is None:
+            checks = [
+                {
+                    "id": "research-capstone-page",
+                    "result": "passed"
+                    if (root / "site/src/content/docs/module-12-research-capstone.mdx").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "research-capstone-simulator",
+                    "result": "passed"
+                    if (root / "site/src/lib/research-capstone.mjs").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "research-capstone-lab",
+                    "result": "passed"
+                    if (root / "labs/research-capstone/run_lab.py").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "research-capstone-contract",
+                    "result": "passed"
+                    if (root / "labs/research-capstone/README.md").is_file()
+                    and (root / "checker/tests/test_research_capstone.py").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "research-capstone-sources",
+                    "result": "passed"
+                    if (root / "docs/sources/source-ledger.json").is_file()
+                    else "failed",
+                },
+                {"id": "research-capstone-evidence", "result": "failed"},
+            ]
+        else:
+            checks, trace = load_research_capstone_checks_external(
+                evidence_file,
+                expected_course_version=course_version,
+            )
     if lesson_id == "t01-foundation" and evidence_file is not None:
         checks, trace = load_evidence_checks(
             evidence_file,
@@ -4325,6 +4782,9 @@ def check_lesson(
             document["experiment"] = trace
         elif lesson_id == HOOKS_TASKS_LESSON_ID:
             document["experiment"] = trace
+        elif lesson_id == PRODUCTION_LESSON_ID:
+            document["evaluation"] = trace["evaluation"]
+            document["logs"] = trace["logs"]
         else:
             document["experiment"] = trace
     return document

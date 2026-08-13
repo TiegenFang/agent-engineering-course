@@ -1,0 +1,175 @@
+---
+import courseVersion from "../../../course-version.json";
+---
+
+<section class="plugin-audit-lab openai-responses-lab" data-openai-responses data-course-version={courseVersion.course_version} aria-labelledby="openai-responses-title">
+  <div class="plugin-audit-lab__heading">
+    <div>
+      <p class="eyebrow">离线确定性夹具</p>
+      <h2 id="openai-responses-title">Responses API 适配边界</h2>
+    </div>
+    <span class="plugin-audit-lab__version">Responses adapter v1</span>
+  </div>
+  <p class="plugin-audit-lab__lead">
+    这里模拟 <code>responses.create</code> 的公共形状，不调用 SDK 或网络。选择一个状态后，观察谁拥有请求、工具、输出校验、预算和错误恢复。
+  </p>
+
+  <noscript>
+    <section class="plugin-audit-lab__noscript" aria-labelledby="openai-responses-noscript-title">
+      <h3 id="openai-responses-noscript-title">离线夹具交互需要 JavaScript</h3>
+      <p>仍可阅读本页：无凭据路径不会调用 OpenAI API；现场 smoke 当前为未执行，不能由该页面替代。</p>
+    </section>
+  </noscript>
+
+  <form class="plugin-audit-lab__form" data-openai-responses-form>
+    <label for="openai-responses-case">选择录制状态</label>
+    <select id="openai-responses-case" data-openai-responses-case>
+      <option value="offline-success">成功：function call 与回填</option>
+      <option value="invalid-arguments">故障：无效工具参数</option>
+      <option value="malformed-structured-output">故障：结构化输出无效</option>
+      <option value="transport-error">故障：连接错误</option>
+    </select>
+    <button type="submit">运行离线夹具</button>
+  </form>
+
+  <div class="plugin-audit-lab__presets" aria-label="离线夹具快捷选择">
+    <p>快捷选择</p>
+    <div>
+      <button type="button" data-openai-responses-preset="offline-success">成功路径</button>
+      <button type="button" data-openai-responses-preset="invalid-arguments">无效参数</button>
+      <button type="button" data-openai-responses-preset="malformed-structured-output">无效输出</button>
+      <button type="button" data-openai-responses-preset="transport-error">连接错误</button>
+    </div>
+  </div>
+
+  <p class="plugin-audit-lab__status" data-openai-responses-status role="status" aria-live="polite">
+    先运行一条录制状态；页面不会读取 API key 或发送请求。
+  </p>
+
+  <div class="plugin-audit-lab__manifest" aria-labelledby="openai-responses-request-title">
+    <h3 id="openai-responses-request-title">适配器请求摘要（已脱敏）</h3>
+    <pre data-openai-responses-request>运行后显示模型标识、function tool、JSON Schema 和输出预算；不会显示 prompt 或参数。</pre>
+  </div>
+
+  <div class="plugin-audit-lab__result" aria-labelledby="openai-responses-result-title">
+    <div class="plugin-audit-lab__result-heading">
+      <h3 id="openai-responses-result-title">状态结论</h3>
+      <span data-openai-responses-outcome>尚未运行</span>
+    </div>
+    <ul class="plugin-audit-lab__findings" data-openai-responses-observations>
+      <li>运行夹具后显示公共状态；不保存原始 API 数据。</li>
+    </ul>
+  </div>
+
+  <div class="plugin-audit-lab__controls">
+    <button type="button" data-record-openai-responses>记录此状态</button>
+    <button type="button" data-export-openai-responses>导出匿名 evidence</button>
+  </div>
+  <p class="plugin-audit-lab__evidence" data-openai-responses-evidence role="status" aria-live="polite">
+    已记录 0 / 4 条固定离线路径。
+  </p>
+  <p class="plugin-audit-lab__privacy">
+    证据只保留状态、计数、模型标识、预算和 <code>not-run</code> smoke 元数据；不含路径、prompt、工具参数、原始响应、读数、密钥或个人数据。
+  </p>
+</section>
+
+<script>
+  // @ts-nocheck
+  import {
+    OPENAI_RESPONSES_CASE_ORDER,
+    OpenAIResponsesFixtureError,
+    buildOpenAIResponsesEvidence,
+    createOpenAIResponsesSession,
+    recordOpenAIResponsesCase,
+    selectOpenAIResponsesCase,
+  } from "../lib/openai-responses.mjs";
+
+  const root = document.querySelector("[data-openai-responses]");
+  if (root instanceof HTMLElement) {
+    const select = root.querySelector("[data-openai-responses-case]");
+    const form = root.querySelector("[data-openai-responses-form]");
+    const status = root.querySelector("[data-openai-responses-status]");
+    const request = root.querySelector("[data-openai-responses-request]");
+    const outcome = root.querySelector("[data-openai-responses-outcome]");
+    const observations = root.querySelector("[data-openai-responses-observations]");
+    const evidenceStatus = root.querySelector("[data-openai-responses-evidence]");
+    let session = createOpenAIResponsesSession();
+
+    const message = (element, text, kind = "") => {
+      if (!(element instanceof HTMLElement)) return;
+      element.textContent = text;
+      element.dataset.status = kind;
+    };
+
+    const render = () => {
+      const current = session.current;
+      if (!current) return;
+      if (request instanceof HTMLElement) request.textContent = JSON.stringify(current.request, null, 2);
+      if (outcome instanceof HTMLElement) {
+        outcome.textContent = current.outcome;
+        outcome.dataset.status = current.error === "none" ? "reviewable" : "needs-review";
+      }
+      if (observations instanceof HTMLElement) {
+        observations.replaceChildren();
+        for (const text of [current.label, current.observation, `network: ${current.network}; access: ${current.access}`]) {
+          const item = document.createElement("li");
+          item.textContent = text;
+          observations.append(item);
+        }
+      }
+      if (evidenceStatus instanceof HTMLElement) {
+        evidenceStatus.textContent = `已记录 ${session.runs.length} / ${OPENAI_RESPONSES_CASE_ORDER.length} 条固定离线路径。`;
+      }
+    };
+
+    const run = (caseId) => {
+      try {
+        session = selectOpenAIResponsesCase(session, caseId);
+        render();
+        message(status, `${session.current.label}。这是本地录制夹具，不是 API 调用。`, session.current.error === "none" ? "success" : "warning");
+      } catch (error) {
+        message(status, `无法运行夹具：${error instanceof Error ? error.message : "输入无效"}`, "error");
+      }
+    };
+
+    form?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      run(select instanceof HTMLSelectElement ? select.value : "offline-success");
+    });
+    root.querySelectorAll("[data-openai-responses-preset]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const caseId = button.getAttribute("data-openai-responses-preset");
+        if (!OPENAI_RESPONSES_CASE_ORDER.includes(caseId)) return;
+        if (select instanceof HTMLSelectElement) select.value = caseId;
+        run(caseId);
+      });
+    });
+    root.querySelector("[data-record-openai-responses]")?.addEventListener("click", () => {
+      try {
+        session = recordOpenAIResponsesCase(session);
+        render();
+        message(status, "已记录离线状态。请继续覆盖其余固定路径。", "success");
+      } catch (error) {
+        const text = error instanceof OpenAIResponsesFixtureError ? error.message : "记录失败";
+        message(status, `无法记录：${text}`, "error");
+      }
+    });
+    root.querySelector("[data-export-openai-responses]")?.addEventListener("click", () => {
+      try {
+        const evidence = buildOpenAIResponsesEvidence(session, { courseVersion: root.dataset.courseVersion ?? "" });
+        const blob = new Blob([`${JSON.stringify(evidence, null, 2)}\n`], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "t27-openai-responses-evidence.json";
+        link.click();
+        URL.revokeObjectURL(url);
+        window.dispatchEvent(new CustomEvent("openai-responses:evidence", { detail: evidence }));
+        message(evidenceStatus, "已导出匿名 evidence；现场 smoke 仍为 not-run。", "success");
+      } catch (error) {
+        message(evidenceStatus, `无法导出：${error instanceof Error ? error.message : "证据不完整"}`, "error");
+      }
+    });
+    render();
+  }
+</script>

@@ -1,0 +1,204 @@
+---
+import courseVersion from "../../../course-version.json";
+---
+
+<section
+  class="production-evaluation-lab"
+  data-production-evaluation-lab
+  data-course-version={courseVersion.course_version}
+  aria-labelledby="production-evaluation-title"
+>
+  <div class="production-evaluation-lab__heading">
+    <div>
+      <p class="eyebrow">离线门禁 / 不花钱</p>
+      <h2 id="production-evaluation-title">生产前评测台</h2>
+    </div>
+    <span class="production-evaluation-lab__badge">deterministic</span>
+  </div>
+  <p>
+    先用合成输入检查成功、失败、变化输入、恢复和预算。结果不会调用模型，也不能证明任何厂商 API 的实时行为。
+  </p>
+  <div class="production-evaluation-lab__controls">
+    <label>
+      评测输入
+      <select data-production-input>
+        <option value="baseline">基线：压力报告</option>
+        <option value="variant">变化：温度报告</option>
+        <option value="budget">预算不足：提前停止</option>
+      </select>
+    </label>
+    <button type="button" data-production-run>运行离线评测</button>
+    <button type="button" data-production-export disabled>导出匿名证据</button>
+  </div>
+  <p data-production-status role="status" aria-live="polite">尚未运行评测。</p>
+  <div data-production-output hidden>
+    <dl class="production-evaluation-lab__metrics">
+      <div><dt>结果</dt><dd data-production-result>—</dd></div>
+      <div><dt>估算成本</dt><dd data-production-cost>—</dd></div>
+      <div><dt>预算门禁</dt><dd data-production-budget>—</dd></div>
+      <div><dt>现场 API</dt><dd data-production-live>—</dd></div>
+    </dl>
+    <ul data-production-checks class="production-evaluation-lab__checks"></ul>
+  </div>
+  <noscript>
+    <p>未启用 JavaScript 时，请按本页 PowerShell 实验运行 <code>evaluate.py</code>；浏览器交互不是正式完成证据。</p>
+  </noscript>
+</section>
+
+<script>
+  import { evaluateProductionFixture } from "../lib/production-evaluation.mjs";
+
+  const root = document.querySelector("[data-production-evaluation-lab]");
+  if (root instanceof HTMLElement) {
+    const input = root.querySelector("[data-production-input]");
+    const run = root.querySelector("[data-production-run]");
+    const exportButton = root.querySelector("[data-production-export]");
+    const status = root.querySelector("[data-production-status]");
+    const output = root.querySelector("[data-production-output]");
+    let evidence: { result: string; [key: string]: unknown } | undefined;
+    const setText = (selector: string, value: string): void => {
+      const element = root.querySelector(selector);
+      if (element) element.textContent = value;
+    };
+    const current = () => {
+      const mode = input instanceof HTMLSelectElement ? input.value : "baseline";
+      if (mode === "variant") return evaluateProductionFixture({ inputId: "variant-temperature-v1", device: "synthetic-device-b", changedInput: true });
+      if (mode === "budget") return evaluateProductionFixture({ budgetUsd: 0.0001 });
+      return evaluateProductionFixture({});
+    };
+    run?.addEventListener("click", () => {
+      const result = current();
+      evidence = {
+        contract: "agent-engineering-course/evidence",
+        contract_version: "1",
+        course_version: root.dataset.courseVersion ?? "",
+        lesson_id: "t29-production",
+        result: result.checks.every((check) => check.result === "passed") ? "passed" : "partial",
+        anonymous: true,
+        checked_on: new Date().toISOString().slice(0, 10),
+        summary: result.checks.every((check) => check.result === "passed") ? "所有必需证据均已通过。" : "部分证据已通过，仍有证据需要补齐。",
+        evidence: result.checks,
+        evaluation: {
+          evaluator_version: result.evaluatorVersion,
+          fixture_version: "1",
+          input_id: result.inputId,
+          cases_total: 3,
+          cases_passed: result.checks.slice(0, 3).filter((check) => check.result === "passed").length,
+          success_case_passed: result.checks[0].result === "passed",
+          failure_case_observed: result.checks[1].result === "passed",
+          variant_input_passed: result.checks[2].result === "passed",
+          recovery_observed: result.checks[3].result === "passed",
+          failures_recovered: result.checks[3].result === "passed" ? 1 : 0,
+          estimated_input_tokens: 240,
+          estimated_output_tokens: 96,
+          estimated_cost_usd: result.estimatedCostUsd,
+          budget_usd: result.budgetUsd,
+          budget_status: result.budgetStatus,
+          provider: "offline-fixture",
+          model: "offline-model-v1",
+          live_api_called: false,
+        },
+        logs: { event_count: result.logs.eventCount, events: result.logs.events },
+      };
+      setText("[data-production-result]", evidence.result);
+      setText("[data-production-cost]", `$${result.estimatedCostUsd.toFixed(6)} (估算)`);
+      setText("[data-production-budget]", result.budgetStatus);
+      setText("[data-production-live]", "false / 未调用");
+      const checks = root.querySelector("[data-production-checks]");
+      if (checks) checks.innerHTML = result.checks.map((check) => `<li><code>${check.id}</code>：${check.result}</li>`).join("");
+      if (output instanceof HTMLElement) output.hidden = false;
+      if (exportButton instanceof HTMLButtonElement) exportButton.disabled = false;
+      if (status instanceof HTMLElement) status.textContent = `已完成 ${evidence.result} 离线评测；现场 API 未调用。`;
+      window.dispatchEvent(new CustomEvent("production:evidence", { detail: evidence }));
+    });
+    exportButton?.addEventListener("click", () => {
+      if (!evidence) return;
+      const blob = new Blob([JSON.stringify(evidence, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "t29-production-evidence.json";
+      link.click();
+      URL.revokeObjectURL(url);
+      if (status instanceof HTMLElement) status.textContent = "已导出匿名证据；请再用本地 course_check 验证。";
+    });
+  }
+</script>
+
+<style>
+  .production-evaluation-lab {
+    border: 1px solid var(--sl-color-gray-5, #b6c0c9);
+    border-radius: 1rem;
+    padding: 1.25rem;
+    margin: 2rem 0;
+    background: color-mix(in srgb, var(--sl-color-gray-7, #172027) 88%, #7fe7c4);
+  }
+  .production-evaluation-lab__heading,
+  .production-evaluation-lab__controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .production-evaluation-lab__controls label {
+    display: grid;
+    gap: 0.35rem;
+  }
+  .production-evaluation-lab select,
+  .production-evaluation-lab button {
+    font: inherit;
+    min-height: 2.5rem;
+    padding: 0.45rem 0.7rem;
+    border-radius: 0.5rem;
+  }
+  .production-evaluation-lab button {
+    cursor: pointer;
+    background: var(--sl-color-accent, #7fe7c4);
+    color: #0d1b1e;
+    border: 1px solid transparent;
+    font-weight: 700;
+  }
+  .production-evaluation-lab button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+  .production-evaluation-lab__badge {
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.8rem;
+  }
+  .production-evaluation-lab__metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 0.75rem;
+    margin: 1.25rem 0;
+  }
+  .production-evaluation-lab__metrics div {
+    padding: 0.7rem;
+    border-radius: 0.6rem;
+    background: color-mix(in srgb, currentColor 8%, transparent);
+  }
+  .production-evaluation-lab__metrics dt {
+    font-size: 0.8rem;
+    opacity: 0.75;
+  }
+  .production-evaluation-lab__metrics dd {
+    margin: 0.2rem 0 0;
+    font-weight: 700;
+  }
+  .production-evaluation-lab__checks {
+    columns: 2;
+    column-gap: 2rem;
+  }
+  @media (max-width: 600px) {
+    .production-evaluation-lab__checks { columns: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .production-evaluation-lab *, .production-evaluation-lab *::before, .production-evaluation-lab *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>

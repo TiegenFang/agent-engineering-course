@@ -44,21 +44,30 @@ const chapterDirectory = [
     title: "规则、上下文、Memory、Skill、Plugin、MCP 与编排",
     description: "围绕同一公共练习仓库继续累积能力和证据。",
     status: "Core Beta",
-    links: [],
+    links: [
+      { label: "受控多 Agent 对照", href: `${base}module-10-multi-agent/` },
+    ],
   },
   {
     id: "M11",
     title: "Python 最小 API Agent loop",
-    description: "先用离线 fixture 拥有响应、工具、状态、结构化输出、预算和恢复控制流。",
+    description: "先用离线 fixture 拥有响应、工具、状态、结构化输出、预算和恢复，再迁移到 OpenAI Responses 与 Anthropic Messages。",
     status: "现在可学",
-    links: [{ label: "打开离线最小 loop", href: `${base}module-11-agent-loop/` }],
+    links: [
+      { label: "打开离线最小 loop", href: `${base}module-11-agent-loop/` },
+      { label: "迁移到 OpenAI Responses", href: `${base}module-11-openai-responses/` },
+      { label: "迁移到 Anthropic Messages", href: `${base}module-11-anthropic-messages/` },
+    ],
   },
   {
     id: "M12",
     title: "生产化与双轨结课",
     description: "在完成 API 控制流之后，进入科研/企业结课轨道和现场验证。",
     status: "v1",
-    links: [],
+    links: [
+      { label: "生产评测与成本控制", href: `${base}module-12-production/` },
+      { label: "科研核心结课", href: `${base}module-12-research-capstone/` },
+    ],
   },
 ] as const;
 

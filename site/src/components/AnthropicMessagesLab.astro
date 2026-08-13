@@ -1,0 +1,189 @@
+---
+interface Props {
+  courseVersion?: string;
+}
+
+const { courseVersion = "development" } = Astro.props;
+---
+
+<section class="anthropic-messages-lab" data-anthropic-messages data-course-version={courseVersion} aria-labelledby="anthropic-messages-title">
+  <div class="anthropic-messages-lab__heading">
+    <p class="anthropic-messages-lab__eyebrow">离线迁移实验 · 不读取凭据 · 不发起网络请求</p>
+    <h2 id="anthropic-messages-title">把 T26 loop 接到 Messages API 边界</h2>
+    <p>
+      这个小型模拟器只演示协议形状：assistant 的 <code>tool_use</code>、应用保存的消息历史，
+      以及随后的 user <code>tool_result</code>。它不是 Anthropic 客户端，也不会调用真实 API。
+    </p>
+  </div>
+
+  <div class="anthropic-messages-lab__layout">
+    <form class="anthropic-messages-lab__controls" data-anthropic-messages-form>
+      <label for="anthropic-messages-case">离线 fixture 情形</label>
+      <select id="anthropic-messages-case" name="case">
+        <option value="offline-success">1. 正常工具往返与 JSON 输出</option>
+        <option value="invalid-arguments">2. 无效工具参数被隔离</option>
+        <option value="malformed-structured-output">3. 坏结构化输出被拒绝</option>
+        <option value="transport-error">4. 传输错误不泄露细节</option>
+        <option value="authentication-error">5. 认证错误不读取凭据</option>
+      </select>
+      <div class="anthropic-messages-lab__presets" aria-label="按顺序选择情形">
+        <button type="button" data-anthropic-messages-preset="offline-success">1</button>
+        <button type="button" data-anthropic-messages-preset="invalid-arguments">2</button>
+        <button type="button" data-anthropic-messages-preset="malformed-structured-output">3</button>
+        <button type="button" data-anthropic-messages-preset="transport-error">4</button>
+        <button type="button" data-anthropic-messages-preset="authentication-error">5</button>
+      </div>
+      <button type="submit" class="anthropic-messages-lab__primary">运行当前离线 fixture</button>
+    </form>
+
+    <div class="anthropic-messages-lab__result" aria-live="polite">
+      <p data-anthropic-messages-status>尚未运行。先预测：哪一种情形还会进入第二个 Messages 请求？</p>
+      <dl>
+        <div><dt>请求形状</dt><dd data-anthropic-messages-request>等待运行</dd></div>
+        <div><dt>结果</dt><dd data-anthropic-messages-outcome>等待运行</dd></div>
+      </dl>
+      <pre data-anthropic-messages-observations aria-label="离线协议观察">选择一个情形后显示匿名观察。</pre>
+    </div>
+  </div>
+
+  <div class="anthropic-messages-lab__evidence">
+    <div>
+      <h3>记录并导出证据</h3>
+      <p>必须依次运行并记录五个情形，导出的 JSON 才会显示可检查的离线结论。</p>
+    </div>
+    <div class="anthropic-messages-lab__actions">
+      <button type="button" data-record-anthropic-messages disabled>记录当前情形</button>
+      <button type="button" data-export-anthropic-messages disabled>导出匿名 JSON</button>
+    </div>
+  </div>
+  <pre data-anthropic-messages-evidence aria-live="polite">尚未记录任何情形。</pre>
+  <noscript><p class="anthropic-messages-lab__noscript">此离线模拟器需要 JavaScript。你仍可运行 Python fixture，并把 JSON 交给 <code>course_check</code>。</p></noscript>
+</section>
+
+<script>
+  import {
+    ANTHROPIC_MESSAGES_CASE_ORDER,
+    AnthropicMessagesFixtureError,
+    buildAnthropicMessagesEvidence,
+    createAnthropicMessagesSession,
+    recordAnthropicMessagesCase,
+    runAnthropicMessagesFixture,
+    selectAnthropicMessagesCase,
+  } from "../lib/anthropic-messages.mjs";
+
+  document.querySelectorAll("[data-anthropic-messages]").forEach((root) => {
+    const form = root.querySelector("[data-anthropic-messages-form]");
+    const select = root.querySelector("#anthropic-messages-case");
+    const status = root.querySelector("[data-anthropic-messages-status]");
+    const request = root.querySelector("[data-anthropic-messages-request]");
+    const outcome = root.querySelector("[data-anthropic-messages-outcome]");
+    const observations = root.querySelector("[data-anthropic-messages-observations]");
+    const recordButton = root.querySelector("[data-record-anthropic-messages]");
+    const exportButton = root.querySelector("[data-export-anthropic-messages]");
+    const evidence = root.querySelector("[data-anthropic-messages-evidence]");
+    const courseVersion = root.dataset.courseVersion || "development";
+    let session = createAnthropicMessagesSession();
+    let lastRun = null;
+
+    const updateControls = () => {
+      const next = ANTHROPIC_MESSAGES_CASE_ORDER[session.recordedCaseIds.length];
+      recordButton.disabled = !lastRun || !next || lastRun.id !== next;
+      exportButton.disabled = session.recordedCaseIds.length !== ANTHROPIC_MESSAGES_CASE_ORDER.length;
+      const done = session.recordedCaseIds.length;
+      if (!lastRun) {
+        status.textContent = `尚未运行。已记录 ${done}/5 个情形。`;
+      }
+    };
+
+    const showRun = () => {
+      const caseId = select.value;
+      session = selectAnthropicMessagesCase(session, caseId);
+      lastRun = runAnthropicMessagesFixture(caseId);
+      request.textContent = `${lastRun.request.tool_schema} → ${lastRun.request.tool_result_reference}; ${lastRun.request.structured_output}; max_tokens=${lastRun.request.max_tokens}`;
+      outcome.textContent = `${lastRun.outcome}（${lastRun.error}）`;
+      observations.textContent = JSON.stringify({
+        case: lastRun.id,
+        request_count: lastRun.request_count,
+        tool_protocol: lastRun.tool_protocol,
+        state_owner: lastRun.request.state_owner,
+        network: lastRun.network,
+        access: lastRun.access,
+      }, null, 2);
+      status.textContent = `已运行 ${caseId}。${lastRun.tool_use ? "可观察 tool_use 与 tool_result 往返。" : "该错误在工具往返前被安全分类。"}`;
+      updateControls();
+    };
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      showRun();
+    });
+
+    root.querySelectorAll("[data-anthropic-messages-preset]").forEach((button) => {
+      button.addEventListener("click", () => {
+        select.value = button.dataset.anthropicMessagesPreset;
+        showRun();
+      });
+    });
+
+    recordButton.addEventListener("click", () => {
+      try {
+        session = recordAnthropicMessagesCase(session, lastRun?.id);
+        lastRun = null;
+        const next = ANTHROPIC_MESSAGES_CASE_ORDER[session.recordedCaseIds.length];
+        evidence.textContent = `已记录 ${session.recordedCaseIds.length}/5：${session.recordedCaseIds.join("、")}${next ? `。下一项：${next}` : "。现在可以导出。"}`;
+        updateControls();
+      } catch (error) {
+        status.textContent = error instanceof AnthropicMessagesFixtureError ? error.message : "记录失败；请按显示的顺序重试。";
+      }
+    });
+
+    exportButton.addEventListener("click", () => {
+      try {
+        const documentEvidence = buildAnthropicMessagesEvidence(session, { courseVersion });
+        const serialized = JSON.stringify(documentEvidence, null, 2);
+        evidence.textContent = serialized;
+        const blob = new Blob([serialized], { type: "application/json" });
+        const downloadUrl = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = downloadUrl;
+        anchor.download = "t28-anthropic-messages-evidence.json";
+        anchor.hidden = true;
+        document.body.append(anchor);
+        anchor.click();
+        anchor.remove();
+        window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
+        status.textContent = "已导出匿名离线证据：不含凭据、不含真实响应、并明确 live smoke 未运行。";
+      } catch (error) {
+        status.textContent = error instanceof AnthropicMessagesFixtureError ? error.message : "导出失败；请重新记录五个情形。";
+      }
+    });
+
+    updateControls();
+  });
+</script>
+
+<style>
+  .anthropic-messages-lab { border: 1px solid var(--sl-color-gray-5); border-radius: 1rem; padding: 1.25rem; background: color-mix(in srgb, var(--sl-color-bg) 92%, var(--sl-color-accent-low)); }
+  .anthropic-messages-lab__heading > :first-child { margin-top: 0; }
+  .anthropic-messages-lab__eyebrow { color: var(--sl-color-text-accent); font-size: .9rem; font-weight: 650; }
+  .anthropic-messages-lab__layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 1rem; align-items: start; }
+  .anthropic-messages-lab__controls, .anthropic-messages-lab__result { border: 1px solid var(--sl-color-gray-5); border-radius: .75rem; padding: 1rem; }
+  .anthropic-messages-lab label, .anthropic-messages-lab select { display: block; width: 100%; }
+  .anthropic-messages-lab select { min-height: 2.75rem; margin: .35rem 0 .75rem; padding: .4rem; }
+  .anthropic-messages-lab button { min-height: 2.75rem; padding: .45rem .75rem; border-radius: .45rem; border: 1px solid var(--sl-color-gray-4); color: inherit; background: var(--sl-color-bg); cursor: pointer; }
+  .anthropic-messages-lab button:focus-visible, .anthropic-messages-lab select:focus-visible { outline: 3px solid var(--sl-color-text-accent); outline-offset: 2px; }
+  .anthropic-messages-lab button:disabled { cursor: not-allowed; opacity: .55; }
+  .anthropic-messages-lab__primary { width: 100%; background: var(--sl-color-accent); color: var(--sl-color-black); border-color: var(--sl-color-accent); }
+  .anthropic-messages-lab__presets, .anthropic-messages-lab__actions { display: flex; flex-wrap: wrap; gap: .45rem; margin: .75rem 0; }
+  .anthropic-messages-lab__presets button { min-width: 2.75rem; }
+  .anthropic-messages-lab dl { display: grid; gap: .5rem; margin-bottom: 0; }
+  .anthropic-messages-lab dl div { display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: .5rem; }
+  .anthropic-messages-lab dt { font-weight: 650; }
+  .anthropic-messages-lab dd { margin: 0; overflow-wrap: anywhere; }
+  .anthropic-messages-lab pre { max-width: 100%; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .anthropic-messages-lab__evidence { display: flex; justify-content: space-between; gap: 1rem; align-items: center; margin-top: 1rem; border-top: 1px solid var(--sl-color-gray-5); padding-top: 1rem; }
+  .anthropic-messages-lab__evidence h3, .anthropic-messages-lab__evidence p { margin: 0; }
+  .anthropic-messages-lab__evidence p { margin-top: .25rem; }
+  @media (max-width: 42rem) { .anthropic-messages-lab__layout { grid-template-columns: 1fr; } .anthropic-messages-lab__evidence { align-items: flex-start; flex-direction: column; } .anthropic-messages-lab dl div { grid-template-columns: 1fr; gap: .1rem; } }
+  @media (prefers-reduced-motion: reduce) { .anthropic-messages-lab * { scroll-behavior: auto !important; transition: none !important; } }
+</style>

@@ -1,0 +1,18 @@
+{
+  "rubric_version": "common-agent-evaluation-v1",
+  "dimensions": [
+    "task-success",
+    "structured-output",
+    "tool-and-recovery",
+    "budget",
+    "privacy-and-permissions",
+    "version-and-reproducibility"
+  ],
+  "provider_specific_fields": [
+    "sdk-response-shape",
+    "provider-error-code",
+    "usage-field",
+    "auth-and-role"
+  ],
+  "live_api_claimed": false
+}
