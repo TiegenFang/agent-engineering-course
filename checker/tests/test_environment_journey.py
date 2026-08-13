@@ -64,6 +64,7 @@ class EnvironmentEvidenceCommandTests(unittest.TestCase):
             env=env,
             capture_output=True,
             text=True,
+            encoding="utf-8",
             check=False,
         )
 
@@ -210,6 +211,7 @@ class EnvironmentEvidenceCommandTests(unittest.TestCase):
             env=env,
             capture_output=True,
             text=True,
+            encoding="utf-8",
             check=False,
         )
 

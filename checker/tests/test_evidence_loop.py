@@ -98,12 +98,16 @@ class EvidenceCommandTests(unittest.TestCase):
     def run_checker(self, *args: str) -> subprocess.CompletedProcess[str]:
         env = os.environ.copy()
         env["PYTHONPATH"] = str(CHECKER)
+        # Exercise the Windows legacy-console case even when the test host is
+        # already UTF-8.  The CLI must reconfigure its public output stream.
+        env["PYTHONIOENCODING"] = "cp1252"
         return subprocess.run(
             [sys.executable, "-m", "course_check", *args],
             cwd=CHECKER,
             env=env,
             capture_output=True,
             text=True,
+            encoding="utf-8",
             check=False,
         )
 

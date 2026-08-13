@@ -434,6 +434,14 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # JSON evidence is a UTF-8 interchange contract.  Windows PowerShell
+    # runners may expose a legacy cp1252 stdout, which cannot encode the
+    # course's Chinese lesson labels.  Reconfigure the stream at the public
+    # CLI boundary so ``--json`` behaves identically across platforms.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="strict")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="strict")
     args = build_parser().parse_args(argv)
     if args.command == "validate":
         try:
