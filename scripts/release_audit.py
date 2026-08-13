@@ -405,7 +405,10 @@ def audit_repository(root: Path, *, as_of: dt.date, max_age_days: int = 90, onli
     findings: list[dict[str, Any]] = []
     details: dict[str, Any] = {}
     for scanner in (scan_sensitive, scan_contracts, scan_links, scan_dependencies, scan_permissions, scan_freshness):
-        if scanner is scan_links:
+        if scanner is scan_sensitive:
+            result = scanner(root)
+            metadata = {"finding_count": len(result)}
+        elif scanner is scan_links:
             result, metadata = scanner(root, online=online, max_url_checks=max_url_checks)
         elif scanner is scan_freshness:
             result, metadata = scanner(root, as_of=as_of, max_age_days=max_age_days)
