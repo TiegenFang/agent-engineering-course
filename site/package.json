@@ -8,7 +8,7 @@
     "build": "astro build",
     "test": "node scripts/run-tests.mjs && node scripts/assert-directions.mjs",
     "browser:install": "playwright install chromium",
-    "test:browser": "npm run build && node scripts/verify-directions.mjs && node scripts/verify-agent-loop.mjs && node scripts/verify-instruction.mjs && node scripts/verify-course-shell.mjs && node scripts/verify-project-rules.mjs"
+    "test:browser": "npm run build && node scripts/verify-directions.mjs && node scripts/verify-agent-loop.mjs && node scripts/verify-instruction.mjs && node scripts/verify-course-shell.mjs && node scripts/verify-project-rules.mjs && node scripts/verify-context-budget.mjs"
   },
   "dependencies": {
     "@astrojs/starlight": "0.41.7",

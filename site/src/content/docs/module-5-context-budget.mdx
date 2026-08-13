@@ -1,0 +1,113 @@
+---
+title: 模块 5A：上下文预算模拟器
+description: 用离线确定性模拟观察上下文不足、污染、遗漏与挤占，并区分 Context、History 与 Memory。
+sidebar:
+  order: 6
+---
+
+import ContextBudget from '../../components/ContextBudget.astro';
+import EvidenceLoop from '../../components/EvidenceLoop.astro';
+
+# 模块 5A：上下文预算模拟器
+
+> 本课的主实验是浏览器内的确定性工作集模拟。它不调用真实模型，不代表 Codex、Claude Code 或任何模型的实际上下文上限；它只帮助你建立“先选工作集，再看预算后果”的心智模型。
+
+## 你要解决的真实问题
+
+长任务失败时，原因不一定是模型“不会做”。当前任务可能被过长的对话历史、重复工具输出、过期规则或未经筛选的 Memory 摘要挤出工作集；即使全部内容都能塞进窗口，无关内容也可能稀释真正相关的决定。本课让你用一组可复现的相对占用量，观察这三类不同信号：
+
+- **上下文不足**：选入的工作集超过本轮输入预算，或输出预留已经占满容量。
+- **上下文污染**：无关或过期内容在工作集中占比过高，相关性下降，即使尚未溢出也值得清理。
+- **相关内容被挤占**：容量分配后，历史、Memory 或工具结果没有完整保留；应压缩、刷新、摘要或减少无关内容。
+
+完成本课后，你应能在不依赖颜色的情况下，用数字和文字证据说明：
+
+1. Context 是当前推理可见的有限工作集；它不是全部项目资料。
+2. History 是当前会话的先前轮次；它不自动等于值得永久保存的 Memory。
+3. Memory 是受控保留的信息；只有主动选入本轮的摘要才占本次预算，也不代表完整历史。
+4. 调大容量只是一个变量；优先级、相关性和输出预留仍需要管理。
+
+## 心智模型：容量、工作集与输出预留
+
+实验使用下面的简化预算式：
+
+```text
+输入预算 = 上下文容量 − 输出预留
+选入工作集 = 系统与规则 + 当前任务 +（可选片段）
+```
+
+系统与规则、当前任务的优先级最高；可选的 Memory 摘要、工具结果、对话历史和噪声按优先级依次尝试保留。被截掉的数字不是“模型已经看过但忘了”，而是本轮工作集没有完整保留的证据。
+
+这是一种课程判断，不是跨厂商协议。OpenAI 的 API 文档把超过输入限制时的处理区分为截断或报错，且提示输入预算还要为输出预留空间；Anthropic 的 Claude Code 文档则展示会话上下文、规则、工具结果、Memory 和压缩的产品行为。请把官方页面当作产品适配层事实，不要把本模拟的 256 或 1024 当成真实模型上限：
+
+- [OpenAI Realtime API reference：truncation 与输入限制](https://platform.openai.com/docs/api-reference/realtime)
+- [Claude Code：Explore the context window](https://code.claude.com/docs/en/context-window)
+- [Claude Code：How Claude remembers your project](https://code.claude.com/docs/en/memory)
+- 课程的厂商无关定义见仓库 [CONTEXT.md](https://github.com/TiegenFang/agent-engineering-course/blob/main/CONTEXT.md) 与 [课程总体规划](https://github.com/TiegenFang/agent-engineering-course/blob/main/docs/course-plan.md)。
+
+## 操作前预测
+
+先不要运行。观察默认值：容量 256、输出预留 64，选入片段合计小于输入预算。然后在脑中预测：
+
+- 把“上下文容量”改到最小边界 64，同时把输出预留改到 64，会发生什么？
+- 只勾选“无关/过期噪声”，把噪声调到 160，为什么可能先看到污染而不是不足？
+- 把对话历史调大，哪一个片段会显示“未保留”？它和“上下文不足”是否可能同时出现？
+
+在“你的预测”中选择主要风险，再运行模拟。预测错了不会删除结果；它只是帮助你把“直觉”与数字证据分开。
+
+## 主工具演示：选择工作集
+
+<ContextBudget />
+
+先点“正常工作集”并记录一次观察，再依次运行“上下文不足”“注入污染”“制造挤占”三个夹具。每次运行都可以继续调整数字；结果区域会显示输入预算、选入量、保留量、未保留量、噪声占比、相关信息占比和逐片段分配。风险信号同时以标题、数字和文字解释呈现，不依赖颜色。
+
+## 本地实验：完成三次可核验观察
+
+浏览器中的模拟只留下本地状态；完成后点击“导出匿名证据”，把下载的文件放在课程工作区外的临时位置或你明确指定的文件名。Windows 11 + PowerShell 7 主路径如下：
+
+```powershell
+Set-Location -LiteralPath .\checker
+python -m course_check check t14-context-budget --root .. --evidence-file ..\t14-context-budget-evidence.json --output ..\t14-context-budget-checked.json
+Get-Content -LiteralPath ..\t14-context-budget-checked.json
+```
+
+没有 `--evidence-file` 时，checker 只检查课节和模拟器结构，结果会是 `partial`；带证据文件时，checker 会重新推导三类风险覆盖、边界值和匿名证据状态。输出只包含稳定的检查 ID，不包含输入数字、路径、原始文本或密钥。
+
+## 故障注入与恢复
+
+有意把输出预留设为容量本身，运行后确认输入预算为 0，并观察“上下文不足”。恢复时把输出预留调回较小值，再关闭噪声或减少历史，比较“未保留”数量如何变化。
+
+如果你把无关噪声调高后发现还没有溢出，不要把“没有超限”误认为“工作集健康”：污染信号描述的是相关性风险。恢复动作应是移除无关片段、刷新历史、把长期有效的事实压成短 Memory 摘要，而不是把全部聊天记录复制到 Memory。
+
+## 迁移挑战：换工具，保留能力目标
+
+任选一个你可用的 Coding Agent（Codex 或 Claude Code），不要让它调用模型或读取真实项目数据；只给它这四个合成场景的结果表，让它写出一页恢复建议。要求它明确：
+
+- 哪些内容属于当前 Context，哪些只是 History；
+- 哪些信息值得经过人工确认后进入 Memory；
+- 哪些信息应被删除或留在外部文件，而不是继续挤进工作集；
+- 如果工具拥有自动压缩、截断或独立子代理，它的产品行为与本模拟的优先级夹具哪里不同。
+
+迁移挑战改变解释输入，不要求复制任何厂商 UI，也不需要账号、API key 或付费额度。
+
+## 可核验成果：匿名 evidence
+
+至少记录四次观察：正常工作集、上下文不足、污染、挤占；其中一次触碰容量或输入字段边界。点击“导出匿名证据”，再用本地 `course_check` 检查。成功证据是：
+
+- `risk-signals-observed` 覆盖 `insufficient`、`pollution`、`crowding`；
+- `boundary-tested` 已通过；
+- `offline-deterministic` 已通过；
+- 生成的 JSON 可以被本页的本地 EvidenceLoop 导入。
+
+<EvidenceLoop lessonId="t14-context-budget" />
+
+## 风险、版本与来源卡片
+
+- **账号与成本**：不需要账号、API key、模型额度或网络；浏览器模拟和 checker 免费。
+- **权限与副作用**：页面只在浏览器内计算；下载和导入由你主动操作。不要把真实研究数据、企业文本、个人信息或秘密粘贴进输入扩展中。
+- **隐私边界**：匿名 evidence 只保留运行编号、风险类别、边界标记和稳定检查结果；不上传、不记录绝对路径、源码、密钥、原始数据或输入数字。
+- **版本与验证边界**：模拟器与 `agent-engineering-course/evidence v1` 随课程版本锁定；本课未验证真实 Codex/Claude Code、真实模型截断策略、付费 API、MCP transport 或跨平台浏览器行为。
+- **事实与判断**：OpenAI 与 Anthropic 链接用于核验各自产品/接口的上下文处理说明；Context/History/Memory 的课程边界、夹具数字、风险分类和恢复建议是本课程原创判断与实验设计。
+- **许可**：正文采用 CC BY 4.0；模拟器、页面组件、测试和 checker 采用 MIT；官方页面只作引用，不复制第三方资产。
+
+下一步是模块 6 的 Memory 设计：你会把“值得保留什么、由谁更新、何时删除”从当前工作集管理中单独拿出来，做污染与纠错实验。

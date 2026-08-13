@@ -287,6 +287,56 @@
         "course-project-rules-original"
       ],
       "licenses": ["CC-BY-4.0", "MIT"]
+    },
+    {
+      "id": "t14-context-budget",
+      "title": "模块 5A：上下文预算模拟器",
+      "stage": "alpha",
+      "duration_minutes": 45,
+      "prerequisites": ["t02-agent-loop"],
+      "outcomes": [
+        "区分当前 Context、对话 History 与受控 Memory 的工作边界",
+        "用可调整的离线工作集模拟上下文不足、污染和相关内容被挤占",
+        "用数字、文字和匿名 evidence 解释恢复动作，不把模拟夹具当成真实模型上限"
+      ],
+      "artifacts": [
+        "四次上下文工作集观察（正常、不足、污染、挤占）",
+        "一次触碰容量或输入边界的观察",
+        "匿名 t14-context-budget evidence JSON"
+      ],
+      "primary_tool": "Deterministic browser simulator (offline working-set fixture)",
+      "migration_tool": "Codex or Claude Code (conceptual migration challenge; no live call)",
+      "platforms": {
+        "primary": "Desktop or mobile browser; Windows 11 + PowerShell 7 for course_check",
+        "secondary": ["macOS/Linux browser; checker path not yet cross-platform verified"]
+      },
+      "versions": {
+        "client": "Astro/Starlight course page @ workspace baseline",
+        "sdk": "not-applicable",
+        "model": "mock/deterministic working-set allocation v1; no model call",
+        "protocol": "agent-engineering-course/evidence v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free",
+        "network": "browser experiment and local checker need no network after dependencies are installed"
+      },
+      "risk": {
+        "permissions": "只读页面与本地导出的 JSON；checker 读取用户显式指定的证据文件",
+        "side_effects": "不调用真实模型、Coding Agent、设备或 API；导出由用户主动触发",
+        "staleness": "模拟数字和产品适配说明随课程版本复核；官方上下文行为不能由本夹具推断"
+      },
+      "sources": [
+        "openai-realtime-context-window",
+        "anthropic-claude-code-context-window",
+        "anthropic-claude-code-memory",
+        "course-context-budget-original"
+      ],
+      "licenses": [
+        "CC-BY-4.0",
+        "MIT"
+      ]
     }
   ]
 }

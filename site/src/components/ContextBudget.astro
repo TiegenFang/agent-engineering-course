@@ -1,0 +1,344 @@
+---
+import courseVersion from "../../../course-version.json";
+
+const expectedCourseVersion = courseVersion.course_version;
+---
+
+<section
+  class="context-budget-lab"
+  data-context-budget
+  data-course-version={expectedCourseVersion}
+  aria-labelledby="context-budget-title"
+>
+  <div class="context-budget-lab__heading">
+    <div>
+      <p class="eyebrow">模块 5A · 上下文工程</p>
+      <h2 id="context-budget-title">选择工作集，再看谁被挤出去</h2>
+    </div>
+    <span class="context-budget-lab__version">budget v1 · {expectedCourseVersion}</span>
+  </div>
+
+  <p class="context-budget-lab__lead">
+    这是一个离线、确定性的教学模拟，不调用真实模型。每个数字只是相对占用量；它把当前任务、历史、受控 Memory、工具结果和无关噪声放进同一工作集，再按优先级报告容量、遗漏和挤占。
+  </p>
+
+  <noscript>
+    <section class="context-budget-lab__noscript" aria-labelledby="context-budget-noscript-title">
+      <h3 id="context-budget-noscript-title">交互控件需要 JavaScript</h3>
+      <p>
+        未启用 JavaScript 时不能调整数字或导出证据，但以下固定边界仍说明实验的判断方式：输入预算 = 上下文容量 − 输出预留；输入工作集超出预算时会出现“上下文不足”，无关内容占比高时会出现“上下文污染”，低优先级片段被截掉时会出现“相关内容被挤占”。
+      </p>
+      <ul>
+        <li>系统与规则、当前任务优先于可选的历史、Memory、工具结果和噪声。</li>
+        <li>Memory 只表示主动选入的摘要，不等于全部历史对话。</li>
+        <li>本实验的数字是课程夹具，不代表任何厂商模型的真实上下文上限。</li>
+      </ul>
+    </section>
+  </noscript>
+
+  <div class="context-budget-lab__model-grid" aria-label="上下文、历史与 Memory 的边界">
+    <article>
+      <h3>Context</h3>
+      <p>当前推理能看到的有限工作集；容量会被规则、任务、历史和工具结果共同消耗。</p>
+    </article>
+    <article>
+      <h3>History</h3>
+      <p>当前会话已经发生的轮次；它不是自动值得永久保留的知识。</p>
+    </article>
+    <article>
+      <h3>Memory</h3>
+      <p>为后续任务受控保留的信息；只有选入当前工作集的摘要才会占本次预算。</p>
+    </article>
+    <article>
+      <h3>Noise</h3>
+      <p>无关、过期或重复内容；即使能塞进窗口，也可能稀释当前决策所需信息。</p>
+    </article>
+  </div>
+
+  <form class="context-budget-lab__inputs" data-context-budget-form>
+    <fieldset>
+      <legend>1. 调整边界与片段占用量</legend>
+
+      <label for="context-budget-capacity">上下文容量（相对单位）</label>
+      <input id="context-budget-capacity" name="capacity" type="number" min="64" max="1024" step="1" value="256" required />
+
+      <label for="context-budget-reserve">输出预留</label>
+      <input id="context-budget-reserve" name="outputReserve" type="number" min="0" max="512" step="1" value="64" required />
+
+      <label for="context-budget-instructions">系统与规则</label>
+      <input id="context-budget-instructions" name="instructions" type="number" min="0" max="512" step="1" value="24" required />
+
+      <label for="context-budget-task">当前任务</label>
+      <input id="context-budget-task" name="task" type="number" min="0" max="512" step="1" value="48" required />
+
+      <label for="context-budget-history">对话历史</label>
+      <input id="context-budget-history" name="history" type="number" min="0" max="512" step="1" value="64" required />
+
+      <label for="context-budget-memory">Memory 摘要</label>
+      <input id="context-budget-memory" name="memory" type="number" min="0" max="512" step="1" value="32" required />
+
+      <label for="context-budget-tools">工具结果</label>
+      <input id="context-budget-tools" name="tools" type="number" min="0" max="512" step="1" value="16" required />
+
+      <label for="context-budget-noise">无关或过期噪声</label>
+      <input id="context-budget-noise" name="noise" type="number" min="0" max="512" step="1" value="0" required />
+    </fieldset>
+
+    <fieldset class="context-budget-lab__selection">
+      <legend>选择本轮工作集（系统与当前任务始终保留）</legend>
+      <label><input id="context-budget-include-history" type="checkbox" checked /> 纳入对话历史</label>
+      <label><input id="context-budget-include-memory" type="checkbox" checked /> 纳入 Memory 摘要</label>
+      <label><input id="context-budget-include-tools" type="checkbox" checked /> 纳入工具结果</label>
+      <label><input id="context-budget-include-noise" type="checkbox" /> 纳入无关/过期噪声</label>
+    </fieldset>
+
+    <fieldset class="context-budget-lab__prediction">
+      <legend>2. 先预测主要风险，再运行</legend>
+      <label for="context-budget-prediction">你的预测</label>
+      <select id="context-budget-prediction">
+        <option value="ready">工作集可用</option>
+        <option value="insufficient">上下文不足</option>
+        <option value="pollution">上下文污染</option>
+        <option value="crowding">相关内容被挤占</option>
+      </select>
+      <button type="submit" data-run-context-budget>运行离线模拟</button>
+    </fieldset>
+  </form>
+
+  <div class="context-budget-lab__presets" aria-labelledby="context-budget-presets-title">
+    <h3 id="context-budget-presets-title">快速复现实验分支</h3>
+    <p>这些按钮只是填入可重复的夹具输入；也可以自行调整每个边界值。</p>
+    <div class="context-budget-lab__preset-buttons">
+      <button type="button" data-context-budget-preset="normal">正常工作集</button>
+      <button type="button" data-context-budget-preset="insufficient">上下文不足</button>
+      <button type="button" data-context-budget-preset="pollution">注入污染</button>
+      <button type="button" data-context-budget-preset="crowding">制造挤占</button>
+    </div>
+  </div>
+
+  <p class="context-budget-lab__status" data-context-budget-status role="status" aria-live="polite">
+    请先预测，再运行模拟。
+  </p>
+
+  <section class="context-budget-lab__result" aria-labelledby="context-budget-result-title">
+    <div class="context-budget-lab__result-heading">
+      <h3 id="context-budget-result-title">可解释结果</h3>
+      <span data-context-budget-primary>工作集可用</span>
+    </div>
+    <dl class="context-budget-lab__metrics" data-context-budget-metrics>
+      <div><dt>输入预算</dt><dd data-metric="input-budget">—</dd></div>
+      <div><dt>选入工作集</dt><dd data-metric="selected-total">—</dd></div>
+      <div><dt>保留</dt><dd data-metric="retained-total">—</dd></div>
+      <div><dt>未保留</dt><dd data-metric="dropped-total">—</dd></div>
+      <div><dt>噪声占比</dt><dd data-metric="pollution-percent">—</dd></div>
+      <div><dt>相关信息占比</dt><dd data-metric="relevance-percent">—</dd></div>
+    </dl>
+    <div class="context-budget-lab__findings" aria-live="polite">
+      <h4>风险信号（文字不是颜色的替代品）</h4>
+      <ul data-context-budget-findings>
+        <li>运行后会显示“上下文不足”“上下文污染”或“相关内容被挤占”的文字解释。</li>
+      </ul>
+    </div>
+    <div class="context-budget-lab__segments">
+      <h4>各片段保留情况</h4>
+      <table>
+        <caption>按优先级分配输入预算；“未保留”表示被挤出当前工作集。</caption>
+        <thead><tr><th scope="col">片段</th><th scope="col">角色</th><th scope="col">选入</th><th scope="col">保留</th><th scope="col">未保留</th></tr></thead>
+        <tbody data-context-budget-segments><tr><td colspan="5">运行后显示确定性分配。</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="context-budget-lab__controls">
+    <button type="button" data-record-context-budget>记录本次观察</button>
+    <button type="button" data-export-context-budget>导出匿名证据</button>
+  </div>
+  <p class="context-budget-lab__evidence" data-context-budget-evidence-status role="status" aria-live="polite">
+    已记录 0 次观察；需要覆盖三类风险与至少一个边界值后再导出。
+  </p>
+  <p class="context-budget-lab__privacy">
+    证据只记录运行编号、风险类别和是否触碰边界，不记录输入文本、路径、密钥、原始数据或模型响应；模拟完全离线。
+  </p>
+</section>
+
+<script>
+  // @ts-nocheck
+  import {
+    CONTEXT_BUDGET_PRESETS,
+    DEFAULT_CONTEXT_BUDGET_INPUT,
+    buildContextBudgetEvidence,
+    createContextBudgetSession,
+    describeContextBudgetResult,
+    recordContextBudgetObservation,
+    updateContextBudgetSession,
+  } from "../lib/context-budget.mjs";
+
+  const root = document.querySelector("[data-context-budget]");
+  if (root instanceof HTMLElement) {
+    const form = root.querySelector("[data-context-budget-form]");
+    const status = root.querySelector("[data-context-budget-status]");
+    const evidenceStatus = root.querySelector("[data-context-budget-evidence-status]");
+    const primary = root.querySelector("[data-context-budget-primary]");
+    const findings = root.querySelector("[data-context-budget-findings]");
+    const segments = root.querySelector("[data-context-budget-segments]");
+    const prediction = root.querySelector("#context-budget-prediction");
+    const recordButton = root.querySelector("[data-record-context-budget]");
+    const exportButton = root.querySelector("[data-export-context-budget]");
+    const numericFields = ["capacity", "outputReserve", "instructions", "task", "history", "memory", "tools", "noise"];
+    const fieldIds = Object.fromEntries(numericFields.map((name) => [name, `#context-budget-${name === "outputReserve" ? "reserve" : name}`]));
+    let session = createContextBudgetSession(DEFAULT_CONTEXT_BUDGET_INPUT);
+    let predictionCorrect = null;
+
+    const setMessage = (element, message, kind = "") => {
+      if (!(element instanceof HTMLElement)) return;
+      element.textContent = message;
+      element.dataset.status = kind;
+    };
+
+    const readInput = () => ({
+      capacity: Number(root.querySelector(fieldIds.capacity)?.value),
+      outputReserve: Number(root.querySelector(fieldIds.outputReserve)?.value),
+      instructions: Number(root.querySelector(fieldIds.instructions)?.value),
+      task: Number(root.querySelector(fieldIds.task)?.value),
+      history: Number(root.querySelector(fieldIds.history)?.value),
+      memory: Number(root.querySelector(fieldIds.memory)?.value),
+      tools: Number(root.querySelector(fieldIds.tools)?.value),
+      noise: Number(root.querySelector(fieldIds.noise)?.value),
+      includeHistory: root.querySelector("#context-budget-include-history")?.checked ?? false,
+      includeMemory: root.querySelector("#context-budget-include-memory")?.checked ?? false,
+      includeTools: root.querySelector("#context-budget-include-tools")?.checked ?? false,
+      includeNoise: root.querySelector("#context-budget-include-noise")?.checked ?? false,
+    });
+
+    const writeInput = (input) => {
+      for (const name of numericFields) {
+        const element = root.querySelector(fieldIds[name]);
+        if (element instanceof HTMLInputElement) element.value = String(input[name]);
+      }
+      for (const [id, value] of [
+        ["#context-budget-include-history", input.includeHistory],
+        ["#context-budget-include-memory", input.includeMemory],
+        ["#context-budget-include-tools", input.includeTools],
+        ["#context-budget-include-noise", input.includeNoise],
+      ]) {
+        const element = root.querySelector(id);
+        if (element instanceof HTMLInputElement) element.checked = value;
+      }
+    };
+
+    const updateMetrics = () => {
+      const values = {
+        "input-budget": session.result.budget.inputBudget,
+        "selected-total": session.result.budget.selectedTotal,
+        "retained-total": session.result.budget.retainedTotal,
+        "dropped-total": session.result.budget.droppedTotal,
+        "pollution-percent": `${session.result.ratios.pollutionPercent}%`,
+        "relevance-percent": `${session.result.ratios.relevancePercent}%`,
+      };
+      for (const [key, value] of Object.entries(values)) {
+        const element = root.querySelector(`[data-metric="${key}"]`);
+        if (element) element.textContent = String(value);
+      }
+    };
+
+    const render = () => {
+      const result = session.result;
+      updateMetrics();
+      if (primary instanceof HTMLElement) {
+        primary.textContent = result.findingDetails[0].label;
+        primary.dataset.finding = result.primaryFinding;
+      }
+      if (findings instanceof HTMLElement) {
+        findings.replaceChildren();
+        for (const item of result.findingDetails) {
+          const listItem = document.createElement("li");
+          listItem.dataset.finding = item.id;
+          const heading = document.createElement("strong");
+          heading.textContent = item.label;
+          const detail = document.createElement("p");
+          detail.textContent = item.detail;
+          listItem.append(heading, detail);
+          findings.append(listItem);
+        }
+      }
+      if (segments instanceof HTMLElement) {
+        segments.replaceChildren();
+        for (const segment of result.segments) {
+          const row = document.createElement("tr");
+          const values = [
+            segment.label,
+            segment.role,
+            segment.selected ? `${segment.requested}` : "未选入",
+            `${segment.kept}`,
+            `${segment.dropped}`,
+          ];
+          values.forEach((value, index) => {
+            const cell = document.createElement("td");
+            if (index === 0) cell.setAttribute("data-segment", segment.id);
+            cell.textContent = value;
+            row.append(cell);
+          });
+          segments.append(row);
+        }
+      }
+      if (evidenceStatus instanceof HTMLElement) {
+        const observed = new Set(session.runs.flatMap((run) => run.findings));
+        evidenceStatus.textContent = `已记录 ${session.runs.length} 次观察；已覆盖 ${["insufficient", "pollution", "crowding"].filter((id) => observed.has(id)).length} / 3 类风险。`;
+      }
+    };
+
+    const runInput = () => {
+      try {
+        session = updateContextBudgetSession(session, readInput());
+        const selectedPrediction = prediction instanceof HTMLSelectElement ? prediction.value : "ready";
+        predictionCorrect = selectedPrediction === session.result.primaryFinding;
+        const predictionText = predictionCorrect ? "预测命中" : `预测未命中，实际主要信号是“${session.result.findingDetails[0].label}”`;
+        setMessage(status, `${predictionText}。${describeContextBudgetResult(session.result)}`, predictionCorrect ? "success" : "warning");
+        render();
+      } catch (error) {
+        setMessage(status, `无法运行模拟：${error instanceof Error ? error.message : "输入无效"}`, "error");
+      }
+    };
+
+    form?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      runInput();
+    });
+
+    root.querySelectorAll("[data-context-budget-preset]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const name = button.getAttribute("data-context-budget-preset");
+        const preset = name ? CONTEXT_BUDGET_PRESETS[name] : null;
+        if (!preset) return;
+        writeInput(preset);
+        runInput();
+      });
+    });
+
+    recordButton?.addEventListener("click", () => {
+      session = recordContextBudgetObservation(session);
+      setMessage(status, `已记录 ${session.lastRun.finding} 观察；可以改变输入继续记录。`, "success");
+      render();
+    });
+
+    exportButton?.addEventListener("click", () => {
+      try {
+        const evidence = buildContextBudgetEvidence(session, { courseVersion: root.dataset.courseVersion ?? "" });
+        const encoded = `${JSON.stringify(evidence, null, 2)}\n`;
+        const blob = new Blob([encoded], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "t14-context-budget-evidence.json";
+        link.click();
+        URL.revokeObjectURL(url);
+        window.dispatchEvent(new CustomEvent("context-budget:evidence", { detail: evidence }));
+        setMessage(evidenceStatus, `已导出 ${evidence.result} 匿名证据；可交给本地 course_check。`, "success");
+      } catch (error) {
+        setMessage(evidenceStatus, `无法导出证据：${error instanceof Error ? error.message : "证据生成失败"}`, "error");
+      }
+    });
+
+    render();
+  }
+</script>

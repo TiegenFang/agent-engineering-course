@@ -201,6 +201,16 @@ T03_ENGINEERED_OUTCOMES = {
     "injection-uncontained",
     "variant-mismatch",
 }
+CONTEXT_BUDGET_LESSON_ID = "t14-context-budget"
+CONTEXT_BUDGET_SIMULATION_VERSION = "1"
+CONTEXT_BUDGET_FINDINGS = frozenset({"insufficient", "pollution", "crowding", "ready"})
+CONTEXT_BUDGET_REQUIRED_FINDINGS = frozenset({"insufficient", "pollution", "crowding"})
+CONTEXT_BUDGET_CHECK_IDS = (
+    "working-set-selected",
+    "risk-signals-observed",
+    "boundary-tested",
+    "offline-deterministic",
+)
 
 
 class ContractError(ValueError):
@@ -683,6 +693,32 @@ def validate_t03_evidence_checks(value: Any) -> list[dict[str, Any]]:
     return normalized
 
 
+def validate_t14_evidence_checks(value: Any) -> list[dict[str, Any]]:
+    """Validate the stable public checks for the context-budget lesson."""
+
+    if not isinstance(value, list) or len(value) != len(CONTEXT_BUDGET_CHECK_IDS):
+        raise EvidenceError("T14 evidence checks must contain the complete fixed check list")
+    actual_ids: list[str] = []
+    normalized: list[dict[str, str]] = []
+    for index, check in enumerate(value):
+        if not isinstance(check, dict):
+            raise EvidenceError(f"T14 evidence check {index} must be an object")
+        _reject_sensitive_unknown_fields(check, f"T14 evidence check {index}")
+        check_id = check.get("id")
+        if not isinstance(check_id, str) or not check_id:
+            raise EvidenceError(f"T14 evidence check {index} needs an id")
+        result = check.get("result")
+        if result not in {"passed", "failed", "alternative"}:
+            raise EvidenceError(f"T14 evidence check {check_id}.result is not supported")
+        actual_ids.append(check_id)
+        normalized.append({"id": check_id, "result": result})
+    if actual_ids != list(CONTEXT_BUDGET_CHECK_IDS):
+        raise EvidenceError(
+            "T14 evidence IDs must be exactly " + ", ".join(CONTEXT_BUDGET_CHECK_IDS)
+        )
+    return normalized
+
+
 def validate_t03_experiment(
     experiment: Any,
     *,
@@ -865,6 +901,109 @@ def validate_t03_experiment(
     }
 
 
+def validate_t14_simulation(
+    value: Any,
+    *,
+    document_result: str,
+) -> tuple[list[dict[str, str]], dict[str, Any]]:
+    """Validate a status-only simulation and derive its public checks.
+
+    Raw input values are intentionally not part of this contract.  A learner
+    can prove that the three risk classes and a boundary were observed without
+    exporting their local prompts, paths, files, or experiment data.
+    """
+
+    if not isinstance(value, dict):
+        raise EvidenceError("T14 evidence requires a simulation object")
+    _reject_sensitive_unknown_fields(value, "T14 simulation")
+    if value.get("version") != CONTEXT_BUDGET_SIMULATION_VERSION:
+        raise EvidenceError("Unsupported T14 simulation version")
+    runs = value.get("runs")
+    if not isinstance(runs, list):
+        raise EvidenceError("T14 simulation runs must be a list")
+
+    seen_ids: set[str] = set()
+    observed: set[str] = set()
+    normalized_runs: list[dict[str, Any]] = []
+    for index, raw_run in enumerate(runs):
+        if not isinstance(raw_run, dict):
+            raise EvidenceError(f"T14 simulation run {index} must be an object")
+        _reject_sensitive_unknown_fields(raw_run, f"T14 simulation run {index}")
+        required = {"id", "finding", "findings", "boundary"}
+        missing = sorted(required - set(raw_run))
+        if missing:
+            raise EvidenceError(
+                f"T14 simulation run {index} is missing: " + ", ".join(missing)
+            )
+        run_id = raw_run["id"]
+        _require_identifier(run_id, f"T14 simulation run {index}.id")
+        if run_id in seen_ids:
+            raise EvidenceError(f"T14 simulation run id repeated: {run_id}")
+        seen_ids.add(run_id)
+        finding = raw_run["finding"]
+        if finding not in CONTEXT_BUDGET_FINDINGS:
+            raise EvidenceError(f"T14 simulation run {run_id}.finding is not supported")
+        findings = raw_run["findings"]
+        if not isinstance(findings, list) or any(item not in CONTEXT_BUDGET_FINDINGS for item in findings):
+            raise EvidenceError(f"T14 simulation run {run_id}.findings is invalid")
+        if len(findings) != len(set(findings)):
+            raise EvidenceError(f"T14 simulation run {run_id}.findings repeat an id")
+        if finding != "ready" and finding not in findings:
+            raise EvidenceError(f"T14 simulation run {run_id}.finding is absent from findings")
+        boundary = raw_run["boundary"]
+        if not isinstance(boundary, bool):
+            raise EvidenceError(f"T14 simulation run {run_id}.boundary must be boolean")
+        observed.update(findings)
+        normalized_runs.append(
+            {
+                "id": run_id,
+                "finding": finding,
+                "findings": list(findings),
+                "boundary": boundary,
+            }
+        )
+
+    supplied_observed = value.get("observed")
+    if not isinstance(supplied_observed, list) or any(item not in CONTEXT_BUDGET_FINDINGS for item in supplied_observed):
+        raise EvidenceError("T14 simulation observed must list supported finding IDs")
+    if len(supplied_observed) != len(set(supplied_observed)):
+        raise EvidenceError("T14 simulation observed must not repeat a finding")
+    if set(supplied_observed) != observed:
+        raise EvidenceError("T14 simulation observed does not match its runs")
+
+    expected_checks = [
+        {
+            "id": "working-set-selected",
+            "result": "passed" if normalized_runs else "failed",
+        },
+        {
+            "id": "risk-signals-observed",
+            "result": "passed"
+            if CONTEXT_BUDGET_REQUIRED_FINDINGS <= observed
+            else "failed",
+        },
+        {
+            "id": "boundary-tested",
+            "result": "passed"
+            if any(run["boundary"] for run in normalized_runs)
+            else "failed",
+        },
+        {
+            "id": "offline-deterministic",
+            "result": "passed" if normalized_runs else "failed",
+        },
+    ]
+    if document_result in {"passed", "alternative"} and any(
+        check["result"] != "passed" for check in expected_checks
+    ):
+        raise EvidenceError("Completed T14 evidence is missing a required simulation observation")
+    return expected_checks, {
+        "version": CONTEXT_BUDGET_SIMULATION_VERSION,
+        "runs": normalized_runs,
+        "observed": sorted(observed),
+    }
+
+
 def load_evidence_checks(
     evidence_file: Path, *, expected_lesson_id: str, expected_course_version: str
 ) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
@@ -903,6 +1042,14 @@ def load_evidence_checks(
                 document_result=document["result"],
             )
             return checks, experiment
+        if expected_lesson_id == CONTEXT_BUDGET_LESSON_ID:
+            checks = validate_t14_evidence_checks(document["evidence"])
+            expected_checks, simulation = validate_t14_simulation(
+                value.get("simulation"), document_result=document["result"]
+            )
+            if checks != expected_checks:
+                raise EvidenceError("T14 evidence checks do not match the recorded simulation")
+            return checks, simulation
         return document["evidence"], None
     checks = value.get("checks")
     if not isinstance(checks, list):
@@ -921,6 +1068,15 @@ def load_evidence_checks(
             checks=checks,
             document_result=result,
         )
+    if expected_lesson_id == CONTEXT_BUDGET_LESSON_ID:
+        checks = validate_t14_evidence_checks(checks)
+        result = classify_checks([check["result"] for check in checks])
+        expected_checks, simulation = validate_t14_simulation(
+            value.get("simulation"), document_result=result
+        )
+        if checks != expected_checks:
+            raise EvidenceError("T14 evidence checks do not match the recorded simulation")
+        return checks, simulation
     return checks, None
 
 
@@ -1179,6 +1335,7 @@ def check_lesson(
         "t02-agent-loop",
         "t03-agent-instruction",
         PROJECT_RULES_LESSON_ID,
+        CONTEXT_BUDGET_LESSON_ID,
     }:
         raise ContractError(f"Unsupported evidence lesson: {lesson_id}")
     course_version = validate_foundation(root)
@@ -1266,6 +1423,35 @@ def check_lesson(
                 evidence_file,
                 expected_course_version=course_version,
             )
+    elif lesson_id == CONTEXT_BUDGET_LESSON_ID:
+        if evidence_file is None:
+            checks = [
+                {
+                    "id": "context-budget-page",
+                    "result": "passed"
+                    if (root / "site/src/content/docs/module-5-context-budget.mdx").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "context-budget-simulator",
+                    "result": "passed"
+                    if (root / "site/src/lib/context-budget.mjs").is_file()
+                    else "failed",
+                },
+                {
+                    "id": "context-budget-contract",
+                    "result": "passed"
+                    if (root / "labs/context-budget/README.md").is_file()
+                    else "failed",
+                },
+                {"id": "context-budget-evidence", "result": "failed"},
+            ]
+        else:
+            checks, trace = load_evidence_checks(
+                evidence_file,
+                expected_lesson_id=lesson_id,
+                expected_course_version=course_version,
+            )
     else:
         checks = [
             {
@@ -1320,6 +1506,8 @@ def check_lesson(
     if trace is not None:
         if lesson_id == "t02-agent-loop":
             document["trace"] = trace
+        elif lesson_id == CONTEXT_BUDGET_LESSON_ID:
+            document["simulation"] = trace
         else:
             document["experiment"] = trace
     return document

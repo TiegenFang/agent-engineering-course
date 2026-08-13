@@ -271,6 +271,46 @@
       "usage": "一次性规则目录、安全边界、嵌套冲突诊断/恢复、跨工具迁移与匿名行为 evidence 设计",
       "license_or_terms": "project-original; no copied assets",
       "copied_assets": false
+    },
+    {
+      "id": "openai-realtime-context-window",
+      "title": "OpenAI Realtime API reference: truncation and input limits",
+      "url": "https://platform.openai.com/docs/api-reference/realtime",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "page observed 2026-08-13; no model or client version asserted",
+      "usage": "核验输入超限时的 truncation、disabled error 与 output reserve 边界；正文只做厂商适配层改写",
+      "license_or_terms": "reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-code-context-window",
+      "title": "Claude Code: Explore the context window",
+      "url": "https://code.claude.com/docs/en/context-window",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "page observed 2026-08-13; current docs page, no client version asserted",
+      "usage": "核验 Claude Code 会话上下文、规则、工具结果、压缩与子代理隔离的产品行为边界",
+      "license_or_terms": "reference-only; Anthropic product and trademark terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-code-memory",
+      "title": "Claude Code: How Claude remembers your project",
+      "url": "https://code.claude.com/docs/en/memory",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "page observed 2026-08-13; current docs page, no client version asserted",
+      "usage": "核验 CLAUDE.md 与 auto memory 的跨会话边界；课程不把 Claude Code 机制泛化为通用 Memory 标准",
+      "license_or_terms": "reference-only; Anthropic product and trademark terms apply; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "course-context-budget-original",
+      "title": "模块 5A 上下文预算原创实验设计",
+      "url": "docs/course-plan.md",
+      "source_role": "course-original",
+      "pinned_version": "workspace baseline 8534dee",
+      "usage": "课程的 Context/History/Memory 边界、离线优先级分配夹具、三类风险与匿名证据合同",
+      "license_or_terms": "project-original; no copied assets",
+      "copied_assets": false
     }
   ]
 }

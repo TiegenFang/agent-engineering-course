@@ -166,12 +166,14 @@ const expectedCourseVersion = courseVersion.course_version;
       }
     };
 
-    window.addEventListener("agent-loop:evidence", (event) => {
+    const handleGeneratedEvidence = (event: Event) => {
       const detail = (event as CustomEvent<unknown>).detail;
       if (detail !== null && typeof detail === "object") {
         importText(JSON.stringify(detail));
       }
-    });
+    };
+    window.addEventListener("agent-loop:evidence", handleGeneratedEvidence);
+    window.addEventListener("context-budget:evidence", handleGeneratedEvidence);
 
     try {
       const saved = loadLearningRecord(localStorage, storageKey, courseVersion) as LearningRecord;
