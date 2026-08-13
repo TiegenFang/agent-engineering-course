@@ -144,6 +144,7 @@ T02_TRACE_CHECK_IDS = (
     "stop-condition-observed",
 )
 T02_TRACE_VERSION = "1"
+T02_MAX_STEPS = 6
 T02_TRACE_CONTRACTS = {
     "success": (
         ("prediction-1", "prediction"),
@@ -163,6 +164,7 @@ T02_TRACE_CONTRACTS = {
         ("stop-1", "stop"),
     ),
 }
+T02_TRACE_EVENT_CONTRACT = T02_TRACE_CONTRACTS["success"][1:-1]
 
 
 class ContractError(ValueError):
@@ -392,6 +394,10 @@ def validate_t02_evidence_checks(value: Any) -> list[dict[str, Any]]:
         check_id = check.get("id")
         if not isinstance(check_id, str) or not check_id:
             raise EvidenceError(f"T02 trace evidence check {index} needs an id")
+        if check.get("result") not in {"passed", "failed", "alternative"}:
+            raise EvidenceError(
+                f"T02 trace evidence check {check_id}.result is not supported"
+            )
         if check_id in seen:
             raise EvidenceError(f"T02 trace evidence check ID repeated: {check_id}")
         seen.add(check_id)
@@ -416,18 +422,40 @@ def validate_t02_trace(trace: Any, *, document_result: str) -> dict[str, Any]:
     if trace.get("version") != T02_TRACE_VERSION:
         raise EvidenceError("Unsupported T02 trace version")
     outcome = trace.get("outcome")
-    if outcome not in T02_TRACE_CONTRACTS:
-        raise EvidenceError("T02 trace outcome must be success or error")
+    if outcome not in {"success", "error", "budget-stop"}:
+        raise EvidenceError("T02 trace outcome must be success, error, or budget-stop")
+    max_steps = trace.get("max_steps")
+    if not isinstance(max_steps, int) or isinstance(max_steps, bool) or not 1 <= max_steps <= T02_MAX_STEPS:
+        raise EvidenceError(f"T02 trace max_steps must be an integer from 1 to {T02_MAX_STEPS}")
+    if outcome == "budget-stop" and max_steps >= len(T02_TRACE_CONTRACTS["success"]) - 1:
+        raise EvidenceError("budget-stop T02 trace must stop before the natural stop step")
     steps = trace.get("steps")
     if not isinstance(steps, list):
         raise EvidenceError("T02 trace steps must be a list")
 
-    expected = T02_TRACE_CONTRACTS[outcome]
+    if outcome == "budget-stop":
+        expected = (
+            ("prediction-1", "prediction"),
+            *T02_TRACE_EVENT_CONTRACT[:max_steps],
+            ("budget-stop-1", "stop"),
+        )
+    else:
+        expected = T02_TRACE_CONTRACTS[outcome]
+        minimum_steps = len(expected) - 1
+        if max_steps < minimum_steps:
+            raise EvidenceError(
+                f"T02 {outcome} trace needs max_steps >= {minimum_steps}"
+            )
     expected_ids = [step_id for step_id, _ in expected]
     expected_kinds = dict(expected)
     if not steps:
         if document_result in {"failed", "partial"}:
-            return {"version": T02_TRACE_VERSION, "outcome": outcome, "steps": []}
+            return {
+                "version": T02_TRACE_VERSION,
+                "outcome": outcome,
+                "max_steps": max_steps,
+                "steps": [],
+            }
         raise EvidenceError("Completed T02 evidence must include trace steps")
     seen: set[str] = set()
     actual_ids: list[str] = []
@@ -446,7 +474,8 @@ def validate_t02_trace(trace: Any, *, document_result: str) -> dict[str, Any]:
         actual_ids.append(step_id)
 
         step_result = step.get("result")
-        if step_result not in {"passed", "failed"}:
+        allowed_results = {"passed", "failed", "alternative"}
+        if step_result not in allowed_results:
             raise EvidenceError(
                 f"T02 trace step {step_id}.result must be passed or failed"
             )
@@ -456,8 +485,26 @@ def validate_t02_trace(trace: Any, *, document_result: str) -> dict[str, Any]:
                 f"T02 trace step {step_id}.kind does not match the fixed trace contract"
             )
         status = step.get("status")
-        if status is not None and status not in {"ok", "passed", "error"}:
+        if status is not None and status not in {"ok", "passed", "error", "budget"}:
             raise EvidenceError(f"T02 trace step {step_id}.status is not supported")
+
+        if step_id == "prediction-1":
+            if status is not None:
+                raise EvidenceError("T02 prediction-1 must not have a status")
+            if step_result not in {"passed", "failed"}:
+                raise EvidenceError("T02 prediction-1 result must be passed or failed")
+        elif status is None:
+            raise EvidenceError(f"T02 trace step {step_id} needs a status")
+        elif status == "budget" and step_id != "budget-stop-1":
+            raise EvidenceError("Only budget-stop-1 may have budget status")
+        elif step_id == "budget-stop-1" and (status != "budget" or step_result != "alternative"):
+            raise EvidenceError("budget-stop-1 must have alternative result and budget status")
+        elif step_id != "budget-stop-1" and status == "budget":
+            raise EvidenceError("Only budget-stop-1 may have budget status")
+        elif status in {"ok", "passed", "error"} and step_result != "passed":
+            raise EvidenceError(
+                f"T02 trace step {step_id} result must be passed when status is {status}"
+            )
 
         normalized: dict[str, Any] = {
             "id": step_id,
@@ -477,7 +524,81 @@ def validate_t02_trace(trace: Any, *, document_result: str) -> dict[str, Any]:
             "Completed T02 evidence is missing trace steps: " + ", ".join(missing)
         )
 
-    return {"version": T02_TRACE_VERSION, "outcome": outcome, "steps": normalized_steps}
+    if outcome == "success":
+        if any(step.get("status") in {"error", "budget"} for step in normalized_steps):
+            raise EvidenceError("Success T02 trace cannot contain error or budget statuses")
+        stop = normalized_steps[-1] if actual_ids == expected_ids else None
+        if stop is not None and stop.get("status") != "passed":
+            raise EvidenceError("Success T02 trace must end with a passed stop")
+    elif outcome == "error":
+        required_error_steps = {"tool-execution-1", "tool-result-1", "stop-1"}
+        by_id = {step["id"]: step for step in normalized_steps}
+        if actual_ids == expected_ids and any(
+            by_id[step_id].get("status") != "error" for step_id in required_error_steps
+        ):
+            raise EvidenceError("Error T02 trace must mark execution, result, and stop as error")
+        if any(
+            step.get("status") == "error" and step["id"] not in required_error_steps
+            for step in normalized_steps
+        ):
+            raise EvidenceError("Only execution, result, and stop may be error in an error trace")
+    elif actual_ids == expected_ids and document_result not in {"alternative", "partial"}:
+        raise EvidenceError("Completed budget-stop evidence must be alternative")
+
+    if document_result == "passed" and any(
+        step["result"] != "passed" for step in normalized_steps
+    ):
+        raise EvidenceError("Passed T02 evidence cannot contain failed or alternative trace steps")
+
+    return {
+        "version": T02_TRACE_VERSION,
+        "outcome": outcome,
+        "max_steps": max_steps,
+        "steps": normalized_steps,
+    }
+
+
+def validate_t02_check_semantics(
+    checks: list[dict[str, Any]], trace: dict[str, Any], *, document_result: str
+) -> None:
+    """Keep the three public check states aligned with the executed trace."""
+
+    check_results = {check["id"]: check["result"] for check in checks}
+    steps = trace["steps"]
+    outcome = trace["outcome"]
+    if outcome == "budget-stop":
+        expected_ids = [
+            "prediction-1",
+            *[step_id for step_id, _ in T02_TRACE_EVENT_CONTRACT[: trace["max_steps"]]],
+            "budget-stop-1",
+        ]
+    else:
+        expected_ids = [step_id for step_id, _ in T02_TRACE_CONTRACTS[outcome]]
+    complete = [step["id"] for step in steps] == expected_ids
+    prediction_result = next(
+        (step["result"] for step in steps if step["id"] == "prediction-1"),
+        "failed",
+    )
+    expected_trace_result = "passed" if complete else "failed"
+    expected_stop_result = (
+        "alternative"
+        if complete and outcome == "budget-stop"
+        else "passed"
+        if complete
+        else "failed"
+    )
+    expected_checks = {
+        "prediction-recorded": prediction_result,
+        "trace-observed": expected_trace_result,
+        "stop-condition-observed": expected_stop_result,
+    }
+    for check_id, expected in expected_checks.items():
+        if check_results[check_id] != expected:
+            raise EvidenceError(
+                f"T02 evidence check {check_id} does not match trace semantics"
+            )
+    if document_result == "alternative" and outcome != "budget-stop":
+        raise EvidenceError("Alternative T02 evidence requires a budget-stop trace")
 
 
 def load_evidence_checks(
@@ -508,6 +629,7 @@ def load_evidence_checks(
         if expected_lesson_id == "t02-agent-loop":
             checks = validate_t02_evidence_checks(document["evidence"])
             trace = validate_t02_trace(value.get("trace"), document_result=document["result"])
+            validate_t02_check_semantics(checks, trace, document_result=document["result"])
             return checks, trace
         return document["evidence"], None
     checks = value.get("checks")
@@ -516,7 +638,9 @@ def load_evidence_checks(
     if expected_lesson_id == "t02-agent-loop":
         checks = validate_t02_evidence_checks(checks)
         result = classify_checks([check["result"] for check in checks])
-        return checks, validate_t02_trace(value.get("trace"), document_result=result)
+        trace = validate_t02_trace(value.get("trace"), document_result=result)
+        validate_t02_check_semantics(checks, trace, document_result=result)
+        return checks, trace
     return checks, None
 
 

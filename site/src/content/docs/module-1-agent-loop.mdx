@@ -20,7 +20,7 @@ import EvidenceLoop from '../../components/EvidenceLoop.astro';
 
 - 区分 Model、Agent、Agent Harness 与 Agent Application 的职责边界。
 - 按 `response → tool request → execution → result → response/stop` 顺序描述一次最小 Agent loop。
-- 在变化输入和预置工具错误下，记录预测、观察和停止条件，并说明恢复动作。
+- 在变化输入、预置工具错误和 `max_steps` 预算下，记录预测、观察和停止条件，并说明恢复动作。
 - 导出不含设备原始值、路径、密钥或个人信息的匿名 `evidence` JSON。
 
 ## 心智模型：谁拥有哪一段控制流？
@@ -38,7 +38,7 @@ import EvidenceLoop from '../../components/EvidenceLoop.astro';
 
 ## 主工具演示：逐步观察
 
-下面的实验固定显示一条成功 trace，也允许你改变目标、`deviceId`、阈值和故障模式。请留意每个事件的角色（`model`、`harness` 或 `tool`）与状态。
+下面的实验固定显示一条成功 trace，也允许你改变目标、`deviceId`、阈值、`max_steps` 和故障模式。请留意每个事件的角色（`model`、`harness` 或 `tool`）与状态；预算耗尽时会出现 `budget-stop`，而不是伪造成功完成。
 
 <AgentLoop />
 
@@ -78,7 +78,7 @@ import EvidenceLoop from '../../components/EvidenceLoop.astro';
 
 ## 可核验成果：导出匿名 evidence
 
-完成成功路径和故障路径后，点击实验下方的“导出匿名证据”。导出的文档遵循课程已有的 `agent-engineering-course/evidence` v1 合同，并附带固定的 trace v1 步骤顺序。你可以把它交给本地 `course_check`，再导入本页的本地学习记录组件：
+完成成功路径和故障路径后，点击实验下方的“导出匿名证据”。若达到 `max_steps`，导出的是 `alternative` 的 `budget-stop` 证据；若出现错误预测，即使事件全部观察完也保持 `partial`，请重置并重新预测。导出的文档遵循课程已有的 `agent-engineering-course/evidence` v1 合同，并附带固定的 trace v1 步骤顺序。你可以把它交给本地 `course_check`，再导入本页的本地学习记录组件：
 
 <EvidenceLoop lessonId="t02-agent-loop" />
 
@@ -94,7 +94,7 @@ python -m course_check check t02-agent-loop --root .. --json
 python -m course_check check t02-agent-loop --root .. --evidence-file ..\t02-agent-loop-evidence.json --output ..\t02-agent-loop-checked.json
 ```
 
-不带 `--evidence-file` 的命令只验证页面、模拟器和实验契约结构，结果是 `partial`，不表示已经执行 trace。带文件的路径会拒绝缺失、未知或重复的 trace ID，也会拒绝旧 `course_version`；它不会把旧版本改写为当前版本。检查器只读取你主动指定的本地证据文件，不上传源码、密钥、绝对路径或原始遥测。
+不带 `--evidence-file` 的命令只验证页面、模拟器和实验契约结构，结果是 `partial`，不表示已经执行 trace。带文件的路径会拒绝缺失、未知或重复的 trace ID、错误的 status/result 语义，也会拒绝旧 `course_version`；它不会把旧版本改写为当前版本。检查器只读取你主动指定的本地证据文件，不上传源码、密钥、绝对路径或原始遥测。
 
 ## 风险、版本与来源卡片
 

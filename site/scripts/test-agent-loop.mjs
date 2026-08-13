@@ -30,6 +30,10 @@ test("模块 1 页面公开 Agent loop 实验并连接匿名证据入口", () =>
     new URL("../src/components/AgentLoop.astro", import.meta.url),
     "utf8",
   );
+  const evidenceComponent = readFileSync(
+    new URL("../src/components/EvidenceLoop.astro", import.meta.url),
+    "utf8",
+  );
 
   assert.match(page, /<AgentLoop\s*\/>/);
   assert.match(page, /<EvidenceLoop\s+lessonId="t02-agent-loop"\s*\/>/);
@@ -37,6 +41,10 @@ test("模块 1 页面公开 Agent loop 实验并连接匿名证据入口", () =>
   assert.match(component, /交互控件需要 JavaScript/);
   assert.match(component, /prediction-1/);
   assert.match(component, /工具错误路径（error）/);
+  assert.match(component, /max_steps/);
+  assert.match(component, /预测错误.*partial/);
+  assert.match(evidenceComponent, /<noscript>/);
+  assert.match(evidenceComponent, /本地记录交互需要 JavaScript/);
 });
 
 const DEFAULT_INPUT = {
@@ -44,6 +52,7 @@ const DEFAULT_INPUT = {
   deviceId: "device-17",
   threshold: 42,
   failureMode: "none",
+  maxSteps: 6,
 };
 
 function finishSession(session) {
@@ -114,6 +123,42 @@ test("工具错误结果不会被渲染成成功遥测读数", () => {
   assert.match(observation, /工具结果为错误/);
   assert.match(observation, /没有可用遥测读数/);
   assert.doesNotMatch(observation, /本次模拟观察：/);
+});
+
+test("max_steps 预算会以明确的 budget-stop 分支结束并导出替代证据", () => {
+  const session = finishSession(createAgentLoopSession({ ...DEFAULT_INPUT, maxSteps: 2 }));
+  const evidence = buildAgentLoopEvidence(session, {
+    courseVersion: COURSE_VERSION,
+    checkedOn: "2026-08-13",
+  });
+
+  assert.equal(evidence.result, "alternative");
+  assert.equal(evidence.trace.outcome, "budget-stop");
+  assert.equal(evidence.trace.max_steps, 2);
+  assert.deepEqual(
+    evidence.trace.steps.map((step) => step.id),
+    ["prediction-1", "response-1", "tool-request-1", "budget-stop-1"],
+  );
+  assert.equal(evidence.trace.steps.at(-1).status, "budget");
+  assert.equal(evidence.trace.steps.at(-1).result, "alternative");
+  assert.match(describeAgentLoopObservation(session), /预算停止/);
+  assert.equal(evidence.evidence.at(-1).result, "alternative");
+});
+
+test("错误预测完成全 trace 后保持 partial，并要求重新预测才能 passed", () => {
+  let session = createAgentLoopSession(DEFAULT_INPUT);
+  session = advanceAgentLoop(submitPrediction(session, "tool-request"));
+  session = finishSession(session);
+  const evidence = buildAgentLoopEvidence(session, {
+    courseVersion: COURSE_VERSION,
+    checkedOn: "2026-08-13",
+  });
+
+  assert.equal(evidence.result, "partial");
+  assert.equal(evidence.evidence[0].result, "failed");
+  assert.equal(evidence.trace.steps[0].result, "failed");
+  assert.equal(evidence.evidence[1].result, "passed");
+  assert.equal(evidence.evidence[2].result, "passed");
 });
 
 test("完成 trace 后可以生成版本锁定且匿名的 evidence", () => {

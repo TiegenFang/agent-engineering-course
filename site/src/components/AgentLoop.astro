@@ -105,6 +105,18 @@ const expectedCourseVersion = courseVersion.course_version;
         value="42"
       />
 
+      <label for="agent-loop-max-steps">最大步骤预算（max_steps）</label>
+      <input
+        id="agent-loop-max-steps"
+        name="maxSteps"
+        type="number"
+        min="1"
+        max="6"
+        step="1"
+        required
+        value="6"
+      />
+
       <label for="agent-loop-failure">故障注入</label>
       <select id="agent-loop-failure" name="failureMode">
         <option value="none">无故障成功路径</option>
@@ -157,7 +169,7 @@ const expectedCourseVersion = courseVersion.course_version;
   </div>
 
   <p class="agent-loop-lab__evidence" data-loop-evidence-status role="status" aria-live="polite">
-    可随时导出当前进度；完成全部事件后，三项 t02 证据应全部通过。
+    可随时导出当前进度；预测错误时即使观察完事件也会保持 partial，请重置后重新预测；达到 max_steps 时记录 budget-stop 替代证据。
   </p>
 
   <details class="agent-loop-lab__help">
@@ -188,6 +200,7 @@ const expectedCourseVersion = courseVersion.course_version;
     const goalInput = root.querySelector("#agent-loop-goal");
     const deviceInput = root.querySelector("#agent-loop-device");
     const thresholdInput = root.querySelector("#agent-loop-threshold");
+    const maxStepsInput = root.querySelector("#agent-loop-max-steps");
     const failureInput = root.querySelector("#agent-loop-failure");
     const predictionInput = root.querySelector("[data-loop-prediction]");
     const recordButton = root.querySelector("[data-record-prediction]");
@@ -206,6 +219,7 @@ const expectedCourseVersion = courseVersion.course_version;
         ok: "已完成",
         passed: "通过",
         error: "错误",
+        budget: "预算停止",
       };
       return labels[value] ?? value;
     };
@@ -285,6 +299,7 @@ const expectedCourseVersion = courseVersion.course_version;
       deviceId: deviceInput instanceof HTMLInputElement ? deviceInput.value : "",
       threshold: thresholdInput instanceof HTMLInputElement ? Number(thresholdInput.value) : NaN,
       failureMode: failureInput instanceof HTMLSelectElement ? failureInput.value : "none",
+      maxSteps: maxStepsInput instanceof HTMLInputElement ? Number(maxStepsInput.value) : 6,
     });
 
     form?.addEventListener("submit", (event) => {
@@ -326,7 +341,9 @@ const expectedCourseVersion = courseVersion.course_version;
         setMessage(
           status,
           session.status === "complete"
-            ? `已执行“${expected.title}”；停止条件出现，循环结束。`
+            ? expected.status === "budget"
+              ? `已执行“${expected.title}”；max_steps 预算耗尽，循环停止并记录替代证据。`
+              : `已执行“${expected.title}”；停止条件出现，循环结束。`
             : `已执行“${expected.title}”。继续预测下一个事件。`,
           expected.status === "error" ? "error" : "success",
         );

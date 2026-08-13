@@ -191,6 +191,21 @@
   font-size: 0.9rem;
 }
 
+.evidence-loop__noscript {
+  margin-block: 1rem;
+  border-inline-start: 0.2rem solid var(--sl-color-orange-high);
+  padding: 0.75rem 1rem;
+  background: var(--sl-color-bg);
+}
+
+.evidence-loop__noscript h3 {
+  margin-block: 0.25rem 0;
+}
+
+.evidence-loop__noscript p {
+  margin-block: 0.5rem 0;
+}
+
 .agent-loop-lab {
   margin-block: 2rem;
   border: 1px solid var(--sl-color-gray-5);

@@ -1,13 +1,14 @@
 import { parseLearningInput } from "./evidence-record.mjs";
 
 /** @typedef {"response" | "tool-request" | "tool-execution" | "tool-result" | "stop"} AgentLoopStepKind */
-/** @typedef {"ok" | "passed" | "error"} AgentLoopStepStatus */
+/** @typedef {"ok" | "passed" | "error" | "budget"} AgentLoopStepStatus */
 /**
  * @typedef {Object} AgentLoopInput
  * @property {string} goal
  * @property {string} deviceId
  * @property {number} threshold
  * @property {"none" | "tool-error"} failureMode
+ * @property {number} maxSteps
  */
 /**
  * @typedef {Object} AgentLoopStep
@@ -53,17 +54,19 @@ import { parseLearningInput } from "./evidence-record.mjs";
  * @property {string} checked_on
  * @property {string} summary
  * @property {{id: string, result: string}[]} evidence
- * @property {{version: string, outcome: "success" | "error", steps: {id: string, kind: string, result: string, status?: string}[]}} trace
+ * @property {{version: string, outcome: "success" | "error" | "budget-stop", max_steps: number, steps: {id: string, kind: string, result: string, status?: string}[]}} trace
  */
 
 export const AGENT_LOOP_LESSON_ID = "t02-agent-loop";
 export const LOOP_TRACE_VERSION = "1";
+export const MAX_LOOP_STEPS = 6;
 
 export const DEFAULT_LOOP_INPUT = Object.freeze({
   goal: "检查设备遥测并在异常时停止",
   deviceId: "device-17",
   threshold: 42,
   failureMode: "none",
+  maxSteps: MAX_LOOP_STEPS,
 });
 
 export const FAILURE_MODES = Object.freeze(["none", "tool-error"]);
@@ -152,7 +155,12 @@ export function normalizeLoopInput(value = DEFAULT_LOOP_INPUT) {
     throw new AgentLoopInputError("不支持的故障模式", "invalid-failure-mode");
   }
 
-  return { goal, deviceId, threshold, failureMode };
+  const maxSteps = Number(input.maxSteps ?? MAX_LOOP_STEPS);
+  if (!Number.isInteger(maxSteps) || maxSteps < 1 || maxSteps > MAX_LOOP_STEPS) {
+    throw new AgentLoopInputError(`max_steps 需要是 1–${MAX_LOOP_STEPS} 之间的整数`, "invalid-max-steps");
+  }
+
+  return { goal, deviceId, threshold, failureMode, maxSteps };
 }
 
 function deterministicReading(deviceId) {
@@ -187,7 +195,7 @@ export function buildAgentLoopTrace(value = DEFAULT_LOOP_INPUT) {
     condition: aboveThreshold ? "threshold-exceeded" : "within-threshold",
   };
   const toolRequest = `read_telemetry({ device_id: "${input.deviceId}" })`;
-  const steps = [
+  const naturalSteps = [
     makeStep(
       "response-1",
       "response",
@@ -205,7 +213,7 @@ export function buildAgentLoopTrace(value = DEFAULT_LOOP_INPUT) {
   ];
 
   if (input.failureMode === "tool-error") {
-    steps.push(
+    naturalSteps.push(
       makeStep(
         "tool-execution-1",
         "tool-execution",
@@ -232,7 +240,7 @@ export function buildAgentLoopTrace(value = DEFAULT_LOOP_INPUT) {
       ),
     );
   } else {
-    steps.push(
+    naturalSteps.push(
       makeStep(
         "tool-execution-1",
         "tool-execution",
@@ -268,6 +276,20 @@ export function buildAgentLoopTrace(value = DEFAULT_LOOP_INPUT) {
       ),
     );
   }
+
+  const steps = input.maxSteps < naturalSteps.length
+    ? [
+      ...naturalSteps.slice(0, input.maxSteps),
+      makeStep(
+        "budget-stop-1",
+        "stop",
+        "harness",
+        "停止：达到 max_steps 预算",
+        `Harness 达到 max_steps=${input.maxSteps}，在目标完成前停止循环；没有继续调用工具。`,
+        "budget",
+      ),
+    ]
+    : naturalSteps;
 
   return {
     version: LOOP_TRACE_VERSION,
@@ -356,6 +378,8 @@ export function advanceAgentLoop(session) {
 function classifyEvidence(results) {
   if (results.every((result) => result === "passed")) return "passed";
   if (results.every((result) => result === "failed")) return "failed";
+  if (results.every((result) => result === "passed" || result === "alternative")
+    && results.some((result) => result === "alternative")) return "alternative";
   return "partial";
 }
 
@@ -367,12 +391,19 @@ function classifyEvidence(results) {
  */
 export function describeAgentLoopObservation(session) {
   const current = ensureSession(session);
+  const budgetStop = current.history.find((event) => event.id === "budget-stop-1");
+  if (budgetStop) {
+    return `预算停止：max_steps=${current.trace.input.maxSteps} 已耗尽，循环没有得到完整的工具结果；请提高预算后重试。`;
+  }
   const toolResult = current.history.find((event) => event.kind === "tool-result");
   if (!toolResult) return "模拟读数会在工具结果回填后出现。";
   if (toolResult.status === "error") {
     return "工具结果为错误：模拟工具拒绝请求，没有可用遥测读数；Harness 已回填错误并停止循环。";
   }
-  return `本次模拟观察：${current.trace.observation.deviceId} = ${current.trace.observation.value} ${current.trace.observation.unit}；${current.trace.observation.condition === "threshold-exceeded" ? "超过" : "未超过"}阈值 ${current.trace.observation.threshold} °C。`;
+  const observation = `本次模拟观察：${current.trace.observation.deviceId} = ${current.trace.observation.value} ${current.trace.observation.unit}；${current.trace.observation.condition === "threshold-exceeded" ? "超过" : "未超过"}阈值 ${current.trace.observation.threshold} °C。`;
+  return current.history.some((event) => event.id === "budget-stop-1")
+    ? `${observation} 但 max_steps=${current.trace.input.maxSteps} 已耗尽，循环在最终响应前停止。`
+    : observation;
 }
 
 /**
@@ -380,10 +411,13 @@ export function describeAgentLoopObservation(session) {
  * Predictions are represented by one aggregate step; event details never
  * cross the checker boundary.
  * @param {AgentLoopSession} current
- * @returns {{version: string, outcome: "success" | "error", steps: {id: string, kind: string, result: string, status?: string}[]}}
+ * @returns {{version: string, outcome: "success" | "error" | "budget-stop", max_steps: number, steps: {id: string, kind: string, result: string, status?: string}[]}}
  */
 function buildAgentLoopTraceEvidence(current) {
-  const expectedOutcome = current.trace.steps.at(-1)?.status === "error" ? "error" : "success";
+  const finalStep = current.trace.steps.at(-1);
+  const expectedOutcome = finalStep?.id === "budget-stop-1"
+    ? "budget-stop"
+    : finalStep?.status === "error" ? "error" : "success";
   const steps = [];
   if (current.predictions.length > 0) {
     steps.push({
@@ -396,11 +430,16 @@ function buildAgentLoopTraceEvidence(current) {
     steps.push({
       id: event.id,
       kind: event.kind,
-      result: "passed",
+      result: event.status === "budget" ? "alternative" : "passed",
       status: event.status,
     });
   }
-  return { version: LOOP_TRACE_VERSION, outcome: expectedOutcome, steps };
+  return {
+    version: LOOP_TRACE_VERSION,
+    outcome: expectedOutcome,
+    max_steps: current.trace.input.maxSteps,
+    steps,
+  };
 }
 
 /** Build the same anonymous evidence envelope accepted by EvidenceLoop. */
@@ -419,10 +458,16 @@ export function buildAgentLoopEvidence(session, options = {}) {
   const stopObserved =
     current.status === "complete"
     && current.history.at(-1)?.kind === "stop";
+  const budgetStopObserved =
+    current.status === "complete"
+    && current.history.at(-1)?.id === "budget-stop-1";
   const checks = [
     { id: "prediction-recorded", result: allPredictionsCorrect ? "passed" : "failed" },
     { id: "trace-observed", result: traceObserved ? "passed" : "failed" },
-    { id: "stop-condition-observed", result: stopObserved ? "passed" : "failed" },
+    {
+      id: "stop-condition-observed",
+      result: budgetStopObserved ? "alternative" : stopObserved ? "passed" : "failed",
+    },
   ];
   const result = classifyEvidence(checks.map((check) => check.result));
   const parsed = parseLearningInput(

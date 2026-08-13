@@ -29,6 +29,15 @@ const expectedCourseVersion = courseVersion.course_version;
     再把生成的匿名 JSON 导入这里。记录只保存在当前浏览器，不上传源码、密钥或原始数据。
   </p>
 
+  <noscript>
+    <section class="evidence-loop__noscript" aria-labelledby="evidence-noscript-title">
+      <h3 id="evidence-noscript-title">本地记录交互需要 JavaScript</h3>
+      <p>
+        当前浏览器未启用 JavaScript，因此导入、导出和清除按钮不会执行。你仍可以阅读上面的 checker 命令，并在启用 JavaScript 后回到本页导入匿名 JSON；页面不会自动上传或保存到服务器。
+      </p>
+    </section>
+  </noscript>
+
   <div class="evidence-loop__controls">
     <label for="evidence-file">选择 checker JSON</label>
     <input id="evidence-file" type="file" accept="application/json,.json" />
