@@ -63,6 +63,9 @@ export function buildResearchRun(overrides = {}) {
   const variant = variantContract(run.input);
   const safeFaults = new Set(["none", "missing-values", "stale-memory", "mcp-denied"]);
   if (!safeFaults.has(run.fault)) run.fault = "none";
+  run.migration = run.input === "pressure-night";
+  run.rubric = run.input === "pressure-night" && run.fault === "none";
+  if (run.fault !== "none") run.report = false;
   if (run.fault === "missing-values") run.figure = false;
   if (run.fault === "stale-memory") run.memory = false;
   if (run.fault === "mcp-denied") run.mcp = false;
