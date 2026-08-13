@@ -371,6 +371,66 @@
       "usage": "合成设备遥测仓库、澄清—计划—修改—diff—验证—交付阶段、失败恢复和匿名 evidence 边界",
       "license_or_terms": "project-original; no copied assets",
       "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-code-installation-t10",
+      "title": "Claude Code Advanced setup",
+      "url": "https://code.claude.com/docs/en/installation",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "official page observed 2026-08-13; client version not asserted",
+      "usage": "现场核验 Windows PowerShell installation entry, native Windows shell fallback, Git for Windows recommendation and network/account boundary;正文为原创改写",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-code-workflows-t10",
+      "title": "Claude Code Common workflows",
+      "url": "https://code.claude.com/docs/en/common-workflows",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "official page observed 2026-08-13; client version not asserted",
+      "usage": "现场核验进入项目运行 claude、使用 plan mode 先计划再编辑和迁移任务操作顺序；正文为原创改写",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-code-permissions-t10",
+      "title": "Claude Code Configure permissions",
+      "url": "https://code.claude.com/docs/en/permissions",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "official page observed 2026-08-13; client version not asserted",
+      "usage": "现场核验 read-only/Bash/Edit approval, deny/ask/allow precedence, plan/default modes and Windows path normalization boundary",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-code-checkpointing-t10",
+      "title": "Claude Code Checkpointing",
+      "url": "https://code.claude.com/docs/en/checkpointing",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "official page observed 2026-08-13; client version not asserted",
+      "usage": "现场核验每次 prompt/编辑 checkpoint、/rewind 与恢复代码/对话的操作边界；正文为原创改写",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply",
+      "copied_assets": false
+    },
+    {
+      "id": "anthropic-claude-code-costs-t10",
+      "title": "Claude Code Manage costs effectively",
+      "url": "https://code.claude.com/docs/en/costs",
+      "source_role": "official-product-fact-source",
+      "pinned_version": "official page observed 2026-08-13; prices and plans not hard-coded",
+      "usage": "现场核验 token/订阅成本差异、/usage、Console 计费与上下文控制；正文只呈现账号与成本边界，不复制价格表",
+      "license_or_terms": "reference-only; Anthropic documentation and product terms apply",
+      "copied_assets": false
+    },
+    {
+      "id": "course-claude-migration-original",
+      "title": "模块 3 Claude Code 迁移挑战原创实验设计",
+      "url": "docs/course-plan.md",
+      "source_role": "course-original",
+      "pinned_version": "workspace baseline 0a10780 (T09 Codex task merged); T10 content checked 2026-08-13",
+      "usage": "压力/单位/告警字段变化输入、Claude-only/dual-tool 分支、确定性本地恢复和不伪造 live 调用的课程合同",
+      "license_or_terms": "project-original; no copied assets",
+      "copied_assets": false
     }
   ]
 }

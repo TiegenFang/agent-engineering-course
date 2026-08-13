@@ -1,0 +1,136 @@
+---
+title: 模块 3：Claude Code 迁移挑战
+description: 把 Codex 主实验迁移到压力安全报告，现场对照 Claude Code 的安装、权限、成本与恢复边界。
+sidebar:
+  order: 5
+---
+
+import EvidenceLoop from '../../components/EvidenceLoop.astro';
+
+# 模块 3：Claude Code 迁移挑战
+
+> 本课的本地 lab 是确定性的，不调用或伪造 Claude Code、Codex、模型、API、账号或设备结果。官方产品事实只来自制作日现场打开的 Anthropic 文档；真实客户端验收仍需学员自行选择并明确记录。
+
+## 真实问题
+
+上一条 Codex 主实验修复的是温度报告中的 `F → C` 换算。本课不复制它：你要把同一组工程能力迁移到压力报告，处理 `kPa`、`psi`、`bar`，输出 `mean_kpa`、`peak_kpa` 和 `alarm_count`，并在一次性仓库中保留失败、恢复、权限和交付证据。课程把这个变化输入命名为 `pressure-night`。
+
+如果 T09 的 Codex starter 已合入，可以把它作为双工具对照；如果尚未合入，`claude-starter` 自带完整的压力变化输入，Claude-only 路径仍然可以从零完成。两条路径共用“澄清—计划—受控修改—验证—复核”的能力目标，但不共用任务答案。
+
+## 心智模型
+
+迁移时先分开稳定能力和产品适配层：
+
+| 对照面 | Codex 主实验 | Claude Code 迁移实验 |
+| --- | --- | --- |
+| 输入 | 温度、`C/F`、均值报告 | 压力、`kPa/psi/bar`、峰值与告警 |
+| 规则入口 | `AGENTS.md` 与人工批准 | `CLAUDE.md`、`/permissions` 与 plan/default 权限 |
+| 执行边界 | 只改源文件和 `worklog/` | 同样的文件范围；Claude 的 deny/ask/allow 和 shell 选择需按官方资料确认 |
+| 恢复证据 | 本地测试、报告和 diff | 本地测试、报告、diff；真实 Claude 会话另有 checkpoint/`/rewind`，本 lab 不伪造它 |
+| 成本 | 由 Codex 账号/产品承担 | 由 Claude subscription、Console token 用量和模型选择决定；fixture/checker 本身免费 |
+
+这张表是课程判断，不是宣称两种产品完全等价。当前 Claude Code 的安装、操作、权限、checkpoint 和成本说明以官方页面为准，并记录在 `labs/module-3/claude-starter/worklog/official-sources.md`。
+
+## 操作前预测
+
+在第一次运行测试前写下预测：
+
+1. 如果只修复 `psi`，报告均值仍会不对，因为 `bar` 也是变化输入；
+2. `plan` 权限可以让 Claude Code 读取并计划，但不应直接编辑源文件；
+3. 一次性本地 fixture 的通过，不等于 Claude Code 客户端、账号、模型或成本现场验收。
+
+记录你选择的路径：`claude-only` 不需要 Codex 产物；`dual-tool` 需要一份状态摘要，说明 Codex 主实验的边界和本课的变化输入。两条路径都必须保留 `live_call = not-verified`，除非你在课程证据之外另行完成人工现场记录。
+
+## 主工具演示
+
+官方资料现场核验日期为 **2026-08-13**：
+
+- [Advanced setup](https://code.claude.com/docs/en/installation)：Windows PowerShell 安装入口、原生 Windows 与 Git for Windows/PowerShell shell 关系；联网和登录是可选的外部副作用。
+- [Common workflows](https://code.claude.com/docs/en/common-workflows)：在目标仓库启动 `claude`，用 `claude --permission-mode plan` 先计划再编辑。
+- [Configure permissions](https://code.claude.com/docs/en/permissions)：Read-only、Bash、Edit/Write 的审批边界，以及 `deny → ask → allow` 的规则顺序。
+- [Checkpointing](https://code.claude.com/docs/en/checkpointing)：Claude 自己的编辑 checkpoint、`/rewind` 和恢复代码/对话的选项。
+- [Manage costs effectively](https://code.claude.com/docs/en/costs)：token/订阅路径、`/usage` 与 Console 计费边界。
+
+这些是当前官方资料事实，不是本次分支已安装的客户端事实。仓库里的 PowerShell 脚本只创建一次性练习仓库、运行本地测试并写匿名状态；它不会执行官方安装命令，也不会启动 `claude`。
+
+## 本地实验
+
+在课程仓库根目录用 PowerShell 7 选择一个新的一次性目录。路径必须明确，目录必须为空；初始化脚本不会删除非空目录：
+
+```powershell
+pwsh -NoProfile -File .\labs\module-3\initialize-claude-migration.ps1 `
+  -WorkspacePath .\claude-migration-practice `
+  -PathMode claude-only `
+  -ConfirmTarget
+```
+
+双工具路径把 `-PathMode` 改为 `dual-tool`，并在目标仓库的 `worklog/codex-reference.md` 记录状态摘要。若你有 Claude Code 账号，可以在该一次性仓库按官方文档先使用 plan/default 权限；没有账号时，直接完成本地确定性路径，不把它写成真实产品调用。
+
+先完成工作日志，再依次记录阶段。`plan` 和写入阶段需要人工确认：
+
+```powershell
+$lab = (Resolve-Path .\claude-migration-practice).Path
+$script = (Resolve-Path .\labs\module-3\claude-migration.ps1).Path
+pwsh -NoProfile -File $script -RepoPath $lab -PathMode claude-only -Stage baseline
+pwsh -NoProfile -File $script -RepoPath $lab -PathMode claude-only -Stage clarify
+pwsh -NoProfile -File $script -RepoPath $lab -PathMode claude-only -Stage plan -HumanApproved
+```
+
+接着记录 `official-facts`，故障注入时让第一次测试按预期失败；修复 `src/pressure_report.py` 后记录 `change`、`recovery`、`review`，最后在人工看过 diff 后交付：
+
+```powershell
+pwsh -NoProfile -File $script -RepoPath $lab -PathMode claude-only -Stage official-facts
+pwsh -NoProfile -File $script -RepoPath $lab -PathMode claude-only -Stage failure-observed
+pwsh -NoProfile -File $script -RepoPath $lab -PathMode claude-only -Stage change -HumanApproved
+pwsh -NoProfile -File $script -RepoPath $lab -PathMode claude-only -Stage recovery
+pwsh -NoProfile -File $script -RepoPath $lab -PathMode claude-only -Stage review
+pwsh -NoProfile -File $script -RepoPath $lab -PathMode claude-only -Stage delivery -HumanApproved
+```
+
+所有阶段必须按顺序执行。脚本只把布尔状态写到目标仓库被忽略的 `artifacts/claude-migration-stages/`，最终 JSON 只允许写到同一 `artifacts/` 目录。
+
+## 故障注入与恢复
+
+基线 starter 故意让 `psi` 和 `bar` 原样返回。第一次测试失败是有效证据，不要删除测试或改数据。恢复时只改允许的源文件，执行：
+
+```powershell
+python -m unittest discover -s tests -v
+python -m pressure_report --input data/readings.csv --output artifacts/report.json
+git diff --check
+```
+
+如果 Claude Code 提议读写范围外文件、访问网络、读取凭据、绕过权限或删除数据，先拒绝并写入 `worklog/recovery.md`；可以用 plan mode、`/permissions` 的明确规则或 checkpoint/`/rewind` 恢复，但课程 checker 不把这些产品操作伪装成已经发生。
+
+## 迁移挑战
+
+完成压力任务后，解释三件事：
+
+1. 哪些东西是可迁移的：任务澄清、变化输入、文件范围、失败证据、测试/报告/diff 验收和人工停手；
+2. 哪些东西属于 Claude Code 适配层：`CLAUDE.md`、`/permissions`、plan/default 模式、Windows shell 选择、checkpoint/`/rewind`、`/usage`；
+3. 哪些东西仍然没有被验证：当前客户端版本、账号可用性、模型选择、真实 Claude 调用、真实成本和跨平台现场运行。
+
+双工具路径再对照 Codex 的 `AGENTS.md`/审批入口和本课的 `CLAUDE.md`/权限入口，但必须指出输入已经从温度 `C/F` 变为压力 `kPa/psi/bar`，输出从均值变为均值+峰值+告警。原样复制 Codex 任务不算迁移通过。
+
+## 可核验成果
+
+你应留下：一次性仓库基线、澄清/计划/官方资料/故障/恢复/复核工作日志、通过的测试和压力报告、干净的 diff，以及 `t04-claude-migration` 匿名 evidence JSON。checker 会从有序阶段和变化输入合同推导结果，拒绝伪造的成功状态、混合路径、错误课程版本、绝对路径、凭据和原始数据。
+
+```powershell
+python -m course_check check t04-claude-migration --root .. --json
+python -m course_check check t04-claude-migration --root .. `
+  --evidence-file ..\claude-migration-practice\artifacts\t04-claude-migration-evidence.json `
+  --output ..\t04-claude-migration-checked.json
+```
+
+不带 evidence 文件时结果为 `partial`，只说明页面、starter、脚本和官方资料接入点存在；它不表示已经完成 Claude Code 调用。带文件时 checker 只读取你主动指定的本地 JSON，网页导入也只保留匿名结果摘要。
+
+<EvidenceLoop lessonId="t04-claude-migration" />
+
+## 风险、版本与来源卡片
+
+- **账号与成本**：阅读、starter、测试、报告、checker 免费；真实 Claude Code 需要 Claude subscription 或 Anthropic Console 路径，成本随模型、上下文和 token/计划使用变化；双工具路径的 Codex 账号和费用另计。课程不执行 live 调用，不产生这些费用。
+- **权限与副作用**：只在明确的一次性本地目录运行；初始化创建 Git 元数据和被忽略的 stage JSON；Claude Code 的写入、Bash、网络和凭据操作必须人工确认，禁止默认绕过权限。
+- **隐私边界**：数据是合成压力样例；不要粘贴真实设备、研究/企业数据、个人信息、绝对路径、token 或 API key。匿名 evidence 不含源码、原始记录或调用输出。
+- **失败与恢复**：第一次单位测试失败是预期故障；最小修复后重跑测试/报告/diff。真实客户端若权限、网络、checkpoint 或成本状态不确定，停止并记录未验证，不用成功文案替代。
+- **版本与验证边界**：课程 evidence v1、实验 trace v1、Node/Python/PowerShell 路径锁定到课程版本；官方页面现场核验日期是 2026-08-13，未核验具体 Claude Code 客户端版本、账号、模型、真实调用、跨平台和 live 计费。
+- **来源与许可**：官方事实来自 Anthropic 页面并记录在 `docs/sources/source-ledger.json`；压力变化输入、脚本、checker 和叙事为本课程原创（正文 CC BY 4.0；自有代码与实验脚手架 MIT）。

@@ -1,0 +1,7 @@
+timestamp,pressure,unit
+2026-08-13T00:00:00Z,101.3,kPa
+2026-08-13T00:05:00Z,14.6959,psi
+2026-08-13T00:10:00Z,1.01325,bar
+not-a-timestamp,101.2,kPa
+2026-08-13T00:20:00Z,101.0,atm
+2026-08-13T00:25:00Z,not-a-number,kPa

@@ -14,6 +14,8 @@ pwsh -NoProfile -File .\labs\module-0\diagnose-environment.ps1
 
 - `agent-loop/`：模块 1 的确定性响应—工具—停止 trace。
 - `agent-instructions/`：模块 2 的模糊/工程化指令、冲突、提示注入、过长预算和迁移输入。
+- `module-3/claude-starter/`：模块 3 的压力变化输入、`CLAUDE.md` 规则、故障样例和 Claude-only/dual-tool 路径模板。
+- `module-3/initialize-claude-migration.ps1` 与 `module-3/claude-migration.ps1`：只在明确的一次性目录创建基线并记录有序匿名状态；不调用或伪造 Claude Code、Codex、API 或真实设备结果。
 
 这里不得加入真实敏感科研数据、企业数据、密钥或个人信息。
 

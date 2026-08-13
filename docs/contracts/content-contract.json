@@ -397,6 +397,67 @@
         "CC-BY-4.0",
         "MIT"
       ]
+    },
+    {
+      "id": "t04-claude-migration",
+      "title": "模块 3：Claude Code 迁移挑战",
+      "stage": "alpha",
+      "duration_minutes": 60,
+      "prerequisites": [
+        "t04-codex-repository-task"
+      ],
+      "outcomes": [
+        "把 Codex 主实验的能力目标迁移到压力安全报告的变化输入",
+        "根据官方资料解释 Claude Code 的安装入口、操作面、权限、成本和 checkpoint 恢复边界",
+        "在 Claude-only 与双工具路径中完成可复现的本地修复、测试、报告和匿名证据",
+        "明确本地确定性 lab、官方资料现场核验与真实 Claude Code 调用验收之间的边界"
+      ],
+      "artifacts": [
+        "pressure-report-v1 一次性练习仓库",
+        "官方资料与日期记录",
+        "Claude-only 或 dual-tool 路径的阶段证据",
+        "匿名 t04-claude-migration evidence JSON"
+      ],
+      "primary_tool": "Claude Code (迁移挑战；真实调用可选且不由 checker 伪造)",
+      "migration_tool": "Codex (双工具对照；只记录状态摘要)",
+      "platforms": {
+        "primary": "Windows 11 + PowerShell 7",
+        "secondary": [
+          "macOS/Linux shell differences documented; cross-platform lab run not yet verified"
+        ]
+      },
+      "versions": {
+        "client": "Claude Code current official installation/operation docs observed 2026-08-13; client version not asserted",
+        "sdk": "not-applicable",
+        "model": "not asserted; deterministic local fixture has no model call",
+        "protocol": "agent-engineering-course/evidence v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [
+          "Claude subscription or Anthropic Console account only for optional live Claude Code path",
+          "Codex account only for optional dual-tool comparison"
+        ],
+        "cost": "fixture/checker free; live Claude Code cost depends on subscription, Console token usage and model; no live cost incurred by this lab",
+        "network": "offline starter, tests and checker need no network; installation/login and official docs require network only when learner chooses them"
+      },
+      "risk": {
+        "permissions": "一次性本地仓库；只允许 src/pressure_report.py 与 worklog；Claude Code 写入/命令执行需人工确认，优先 plan/default 权限，不使用 bypass",
+        "side_effects": "initializer 创建本地 Git 仓库和 artifacts/claude-migration-stages；checker 只写显式 OutputPath 的匿名 JSON；脚本不调用 Claude Code、Codex、API、远程或设备",
+        "staleness": "Claude Code 安装、Windows shell、权限、checkpoint 与成本页面是易变官方适配内容；制作日现场核验日期为 2026-08-13，发布前 90 天内复核"
+      },
+      "sources": [
+        "anthropic-claude-code-installation-t10",
+        "anthropic-claude-code-workflows-t10",
+        "anthropic-claude-code-permissions-t10",
+        "anthropic-claude-code-checkpointing-t10",
+        "anthropic-claude-code-costs-t10",
+        "course-claude-migration-original"
+      ],
+      "licenses": [
+        "CC-BY-4.0",
+        "MIT"
+      ]
     }
   ]
 }

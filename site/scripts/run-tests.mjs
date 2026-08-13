@@ -9,6 +9,7 @@ const testCommands = [
   ["--test", "scripts/test-agent-instruction.mjs"],
   ["--test", "scripts/test-context-budget.mjs"],
   ["--test", "scripts/test-codex-task.mjs"],
+  ["--test", "scripts/test-claude-migration.mjs"],
   ["--test", "scripts/test-evidence-record.mjs"],
   ["--test", "scripts/test-project-rules.mjs"],
   ["scripts/assert-homepage.mjs"],

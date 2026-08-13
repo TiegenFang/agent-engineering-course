@@ -245,6 +245,60 @@ CODEX_TASK_CHECK_IDS = (
     "delivery-recorded",
 )
 
+CLAUDE_MIGRATION_LESSON_ID = "t04-claude-migration"
+CLAUDE_MIGRATION_TRACE_VERSION = "1"
+CLAUDE_MIGRATION_TASK_ID = "pressure-report-v1"
+CLAUDE_MIGRATION_STAGE_IDS = (
+    "baseline",
+    "clarify",
+    "plan",
+    "official-facts",
+    "failure-observed",
+    "change",
+    "recovery",
+    "review",
+    "delivery",
+)
+CLAUDE_MIGRATION_STAGE_OBSERVATIONS = {
+    "baseline": frozenset({"repo", "clean", "head", "branch", "path_declared"}),
+    "clarify": frozenset({"goal", "non_goal", "acceptance", "migration"}),
+    "plan": frozenset({"files", "commands", "permissions", "stop", "approval"}),
+    "official-facts": frozenset(
+        {"installation", "operation", "permissions", "cost", "date", "no_live_claim"}
+    ),
+    "failure-observed": frozenset(
+        {"expected_failure", "error_classified", "no_fake_result"}
+    ),
+    "change": frozenset({"source_changed", "diff", "approval", "variant_changed"}),
+    "recovery": frozenset({"tests_passed", "report_generated", "summary_only"}),
+    "review": frozenset(
+        {"diff_reviewed", "scope_clean", "no_secrets", "path_complete"}
+    ),
+    "delivery": frozenset(
+        {"handoff", "evidence_ready", "human_approved", "live_call_not_claimed"}
+    ),
+}
+CLAUDE_MIGRATION_CHECK_IDS = (
+    "clarification-recorded",
+    "plan-recorded",
+    "official-facts-recorded",
+    "migration-input-changed",
+    "failure-recovered",
+    "tests-passed",
+    "permission-cost-compared",
+    "path-completed",
+    "live-claude-not-claimed",
+    "report-generated",
+    "delivery-recorded",
+)
+CLAUDE_MIGRATION_VARIANT = {
+    "id": "pressure-night",
+    "subject": "pressure",
+    "units": ("kPa", "psi", "bar"),
+    "record_limit": "recent-3-valid",
+    "outputs": ("mean_kpa", "peak_kpa", "alarm_count"),
+}
+
 
 class ContractError(ValueError):
     """Raised when the public Foundation contract is incomplete."""
@@ -1037,6 +1091,302 @@ def validate_t14_simulation(
     }
 
 
+def validate_claude_migration_checks(value: Any) -> list[dict[str, Any]]:
+    """Validate the stable public checks for the Claude migration journey."""
+
+    if not isinstance(value, list) or not value:
+        raise EvidenceError("Claude migration evidence checks must be a non-empty list")
+
+    actual_ids: list[str] = []
+    normalized: list[dict[str, Any]] = []
+    for index, check in enumerate(value):
+        if not isinstance(check, dict):
+            raise EvidenceError(
+                f"Claude migration evidence check {index} must be an object"
+            )
+        check_id = check.get("id")
+        if not isinstance(check_id, str) or not check_id:
+            raise EvidenceError(
+                f"Claude migration evidence check {index} needs an id"
+            )
+        if check_id in actual_ids:
+            raise EvidenceError(
+                f"Claude migration evidence check ID repeated: {check_id}"
+            )
+        result = check.get("result")
+        if result not in {"passed", "failed", "alternative"}:
+            raise EvidenceError(
+                f"Claude migration evidence check {check_id}.result is not supported"
+            )
+        actual_ids.append(check_id)
+        normalized.append({"id": check_id, "result": result})
+
+    expected_ids = list(CLAUDE_MIGRATION_CHECK_IDS)
+    if actual_ids != expected_ids:
+        missing = [check_id for check_id in expected_ids if check_id not in actual_ids]
+        unknown = [check_id for check_id in actual_ids if check_id not in expected_ids]
+        details = []
+        if missing:
+            details.append("missing: " + ", ".join(missing))
+        if unknown:
+            details.append("unknown: " + ", ".join(unknown))
+        raise EvidenceError(
+            "Claude migration evidence IDs must be exactly "
+            + ", ".join(expected_ids)
+            + ("; " + "; ".join(details) if details else "")
+        )
+    return normalized
+
+
+def _require_string_tuple(value: Any, label: str, expected: tuple[str, ...]) -> None:
+    if not isinstance(value, list) or any(
+        not isinstance(item, str) for item in value
+    ):
+        raise EvidenceError(f"{label} must be a list of strings")
+    if tuple(value) != expected:
+        raise EvidenceError(f"{label} does not match the migration contract")
+
+
+def validate_claude_migration_experiment(
+    experiment: Any,
+    *,
+    checks: list[dict[str, Any]],
+    document_result: str,
+) -> dict[str, Any]:
+    """Validate status-only migration metadata and derive stage consistency.
+
+    This intentionally accepts only the changed-input contract and status
+    enums.  It never accepts prompts, source text, paths, model output, or a
+    claim that a live Claude Code/Codex call occurred.
+    """
+
+    if not isinstance(experiment, dict):
+        raise EvidenceError(
+            "Claude migration completed evidence must include an experiment object"
+        )
+    expected_fields = {
+        "version",
+        "mode",
+        "migration_variant",
+        "input_contract",
+        "official_facts",
+        "live_call",
+        "codex_reference",
+    }
+    unexpected = sorted(set(experiment) - expected_fields)
+    if unexpected:
+        raise EvidenceError(
+            "Claude migration experiment contains unsupported fields: "
+            + ", ".join(unexpected)
+        )
+    if experiment.get("version") != CLAUDE_MIGRATION_TRACE_VERSION:
+        raise EvidenceError("Unsupported Claude migration experiment version")
+
+    mode = experiment.get("mode")
+    if mode not in {"claude-only", "dual-tool"}:
+        raise EvidenceError("Claude migration mode must be claude-only or dual-tool")
+    if experiment.get("migration_variant") != CLAUDE_MIGRATION_VARIANT["id"]:
+        raise EvidenceError("Claude migration evidence has an unknown input variant")
+
+    input_contract = experiment.get("input_contract")
+    if not isinstance(input_contract, dict):
+        raise EvidenceError("Claude migration input_contract must be an object")
+    expected_contract_fields = {"subject", "units", "record_limit", "outputs"}
+    if set(input_contract) != expected_contract_fields:
+        raise EvidenceError(
+            "Claude migration input_contract must contain subject, units, record_limit and outputs"
+        )
+    if input_contract.get("subject") != CLAUDE_MIGRATION_VARIANT["subject"]:
+        raise EvidenceError("Claude migration input subject does not differ contractually")
+    _require_string_tuple(
+        input_contract.get("units"),
+        "Claude migration input_contract.units",
+        CLAUDE_MIGRATION_VARIANT["units"],
+    )
+    if input_contract.get("record_limit") != CLAUDE_MIGRATION_VARIANT["record_limit"]:
+        raise EvidenceError("Claude migration input record limit does not match contract")
+    _require_string_tuple(
+        input_contract.get("outputs"),
+        "Claude migration input_contract.outputs",
+        CLAUDE_MIGRATION_VARIANT["outputs"],
+    )
+
+    official_facts = experiment.get("official_facts")
+    if not isinstance(official_facts, dict) or set(official_facts) != {
+        "installation",
+        "operation",
+        "permissions",
+        "cost",
+    }:
+        raise EvidenceError(
+            "Claude migration official_facts must cover installation, operation, permissions and cost"
+        )
+    if any(value != "recorded" for value in official_facts.values()):
+        raise EvidenceError("Claude migration official facts must be status-only recorded values")
+    if experiment.get("live_call") != "not-verified":
+        raise EvidenceError("Claude migration evidence must not claim a live Claude call")
+    codex_reference = experiment.get("codex_reference")
+    expected_reference = "not-required" if mode == "claude-only" else "status-only"
+    if codex_reference != expected_reference:
+        raise EvidenceError(
+            "Claude migration Codex reference does not match the selected path"
+        )
+
+    journey = experiment.get("journey")
+    if journey is not None:
+        raise EvidenceError("Claude migration journey belongs to the public journey field")
+    return {
+        "version": CLAUDE_MIGRATION_TRACE_VERSION,
+        "mode": mode,
+        "migration_variant": CLAUDE_MIGRATION_VARIANT["id"],
+        "input_contract": {
+            "subject": CLAUDE_MIGRATION_VARIANT["subject"],
+            "units": list(CLAUDE_MIGRATION_VARIANT["units"]),
+            "record_limit": CLAUDE_MIGRATION_VARIANT["record_limit"],
+            "outputs": list(CLAUDE_MIGRATION_VARIANT["outputs"]),
+        },
+        "official_facts": {
+            "installation": "recorded",
+            "operation": "recorded",
+            "permissions": "recorded",
+            "cost": "recorded",
+        },
+        "live_call": "not-verified",
+        "codex_reference": codex_reference,
+    }
+
+
+def load_claude_migration_checks(
+    evidence_file: Path,
+    *,
+    expected_course_version: str,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Validate the complete local Claude migration checkpoint document."""
+
+    try:
+        value = json.loads(evidence_file.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise EvidenceError(f"Evidence fixture not found: {evidence_file.name}") from exc
+    except json.JSONDecodeError as exc:
+        raise EvidenceError(f"Invalid evidence fixture JSON: {exc.msg}") from exc
+    if not isinstance(value, dict):
+        raise EvidenceError("Claude migration fixture must be a JSON object")
+    document = validate_evidence_document(value)
+    if document["lesson_id"] != CLAUDE_MIGRATION_LESSON_ID:
+        raise EvidenceError("Claude migration fixture lesson_id does not match the requested lesson")
+    if document["course_version"] != expected_course_version:
+        raise EvidenceError("Claude migration fixture course_version does not match the current course")
+    if value.get("task_id") != CLAUDE_MIGRATION_TASK_ID:
+        raise EvidenceError("Claude migration fixture task_id is unsupported")
+    if value.get("platform") != "windows" or value.get("shell") != "powershell":
+        raise EvidenceError("Claude migration fixture must identify the Windows PowerShell path")
+
+    journey = value.get("journey")
+    if not isinstance(journey, dict):
+        raise EvidenceError("Claude migration fixture requires a checkpoint journey")
+    _reject_sensitive_unknown_fields(journey, "Claude migration journey")
+    if set(journey) != {"trace_version", "trace_id", "stages"}:
+        raise EvidenceError("Claude migration journey must contain trace_version, trace_id and stages")
+    if journey["trace_version"] != CLAUDE_MIGRATION_TRACE_VERSION:
+        raise EvidenceError("Unsupported Claude migration journey version")
+    _require_identifier(journey["trace_id"], "Claude migration journey.trace_id")
+    stages = journey["stages"]
+    if not isinstance(stages, list) or len(stages) != len(CLAUDE_MIGRATION_STAGE_IDS):
+        raise EvidenceError("Claude migration journey must contain the complete ordered stage sequence")
+
+    stage_results: dict[str, bool] = {}
+    path_modes: set[str] = set()
+    for expected_sequence, (expected_id, raw_stage) in enumerate(
+        zip(CLAUDE_MIGRATION_STAGE_IDS, stages, strict=True), start=1
+    ):
+        if not isinstance(raw_stage, dict):
+            raise EvidenceError("Claude migration journey stages must contain objects")
+        _reject_sensitive_unknown_fields(raw_stage, f"Claude migration stage {expected_id}")
+        required_stage_fields = {"id", "sequence", "result", "observations"}
+        allowed_stage_fields = required_stage_fields | {"mode"}
+        missing = sorted(required_stage_fields - set(raw_stage))
+        unexpected = sorted(set(raw_stage) - allowed_stage_fields)
+        if missing or unexpected:
+            details = []
+            if missing:
+                details.append("missing: " + ", ".join(missing))
+            if unexpected:
+                details.append("unknown: " + ", ".join(unexpected))
+            raise EvidenceError(
+                f"Claude migration stage {expected_id} fields are invalid (" + "; ".join(details) + ")"
+            )
+        if raw_stage["id"] != expected_id or raw_stage["sequence"] != expected_sequence:
+            raise EvidenceError("Claude migration journey stages are out of order")
+        if raw_stage.get("mode") is not None:
+            if raw_stage["mode"] not in {"claude-only", "dual-tool"}:
+                raise EvidenceError("Claude migration stage mode is invalid")
+            path_modes.add(raw_stage["mode"])
+        result = raw_stage["result"]
+        if result not in {"passed", "failed"}:
+            raise EvidenceError("Claude migration stage result must be passed or failed")
+        observations = raw_stage["observations"]
+        if not isinstance(observations, dict):
+            raise EvidenceError(f"Claude migration stage {expected_id}.observations must be an object")
+        expected_observations = CLAUDE_MIGRATION_STAGE_OBSERVATIONS[expected_id]
+        if set(observations) != expected_observations:
+            missing_observations = sorted(expected_observations - set(observations))
+            unknown_observations = sorted(set(observations) - expected_observations)
+            details = []
+            if missing_observations:
+                details.append("missing: " + ", ".join(missing_observations))
+            if unknown_observations:
+                details.append("unknown: " + ", ".join(unknown_observations))
+            raise EvidenceError(
+                f"Claude migration stage {expected_id}.observations are incomplete or unexpected ("
+                + "; ".join(details)
+                + ")"
+            )
+        if any(not isinstance(item, bool) for item in observations.values()):
+            raise EvidenceError(f"Claude migration stage {expected_id}.observations must be booleans")
+        computed_result = "passed" if all(observations.values()) else "failed"
+        if result != computed_result:
+            raise EvidenceError(f"Claude migration stage {expected_id}.result does not match observations")
+        stage_results[expected_id] = result == "passed"
+
+    if len(path_modes) > 1:
+        raise EvidenceError("Claude migration journey mixes path modes")
+
+    checks = validate_claude_migration_checks(document["evidence"])
+    check_by_id = {check["id"]: check["result"] for check in checks}
+    derived_checks = [
+        {"id": "clarification-recorded", "result": "passed" if stage_results["clarify"] else "failed"},
+        {"id": "plan-recorded", "result": "passed" if stage_results["plan"] else "failed"},
+        {"id": "official-facts-recorded", "result": "passed" if stage_results["official-facts"] else "failed"},
+        {"id": "migration-input-changed", "result": "passed" if stage_results["change"] else "failed"},
+        {
+            "id": "failure-recovered",
+            "result": "passed" if stage_results["failure-observed"] and stage_results["recovery"] else "failed",
+        },
+        {"id": "tests-passed", "result": "passed" if stage_results["recovery"] else "failed"},
+        {"id": "permission-cost-compared", "result": "passed" if stage_results["official-facts"] else "failed"},
+        {"id": "path-completed", "result": "passed" if stage_results["review"] else "failed"},
+        {
+            "id": "live-claude-not-claimed",
+            "result": "passed" if stage_results["official-facts"] and stage_results["delivery"] else "failed",
+        },
+        {
+            "id": "report-generated",
+            "result": "passed" if stage_results["recovery"] and stage_results["delivery"] else "failed",
+        },
+        {"id": "delivery-recorded", "result": "passed" if stage_results["delivery"] else "failed"},
+    ]
+    if check_by_id != {check["id"]: check["result"] for check in derived_checks}:
+        raise EvidenceError("Claude migration checks do not match the recorded checkpoint journey")
+    experiment = validate_claude_migration_experiment(
+        value.get("experiment"), checks=checks, document_result=document["result"]
+    )
+    if path_modes and experiment["mode"] not in path_modes:
+        raise EvidenceError("Claude migration experiment mode does not match the journey")
+    if document["result"] in {"passed", "alternative"} and not all(stage_results.values()):
+        raise EvidenceError("Completed Claude migration evidence is missing a passed stage")
+    return checks, experiment
+
+
 def load_evidence_checks(
     evidence_file: Path, *, expected_lesson_id: str, expected_course_version: str
 ) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
@@ -1083,6 +1433,11 @@ def load_evidence_checks(
             if checks != expected_checks:
                 raise EvidenceError("T14 evidence checks do not match the recorded simulation")
             return checks, simulation
+        if expected_lesson_id == CLAUDE_MIGRATION_LESSON_ID:
+            return load_claude_migration_checks(
+                evidence_file,
+                expected_course_version=expected_course_version,
+            )
         return document["evidence"], None
     checks = value.get("checks")
     if not isinstance(checks, list):
@@ -1110,6 +1465,11 @@ def load_evidence_checks(
         if checks != expected_checks:
             raise EvidenceError("T14 evidence checks do not match the recorded simulation")
         return checks, simulation
+    if expected_lesson_id == CLAUDE_MIGRATION_LESSON_ID:
+        return load_claude_migration_checks(
+            evidence_file,
+            expected_course_version=expected_course_version,
+        )
     return checks, None
 
 
@@ -1540,6 +1900,7 @@ def check_lesson(
         PROJECT_RULES_LESSON_ID,
         CONTEXT_BUDGET_LESSON_ID,
         CODEX_TASK_LESSON_ID,
+        CLAUDE_MIGRATION_LESSON_ID,
     }:
         raise ContractError(f"Unsupported evidence lesson: {lesson_id}")
     course_version = validate_foundation(root)
@@ -1678,6 +2039,51 @@ def check_lesson(
                 {"id": "context-budget-evidence", "result": "failed"},
             ]
         else:
+            checks, trace = load_evidence_checks(
+                evidence_file,
+                expected_lesson_id=lesson_id,
+                expected_course_version=course_version,
+            )
+    elif lesson_id == CLAUDE_MIGRATION_LESSON_ID:
+        checks = [
+            {
+                "id": "claude-migration-page",
+                "result": "passed"
+                if (root / "site/src/content/docs/module-3-claude-migration.mdx").is_file()
+                else "failed",
+            },
+            {
+                "id": "claude-migration-powershell",
+                "result": "passed"
+                if (root / "labs/module-3/claude-migration.ps1").is_file()
+                else "failed",
+            },
+            {
+                "id": "claude-migration-starter",
+                "result": "passed"
+                if (root / "labs/module-3/claude-starter/TASK.md").is_file()
+                else "failed",
+            },
+            {
+                "id": "claude-migration-official-facts",
+                "result": "passed"
+                if all(
+                    token in (root / "labs/module-3/claude-starter/worklog/official-sources.md").read_text(
+                        encoding="utf-8"
+                    )
+                    for token in (
+                        "https://code.claude.com/docs/en/installation",
+                        "https://code.claude.com/docs/en/permissions",
+                        "https://code.claude.com/docs/en/costs",
+                        "2026-08-13",
+                        "not-verified",
+                    )
+                )
+                else "failed",
+            },
+            {"id": "claude-migration-evidence-executed", "result": "failed"},
+        ]
+        if evidence_file is not None:
             checks, trace = load_evidence_checks(
                 evidence_file,
                 expected_lesson_id=lesson_id,
