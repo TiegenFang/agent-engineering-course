@@ -46,7 +46,22 @@ Git 的三个区域足以支撑本课：
 
 ```powershell
 $labRoot = Join-Path $PWD "git-safety-practice"
-New-Item -ItemType Directory -Path $labRoot -Force | Out-Null
+if (Test-Path -LiteralPath $labRoot) {
+  throw "拒绝使用已有的练习目录；请改用一个确认为空的新目录。"
+}
+New-Item -ItemType Directory -Path $labRoot | Out-Null
+$artifactRoot = Join-Path $PWD "artifacts"
+if (Test-Path -LiteralPath $artifactRoot -PathType Leaf) {
+  throw "artifacts 已经是文件；请先人工确认目录。"
+}
+if (-not (Test-Path -LiteralPath $artifactRoot -PathType Container)) {
+  New-Item -ItemType Directory -Path $artifactRoot | Out-Null
+}
+$stageDirectory = Join-Path $artifactRoot "git-safety-stages"
+if (Test-Path -LiteralPath $stageDirectory) {
+  throw "拒绝复用已有阶段证据目录；请先人工审阅或改用新的 artifacts 目录。"
+}
+New-Item -ItemType Directory -Path $stageDirectory | Out-Null
 Push-Location $labRoot
 git init
 git config --local user.name "课程练习"
@@ -57,6 +72,11 @@ git diff --cached
 git commit -m "建立练习基线"
 git status --short --branch
 Pop-Location
+pwsh -NoProfile -File .\labs\module-0\git-safety.ps1 `
+  -RepoPath $labRoot `
+  -Stage baseline `
+  -EvidenceDirectory $stageDirectory `
+  -ReadOnlyConfirmed
 ```
 
 `git config --local` 只写练习仓库配置；示例邮箱使用保留的 `.invalid` 域名，不要替换为个人邮箱。基线提交后再次进入目录，按固定顺序观察：
@@ -70,26 +90,6 @@ git log --oneline --decorate -3
 Pop-Location
 ```
 
-接着注入一个可恢复的普通修改，故意只把 README 放进第一个功能提交：
-
-```powershell
-Push-Location .\git-safety-practice
-Add-Content -LiteralPath README.md -Value "`nBaseline reviewed before edits." -Encoding utf8
-Set-Content -LiteralPath notes.md -Value "review later" -Encoding utf8
-git status --short
-git diff
-git add README.md
-git diff --cached
-git diff -- notes.md
-git commit -m "记录经过复核的说明"
-git add notes.md
-git commit -m "保存练习笔记"
-git status --short --branch
-Pop-Location
-```
-
-这里的两个提交是教学用的选择性暂存演示，不代表每个项目都必须拆成两个提交。关键证据是：提交前知道暂存区内容，提交后用 `status` 验证干净，并由人确认提交信息和范围。
-
 用一个短分支和历史检查练习“我现在在哪里”：
 
 ```powershell
@@ -98,6 +98,64 @@ git switch -c lesson/git-safety
 git branch --show-current
 git log --oneline --decorate -5
 Pop-Location
+pwsh -NoProfile -File .\labs\module-0\git-safety.ps1 `
+  -RepoPath $labRoot `
+  -Stage branch-history `
+  -EvidenceDirectory $stageDirectory `
+  -ReadOnlyConfirmed
+```
+
+接着注入一个可恢复的普通修改，故意只把 README 放进第一个功能提交：
+
+```powershell
+Push-Location .\git-safety-practice
+Add-Content -LiteralPath README.md -Value "`nBaseline reviewed before edits." -Encoding utf8
+Set-Content -LiteralPath notes.md -Value "review later" -Encoding utf8
+git status --short
+git diff
+Pop-Location
+pwsh -NoProfile -File .\labs\module-0\git-safety.ps1 `
+  -RepoPath $labRoot `
+  -Stage change-created `
+  -EvidenceDirectory $stageDirectory `
+  -ReadOnlyConfirmed
+```
+
+只暂存 README，并在提交前再次复核两个差异区域：
+
+```powershell
+Push-Location .\git-safety-practice
+git add README.md
+git diff --cached
+git diff -- notes.md
+Pop-Location
+pwsh -NoProfile -File .\labs\module-0\git-safety.ps1 `
+  -RepoPath $labRoot `
+  -Stage selective-stage `
+  -EvidenceDirectory $stageDirectory `
+  -ReadOnlyConfirmed
+pwsh -NoProfile -File .\labs\module-0\git-safety.ps1 `
+  -RepoPath $labRoot `
+  -Stage first-commit-decision `
+  -EvidenceDirectory $stageDirectory `
+  -ReadOnlyConfirmed `
+  -HumanApproved
+```
+
+这里的两个提交是教学用的选择性暂存演示，不代表每个项目都必须拆成两个提交。关键证据是：提交前知道暂存区内容，`-HumanApproved` 明确记录人工提交决定，检查脚本不会替你执行 `git commit`：
+
+```powershell
+Push-Location .\git-safety-practice
+git commit -m "记录经过复核的说明"
+git add notes.md
+git commit -m "保存练习笔记"
+git status --short --branch
+Pop-Location
+pwsh -NoProfile -File .\labs\module-0\git-safety.ps1 `
+  -RepoPath $labRoot `
+  -Stage first-commit-recorded `
+  -EvidenceDirectory $stageDirectory `
+  -ReadOnlyConfirmed
 ```
 
 分支名称只是本地练习标签；不要把它推送到远端，也不要在不理解远端协作规则时使用强制推送。
@@ -109,17 +167,50 @@ Pop-Location
 在练习仓库内放入合成占位内容。它看起来像配置，但不是可用凭据：
 
 ```powershell
+pwsh -NoProfile -File .\labs\module-0\git-safety.ps1 `
+  -RepoPath $labRoot `
+  -Stage secret-before `
+  -EvidenceDirectory $stageDirectory `
+  -ReadOnlyConfirmed
 Push-Location .\git-safety-practice
-New-Item -ItemType Directory -Path secrets -Force | Out-Null
+$secretDirectory = Join-Path $PWD "secrets"
+if (Test-Path -LiteralPath $secretDirectory) {
+  throw "拒绝复用已有 secrets 目录；请在新的练习仓库中演示。"
+}
+New-Item -ItemType Directory -Path $secretDirectory | Out-Null
 Set-Content -LiteralPath secrets\local.env -Value "DEMO_VALUE_DO_NOT_USE=placeholder" -Encoding utf8
-Add-Content -LiteralPath .gitignore -Value "`nsecrets/" -Encoding utf8
+$ignorePath = Join-Path $PWD ".gitignore"
+if (Test-Path -LiteralPath $ignorePath) {
+  throw "拒绝覆盖已有 .gitignore；请先人工审阅其规则。"
+}
+Set-Content -LiteralPath $ignorePath -Value "secrets/" -Encoding utf8
 git check-ignore --verbose -- secrets/local.env
 git status --short
+Pop-Location
+pwsh -NoProfile -File .\labs\module-0\git-safety.ps1 `
+  -RepoPath $labRoot `
+  -Stage secret-ignored `
+  -EvidenceDirectory $stageDirectory `
+  -ReadOnlyConfirmed
+Push-Location .\git-safety-practice
 git add .gitignore
 git diff --cached
+Pop-Location
+pwsh -NoProfile -File .\labs\module-0\git-safety.ps1 `
+  -RepoPath $labRoot `
+  -Stage secret-commit-decision `
+  -EvidenceDirectory $stageDirectory `
+  -ReadOnlyConfirmed `
+  -HumanApproved
+Push-Location .\git-safety-practice
 git commit -m "排除本地配置目录"
 git ls-files --error-unmatch -- secrets/local.env
 Pop-Location
+pwsh -NoProfile -File .\labs\module-0\git-safety.ps1 `
+  -RepoPath $labRoot `
+  -Stage secret-commit-recorded `
+  -EvidenceDirectory $stageDirectory `
+  -ReadOnlyConfirmed
 ```
 
 `git check-ignore` 返回成功只说明规则匹配；`git ls-files` 对该路径应找不到结果。若你已经错误地把占位文件暂存，先运行 `git restore --staged -- secrets/local.env`，再确认 `git status` 和 ignore 规则。若真实凭据已经提交，`.gitignore` 不会抹掉历史：停止继续传播，轮换/撤销凭据，并请仓库维护者按组织流程处理历史清理。
@@ -133,25 +224,39 @@ Push-Location .\git-safety-practice
 Add-Content -LiteralPath README.md -Value "`n故障注入：这行不应进入结果。" -Encoding utf8
 git status --short
 git diff -- README.md
+Pop-Location
+pwsh -NoProfile -File .\labs\module-0\git-safety.ps1 `
+  -RepoPath $labRoot `
+  -Stage recovery-before `
+  -EvidenceDirectory $stageDirectory `
+  -ReadOnlyConfirmed
+Push-Location .\git-safety-practice
 git restore -- README.md
 git status --short --branch
 Pop-Location
+pwsh -NoProfile -File .\labs\module-0\git-safety.ps1 `
+  -RepoPath $labRoot `
+  -Stage recovery-recorded `
+  -EvidenceDirectory $stageDirectory `
+  -ReadOnlyConfirmed
 ```
 
 恢复前先看 `diff`；恢复后再次看 `status`。如果错误已经暂存，先用 `git restore --staged -- <path>` 把它退回暂存区，再决定是否恢复工作区。不要对有未保存重要工作的真实仓库运行 `git restore .`，也不要把 `reset --hard` 当成默认修复；不确定时保留目录副本并请维护者确认。
 
 ### 3. 生成本地状态证据
 
-完成两个练习并确认练习仓库干净后，运行课程提供的只读检查脚本。它不会创建提交、切换分支、删除文件或连接远端：
+完成所有阶段并确认练习仓库干净后，运行课程提供的只读检查脚本。它不会创建提交、切换分支、删除文件或连接远端：
 
 ```powershell
-New-Item -ItemType Directory -Path .\artifacts -Force | Out-Null
 pwsh -NoProfile -File .\labs\module-0\git-safety.ps1 `
   -RepoPath .\git-safety-practice `
+  -Stage final `
+  -EvidenceDirectory .\artifacts\git-safety-stages `
+  -ReadOnlyConfirmed `
   -OutputPath .\artifacts\git-safety-diagnostic.json
 ```
 
-诊断文件只有 `lesson_id`、平台/Shell 标签和固定检查 ID 的状态。随后在 `checker` 目录生成网页可导入的匿名证据：
+诊断文件包含 13 个按顺序记录的阶段和每阶段的布尔观察，不包含路径、提交哈希、命令输出或文件内容。脚本默认拒绝替换已有 `.json`；只有人工审阅后显式加入 `-AllowOverwrite` 才能重跑同一个输出路径。随后在 `checker` 目录生成网页可导入的匿名证据：
 
 ```powershell
 Push-Location .\checker
@@ -163,7 +268,7 @@ python -m course_check check t06-git-safety `
 Pop-Location
 ```
 
-检查器会丢弃本地路径、分支名、提交信息、命令输出和文件内容，只保留证据 ID 与 `passed`/`failed` 状态。将 `artifacts/git-safety-evidence.json` 导入课程网页；浏览器只保存本地匿名学习记录。
+检查器会验证阶段顺序，并从阶段观察重新推导 8 个证据 ID；它不会接受只有最终干净状态或手写全 `passed` 的 fixture。网页导入时只保留证据 ID 与 `passed`/`failed` 状态；浏览器只保存本地匿名学习记录。
 
 ## 故障注入与恢复
 
@@ -184,7 +289,7 @@ Pop-Location
 
 - 用 `mkdir`、编辑器或 heredoc 建立练习文件；Git 的 `status`、`diff`、`add`、`commit`、`branch`、`log`、`check-ignore` 和 `restore` 语义保持不变。
 - 把 `secrets/local.env` 换成相同的相对路径，使用同一个合成占位内容；不要把真实 `.env` 或研究数据放入仓库。
-- 如果安装了 PowerShell 7，可用同一个 `git-safety.ps1` 生成状态 fixture；否则按 `lesson_id`、`platform`、`shell` 和 8 个固定 `checks` 字段手写本地 fixture，再让 `course_check` 检查。不要伪造通过状态。
+- 如果安装了 PowerShell 7，可用同一个 `git-safety.ps1` 按阶段生成 trace；否则只能把迁移过程记录为未验证，不能手写一个声称通过的 Git safety fixture。检查器要求完整的 13 阶段序列。
 
 迁移的验收目标不是复制命令，而是证明你能在另一个 Shell 中保持“先观察、选择性暂存、人工提交、可恢复、密钥不入历史”的不变量。
 
@@ -193,9 +298,10 @@ Pop-Location
 完成本课至少留下：
 
 1. `git-safety-practice`：一次性练习仓库，至少有基线提交、一次选择性暂存、一次分支/历史检查、一次恢复和一次忽略规则检查；不推送远端。
-2. `artifacts/git-safety-diagnostic.json`：脚本产生的状态型本地诊断，不含路径、提交文本、文件内容或凭据。
-3. `artifacts/git-safety-evidence.json`：`python -m course_check check t06-git-safety` 产生的匿名 evidence contract。
-4. 一份预测与恢复记录：写清看到的证据、采取的恢复动作和再次验证结果，不写身份、绝对路径、真实密钥或原始研究数据。
+2. `artifacts/git-safety-stages/`：脚本产生的 13 个按顺序阶段记录；不含路径、提交文本、文件内容或凭据。
+3. `artifacts/git-safety-diagnostic.json`：脚本汇总出的阶段型本地诊断。
+4. `artifacts/git-safety-evidence.json`：`python -m course_check check t06-git-safety` 产生的匿名 evidence contract。
+5. 一份预测与恢复记录：写清看到的证据、采取的恢复动作和再次验证结果，不写身份、绝对路径、真实密钥或原始研究数据。
 
 成功证据的 8 个 ID 是：`status-baseline`、`diff-reviewed`、`selective-stage`、`intentional-commit`、`branch-inspected`、`history-inspected`、`secret-ignored`、`recovery-complete`。网页上的“已导入”不是替代文件、命令输出和提交记录的证据。
 
@@ -210,7 +316,7 @@ Pop-Location
 **账号、成本、权限与副作用**
 
 - 不需要 GitHub 账号、Coding Agent、模型、API 或网络；成本为免费。
-- 练习会在你明确指定的本地目录创建/修改 Git 元数据和合成文件；页面命令不会调用远端，也不要求 push。检查脚本为只读，只有显式 `-OutputPath` 时写一个状态 JSON。
+- 练习会在你明确指定且事先不存在的本地目录创建/修改 Git 元数据和合成文件；页面命令不会调用远端，也不要求 push。检查脚本对仓库只读，阶段记录和最终 JSON 只允许写入 `artifacts` 下的新 `.json` 文件；覆盖已有文件必须显式 `-AllowOverwrite`。
 - 不要把真实密钥、个人信息、真实科研/企业数据或已有重要未提交修改放入练习。检查器只输出匿名状态，不上传源码或运行数据；网页导入只写浏览器本地存储。
 - `git restore`、分支切换、历史清理和冲突处理都可能造成不可逆损失。任何真实仓库操作先保留副本、确认分支和人工审批；本课不自动执行这些动作。
 

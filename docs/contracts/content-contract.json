@@ -137,7 +137,7 @@
       },
       "risk": {
         "permissions": "学员只应在明确指定的一次性练习目录中运行写入命令；Git safety 检查脚本只读目标仓库",
-        "side_effects": "练习会创建本地 Git 元数据、合成文件和提交；不会连接远端。显式 -OutputPath 才写状态 JSON",
+        "side_effects": "练习会创建本地 Git 元数据、合成文件和提交；不会连接远端。检查脚本只在显式确认后向 artifacts/git-safety-stages 写入新的阶段 JSON，最终 OutputPath 仅允许同一 artifacts 目录下的新 .json；覆盖必须显式确认",
         "staleness": "Git 命令选项和客户端行为可能随版本变化；发布前重新核验官方手册、PowerShell 主路径和检查器契约"
       },
       "sources": [

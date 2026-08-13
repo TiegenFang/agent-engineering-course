@@ -9,7 +9,12 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from .evidence import EvidenceError, build_evidence_document
+from .evidence import (
+    EvidenceError,
+    _require_identifier,
+    _reject_sensitive_unknown_fields,
+    build_evidence_document,
+)
 
 
 EXPECTED_BOUNDARIES = {
@@ -49,6 +54,44 @@ GIT_SAFETY_CHECK_IDS = frozenset(
         "recovery-complete",
     }
 )
+GIT_SAFETY_STAGE_IDS = (
+    "baseline",
+    "branch-history",
+    "change-created",
+    "selective-stage",
+    "first-commit-decision",
+    "first-commit-recorded",
+    "secret-before",
+    "secret-ignored",
+    "secret-commit-decision",
+    "secret-commit-recorded",
+    "recovery-before",
+    "recovery-recorded",
+    "final",
+)
+GIT_SAFETY_STAGE_OBSERVATIONS = {
+    "baseline": frozenset({"repo", "clean", "head", "branch", "history"}),
+    "branch-history": frozenset({"branch", "history"}),
+    "change-created": frozenset({"tracked_change", "untracked_change", "diff"}),
+    "selective-stage": frozenset(
+        {"staged_change", "unstaged_change", "staged_diff", "diff"}
+    ),
+    "first-commit-decision": frozenset(
+        {"staged_change", "secret_untracked", "approval"}
+    ),
+    "first-commit-recorded": frozenset({"head_changed", "clean"}),
+    "secret-before": frozenset({"secret_absent", "ignore_absent"}),
+    "secret-ignored": frozenset(
+        {"secret_present", "ignored", "untracked", "ignore_unstaged"}
+    ),
+    "secret-commit-decision": frozenset(
+        {"staged_ignore", "secret_untracked", "approval"}
+    ),
+    "secret-commit-recorded": frozenset({"head_changed", "clean"}),
+    "recovery-before": frozenset({"tracked_change", "diff"}),
+    "recovery-recorded": frozenset({"clean", "matches_head"}),
+    "final": frozenset({"clean", "secret_untracked"}),
+}
 
 LESSON_REQUIRED_FIELDS = {
     "id",
@@ -385,12 +428,15 @@ def load_environment_checks(
 def load_git_safety_checks(
     evidence_file: Path,
 ) -> list[dict[str, Any]]:
-    """Validate the status-only Git safety lab fixture.
+    """Validate a stage trace produced by the read-only Git safety lab.
 
-    The lab may inspect a disposable repository locally, but only the fixed
-    check identifiers and their result states are allowed to cross into the
-    browser evidence document.  This keeps branch names, paths, commit
-    messages, and accidental credential contents out of the public seam.
+    A clean repository and a hand-written list of eight ``passed`` values are
+    not sufficient evidence.  The local PowerShell script records a fixed,
+    ordered sequence of observations while the learner moves through the
+    disposable repository.  This function validates that sequence and derives
+    the eight public checks from the stage outcomes instead of trusting a
+    caller-supplied status summary.  Paths, hashes, commit messages and other
+    local details never cross the browser seam.
     """
 
     try:
@@ -411,20 +457,151 @@ def load_git_safety_checks(
     if not isinstance(shell, str) or shell not in ENVIRONMENT_PLATFORM_SHELLS[platform]:
         raise EvidenceError("Git safety fixture shell does not match its platform")
 
+    journey = value.get("journey")
+    if not isinstance(journey, dict):
+        raise EvidenceError(
+            "Git safety fixture requires a stage journey; final repository state alone is insufficient"
+        )
+    _reject_sensitive_unknown_fields(journey, "Git safety journey")
+    required_journey_fields = {"trace_version", "trace_id", "stages"}
+    missing_journey_fields = sorted(required_journey_fields - set(journey))
+    if missing_journey_fields:
+        raise EvidenceError(
+            "Git safety journey is missing: " + ", ".join(missing_journey_fields)
+        )
+    if journey["trace_version"] != "1":
+        raise EvidenceError("Unsupported Git safety journey version")
+    _require_identifier(journey["trace_id"], "Git safety journey.trace_id")
+
+    stages = journey["stages"]
+    if not isinstance(stages, list) or len(stages) != len(GIT_SAFETY_STAGE_IDS):
+        raise EvidenceError(
+            "Git safety journey must contain the complete ordered stage sequence"
+        )
+    stage_results: dict[str, bool] = {}
+    for expected_sequence, (expected_id, raw_stage) in enumerate(
+        zip(GIT_SAFETY_STAGE_IDS, stages, strict=True), start=1
+    ):
+        if not isinstance(raw_stage, dict):
+            raise EvidenceError("Git safety journey stages must contain objects")
+        _reject_sensitive_unknown_fields(raw_stage, f"Git safety stage {expected_id}")
+        required_stage_fields = {"id", "sequence", "result", "observations"}
+        missing_stage_fields = sorted(required_stage_fields - set(raw_stage))
+        if missing_stage_fields:
+            raise EvidenceError(
+                f"Git safety stage {expected_id} is missing: "
+                + ", ".join(missing_stage_fields)
+            )
+        if raw_stage["id"] != expected_id:
+            raise EvidenceError("Git safety journey stages are out of order")
+        if raw_stage["sequence"] != expected_sequence:
+            raise EvidenceError("Git safety journey stage sequence is invalid")
+        result = raw_stage["result"]
+        if result not in {"passed", "failed"}:
+            raise EvidenceError("Git safety stage result must be passed or failed")
+        observations = raw_stage["observations"]
+        if not isinstance(observations, dict):
+            raise EvidenceError(f"Git safety stage {expected_id}.observations must be an object")
+        expected_observations = GIT_SAFETY_STAGE_OBSERVATIONS[expected_id]
+        actual_observations = set(observations)
+        if actual_observations != expected_observations:
+            missing = sorted(expected_observations - actual_observations)
+            unknown = sorted(actual_observations - expected_observations)
+            details = []
+            if missing:
+                details.append("missing: " + ", ".join(missing))
+            if unknown:
+                details.append("unknown: " + ", ".join(unknown))
+            raise EvidenceError(
+                f"Git safety stage {expected_id}.observations are incomplete or unexpected ("
+                + "; ".join(details)
+                + ")"
+            )
+        if any(not isinstance(item, bool) for item in observations.values()):
+            raise EvidenceError(f"Git safety stage {expected_id}.observations must be booleans")
+        computed_result = "passed" if all(observations.values()) else "failed"
+        if result != computed_result:
+            raise EvidenceError(f"Git safety stage {expected_id}.result does not match observations")
+        stage_results[expected_id] = result == "passed"
+
+    derived_checks = [
+        {
+            "id": "status-baseline",
+            "result": "passed" if stage_results["baseline"] else "failed",
+        },
+        {
+            "id": "diff-reviewed",
+            "result": (
+                "passed"
+                if stage_results["change-created"] and stage_results["selective-stage"]
+                else "failed"
+            ),
+        },
+        {
+            "id": "selective-stage",
+            "result": "passed" if stage_results["selective-stage"] else "failed",
+        },
+        {
+            "id": "intentional-commit",
+            "result": (
+                "passed"
+                if all(
+                    stage_results[stage_id]
+                    for stage_id in (
+                        "first-commit-decision",
+                        "first-commit-recorded",
+                        "secret-commit-decision",
+                        "secret-commit-recorded",
+                    )
+                )
+                else "failed"
+            ),
+        },
+        {
+            "id": "branch-inspected",
+            "result": "passed" if stage_results["branch-history"] else "failed",
+        },
+        {
+            "id": "history-inspected",
+            "result": "passed" if stage_results["branch-history"] else "failed",
+        },
+        {
+            "id": "secret-ignored",
+            "result": (
+                "passed"
+                if stage_results["secret-before"] and stage_results["secret-ignored"]
+                else "failed"
+            ),
+        },
+        {
+            "id": "recovery-complete",
+            "result": (
+                "passed"
+                if all(
+                    stage_results[stage_id]
+                    for stage_id in ("recovery-before", "recovery-recorded", "final")
+                )
+                else "failed"
+            ),
+        },
+    ]
+
     checks = value.get("checks")
     if not isinstance(checks, list):
         raise EvidenceError("Git safety fixture checks must be a list")
     if any(not isinstance(check, dict) for check in checks):
         raise EvidenceError("Git safety fixture checks must contain objects")
+    for index, check in enumerate(checks):
+        _reject_sensitive_unknown_fields(check, f"Git safety check {index}")
     check_ids = [check.get("id") for check in checks]
     if any(not isinstance(check_id, str) or not check_id for check_id in check_ids):
         raise EvidenceError("Git safety fixture check ids must be non-empty strings")
     if len(check_ids) != len(set(check_ids)):
         raise EvidenceError("Git safety fixture checks must not repeat an id")
     actual_ids = set(check_ids)
-    missing = sorted(GIT_SAFETY_CHECK_IDS - actual_ids)
-    unknown = sorted(actual_ids - GIT_SAFETY_CHECK_IDS)
-    if missing or unknown or len(checks) != len(GIT_SAFETY_CHECK_IDS):
+    if actual_ids != GIT_SAFETY_CHECK_IDS or len(checks) != len(GIT_SAFETY_CHECK_IDS):
+        missing = sorted(GIT_SAFETY_CHECK_IDS - actual_ids)
+        unknown = sorted(actual_ids - GIT_SAFETY_CHECK_IDS)
         details = []
         if missing:
             details.append("missing: " + ", ".join(missing))
@@ -435,7 +612,11 @@ def load_git_safety_checks(
             + "; ".join(details)
             + ")"
         )
-    return checks
+    supplied_results = {check["id"]: check.get("result") for check in checks}
+    derived_results = {check["id"]: check["result"] for check in derived_checks}
+    if supplied_results != derived_results:
+        raise EvidenceError("Git safety checks do not match the recorded stage journey")
+    return derived_checks
 
 
 def check_lesson(
