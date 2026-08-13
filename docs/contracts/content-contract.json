@@ -99,6 +99,60 @@
         "CC-BY-4.0",
         "MIT"
       ]
+    },
+    {
+      "id": "t06-git-safety",
+      "title": "模块 0：Git 安全修改与恢复",
+      "stage": "alpha",
+      "duration_minutes": 60,
+      "prerequisites": ["t05-environment"],
+      "outcomes": [
+        "在一次性练习仓库中完成 status、diff、选择性暂存、提交、分支和历史检查",
+        "用 git restore 恢复一次可观察的错误修改，并说明工作区与暂存区的区别",
+        "用 .gitignore 和 git check-ignore 排除合成敏感文件，并生成不含路径、凭据和源码的匿名证据"
+      ],
+      "artifacts": [
+        "git-safety-practice（基线、修改、分支、恢复和忽略规则证据）",
+        "git-safety-diagnostic.json（仅含状态）",
+        "git-safety-evidence.json（匿名 evidence contract）",
+        "一份不含身份信息、绝对路径和凭据的预测与恢复记录"
+      ],
+      "primary_tool": "Git 2.x + PowerShell 7",
+      "migration_tool": "macOS zsh / Linux bash",
+      "platforms": {
+        "primary": "Windows 11 + PowerShell 7",
+        "secondary": ["macOS + zsh", "Linux + bash"]
+      },
+      "versions": {
+        "client": "Git 2.x; PowerShell 7.x",
+        "sdk": "not-applicable",
+        "model": "not-applicable",
+        "protocol": "agent-engineering-course/evidence v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free",
+        "network": "本地练习与检查不需要网络；本课不执行 clone、push 或远程操作"
+      },
+      "risk": {
+        "permissions": "学员只应在明确指定的一次性练习目录中运行写入命令；Git safety 检查脚本只读目标仓库",
+        "side_effects": "练习会创建本地 Git 元数据、合成文件和提交；不会连接远端。显式 -OutputPath 才写状态 JSON",
+        "staleness": "Git 命令选项和客户端行为可能随版本变化；发布前重新核验官方手册、PowerShell 主路径和检查器契约"
+      },
+      "sources": [
+        "git-installation-book",
+        "git-recording-changes",
+        "git-viewing-history",
+        "git-undoing-things",
+        "git-branching-basics",
+        "git-check-ignore",
+        "git-restore"
+      ],
+      "licenses": [
+        "CC-BY-4.0",
+        "MIT"
+      ]
     }
   ]
 }

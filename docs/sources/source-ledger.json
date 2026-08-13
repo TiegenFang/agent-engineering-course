@@ -161,6 +161,66 @@
       "usage": "提供账号准备的官方入口；课程只要求学员自查，不读取身份信息",
       "license_or_terms": "reference-only; no copied assets",
       "copied_assets": false
+    },
+    {
+      "id": "git-recording-changes",
+      "title": "Pro Git: Recording Changes to the Repository",
+      "url": "https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository",
+      "source_role": "fact-source",
+      "pinned_version": "Pro Git 2nd edition chapter 2.2; page observed 2026-08-13",
+      "usage": "核验工作区、暂存区、git diff、git add 与 git commit 的基础语义；正文为原创安全练习",
+      "license_or_terms": "reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "git-viewing-history",
+      "title": "Pro Git: Viewing the Commit History",
+      "url": "https://git-scm.com/book/en/v2/Git-Basics-Viewing-the-Commit-History",
+      "source_role": "fact-source",
+      "pinned_version": "Pro Git 2nd edition chapter 2.3; page observed 2026-08-13",
+      "usage": "核验 git log 的历史查看入口；正文为原创证据与恢复练习",
+      "license_or_terms": "reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "git-undoing-things",
+      "title": "Pro Git: Undoing Things",
+      "url": "https://git-scm.com/book/en/v2/Git-Basics-Undoing-Things.html",
+      "source_role": "fact-source",
+      "pinned_version": "Pro Git 2nd edition chapter 2.4; page observed 2026-08-13",
+      "usage": "核验撤销操作的风险边界；课程优先演示 git restore 与暂存区分离，不复制危险清理步骤",
+      "license_or_terms": "reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "git-branching-basics",
+      "title": "Pro Git: Basic Branching and Merging",
+      "url": "https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging.html",
+      "source_role": "fact-source",
+      "pinned_version": "Pro Git 2nd edition chapter 3.2; page observed 2026-08-13",
+      "usage": "核验分支与工作线的基础入口；本课只做本地分支和风险意识练习",
+      "license_or_terms": "reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "git-check-ignore",
+      "title": "git-check-ignore Documentation",
+      "url": "https://git-scm.com/docs/git-check-ignore",
+      "source_role": "fact-source",
+      "pinned_version": "Git 2.55.0 manual; page observed 2026-08-13",
+      "usage": "核验 git check-ignore 的匹配与退出状态；正文使用合成占位文件演示密钥排除",
+      "license_or_terms": "reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "git-restore",
+      "title": "git-restore Documentation",
+      "url": "https://git-scm.com/docs/git-restore",
+      "source_role": "fact-source",
+      "pinned_version": "Git 2.55.0 manual; page observed 2026-08-13",
+      "usage": "核验 git restore 对工作区与暂存区的路径级恢复语义；课程不自动对真实仓库执行恢复",
+      "license_or_terms": "reference-only; no copied assets",
+      "copied_assets": false
     }
   ]
 }

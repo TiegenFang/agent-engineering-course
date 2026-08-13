@@ -1,0 +1,219 @@
+---
+title: 模块 0：Git 安全修改与恢复
+description: 用 status、diff、暂存、提交、分支、历史、忽略规则和恢复动作建立可复核的 Git 基线
+---
+
+> 这是“前置技能补给站”的第二段实战，接在 [环境诊断学习旅程](/agent-engineering-course/module-0-environment/) 之后。所有会修改文件的命令都只在一次性练习仓库中执行；不要把故障注入命令直接复制到课程仓库、科研仓库或企业仓库。
+
+## 真实问题
+
+Coding Agent 能够替你编辑文件，并不意味着它替你拥有提交决定。真正容易造成损失的时刻通常发生在“看起来只是顺手保存”之后：没有先看基线，不知道差异来自哪里，把不相关文件一起暂存，把本地凭据放进提交，或者遇到错误时用一个过大的回滚命令覆盖了仍需要的工作。
+
+本课把一次小修改拆成可以观察的状态转换：先确认 `status`，再看 `diff`，只暂存有意变更，复核暂存区后提交；分支和历史让你知道自己在哪里、刚刚保存了什么；`restore` 和忽略规则让错误有明确的恢复路径。最后的提交决定仍由人做出，检查器只验证你留下的状态证据。
+
+## 心智模型
+
+Git 的三个区域足以支撑本课：
+
+1. **工作区（working tree）**：磁盘上正在编辑的文件。`git diff` 查看尚未暂存的变化。
+2. **暂存区（staging area/index）**：下一次提交的候选快照。`git diff --cached` 查看已经选择的变化。
+3. **本地历史（repository/commits）**：已经保存的快照。`git log` 查看历史，`git branch` 说明当前工作线。
+
+把“修改”与“提交”分开。安全的最小闭环是：
+
+```text
+基线 status → 修改 → diff → 选择性 stage → diff --cached → 验证 → 人工 commit
+       ↑                                                   ↓
+       └────────────── restore / history 恢复 ─────────────┘
+```
+
+`.gitignore` 只影响尚未被追踪的路径。它不是删除凭据、撤回已提交内容或清理远端历史的工具；发现真实凭据已经进入历史时，应先停止共享并按组织的密钥轮换/泄漏响应流程处理。
+
+## 操作前预测
+
+在运行命令前，写下不含用户名、邮箱、绝对路径、真实密钥或研究数据的预测：
+
+- 基线提交后，`git status --short --branch` 会显示什么？为什么 `##` 行不是一个待提交文件？
+- 修改 README、同时新建一个 notes 文件后，`git diff` 和 `git diff --cached` 在暂存 README 之前、之后分别有什么不同？
+- 创建 `secrets/local.env` 并加入 `secrets/` 后，`git status --short` 是否会显示它？`git check-ignore --verbose -- secrets/local.env` 的退出状态表示什么？
+- 对已提交文件注入一行错误后，为什么 `git restore -- README.md` 可以恢复，而 `git restore` 不应该被当成“所有问题都能撤销”的按钮？
+
+预测记录只写状态、命令类别和恢复理由。不要把命令输出中的路径、身份信息或凭据复制进记录。
+
+## 主工具演示
+
+主路径是 Windows 11 + PowerShell 7。先在课程仓库之外创建一个明确命名的练习目录，并把所有命令限制在该目录：
+
+```powershell
+$labRoot = Join-Path $PWD "git-safety-practice"
+New-Item -ItemType Directory -Path $labRoot -Force | Out-Null
+Push-Location $labRoot
+git init
+git config --local user.name "课程练习"
+git config --local user.email "learner@example.invalid"
+Set-Content -LiteralPath README.md -Value "# Git safety practice" -Encoding utf8
+git add README.md
+git diff --cached
+git commit -m "建立练习基线"
+git status --short --branch
+Pop-Location
+```
+
+`git config --local` 只写练习仓库配置；示例邮箱使用保留的 `.invalid` 域名，不要替换为个人邮箱。基线提交后再次进入目录，按固定顺序观察：
+
+```powershell
+Push-Location .\git-safety-practice
+git status --short --branch
+git diff
+git branch --show-current
+git log --oneline --decorate -3
+Pop-Location
+```
+
+接着注入一个可恢复的普通修改，故意只把 README 放进第一个功能提交：
+
+```powershell
+Push-Location .\git-safety-practice
+Add-Content -LiteralPath README.md -Value "`nBaseline reviewed before edits." -Encoding utf8
+Set-Content -LiteralPath notes.md -Value "review later" -Encoding utf8
+git status --short
+git diff
+git add README.md
+git diff --cached
+git diff -- notes.md
+git commit -m "记录经过复核的说明"
+git add notes.md
+git commit -m "保存练习笔记"
+git status --short --branch
+Pop-Location
+```
+
+这里的两个提交是教学用的选择性暂存演示，不代表每个项目都必须拆成两个提交。关键证据是：提交前知道暂存区内容，提交后用 `status` 验证干净，并由人确认提交信息和范围。
+
+用一个短分支和历史检查练习“我现在在哪里”：
+
+```powershell
+Push-Location .\git-safety-practice
+git switch -c lesson/git-safety
+git branch --show-current
+git log --oneline --decorate -5
+Pop-Location
+```
+
+分支名称只是本地练习标签；不要把它推送到远端，也不要在不理解远端协作规则时使用强制推送。
+
+## 本地实验
+
+### 1. 至少一次敏感文件排除练习
+
+在练习仓库内放入合成占位内容。它看起来像配置，但不是可用凭据：
+
+```powershell
+Push-Location .\git-safety-practice
+New-Item -ItemType Directory -Path secrets -Force | Out-Null
+Set-Content -LiteralPath secrets\local.env -Value "DEMO_VALUE_DO_NOT_USE=placeholder" -Encoding utf8
+Add-Content -LiteralPath .gitignore -Value "`nsecrets/" -Encoding utf8
+git check-ignore --verbose -- secrets/local.env
+git status --short
+git add .gitignore
+git diff --cached
+git commit -m "排除本地配置目录"
+git ls-files --error-unmatch -- secrets/local.env
+Pop-Location
+```
+
+`git check-ignore` 返回成功只说明规则匹配；`git ls-files` 对该路径应找不到结果。若你已经错误地把占位文件暂存，先运行 `git restore --staged -- secrets/local.env`，再确认 `git status` 和 ignore 规则。若真实凭据已经提交，`.gitignore` 不会抹掉历史：停止继续传播，轮换/撤销凭据，并请仓库维护者按组织流程处理历史清理。
+
+### 2. 至少一次恢复练习
+
+只在练习仓库里对已提交的 README 注入一行错误，然后恢复工作区：
+
+```powershell
+Push-Location .\git-safety-practice
+Add-Content -LiteralPath README.md -Value "`n故障注入：这行不应进入结果。" -Encoding utf8
+git status --short
+git diff -- README.md
+git restore -- README.md
+git status --short --branch
+Pop-Location
+```
+
+恢复前先看 `diff`；恢复后再次看 `status`。如果错误已经暂存，先用 `git restore --staged -- <path>` 把它退回暂存区，再决定是否恢复工作区。不要对有未保存重要工作的真实仓库运行 `git restore .`，也不要把 `reset --hard` 当成默认修复；不确定时保留目录副本并请维护者确认。
+
+### 3. 生成本地状态证据
+
+完成两个练习并确认练习仓库干净后，运行课程提供的只读检查脚本。它不会创建提交、切换分支、删除文件或连接远端：
+
+```powershell
+New-Item -ItemType Directory -Path .\artifacts -Force | Out-Null
+pwsh -NoProfile -File .\labs\module-0\git-safety.ps1 `
+  -RepoPath .\git-safety-practice `
+  -OutputPath .\artifacts\git-safety-diagnostic.json
+```
+
+诊断文件只有 `lesson_id`、平台/Shell 标签和固定检查 ID 的状态。随后在 `checker` 目录生成网页可导入的匿名证据：
+
+```powershell
+Push-Location .\checker
+python -m course_check check t06-git-safety `
+  --root .. `
+  --evidence-file ..\artifacts\git-safety-diagnostic.json `
+  --output ..\artifacts\git-safety-evidence.json `
+  --json
+Pop-Location
+```
+
+检查器会丢弃本地路径、分支名、提交信息、命令输出和文件内容，只保留证据 ID 与 `passed`/`failed` 状态。将 `artifacts/git-safety-evidence.json` 导入课程网页；浏览器只保存本地匿名学习记录。
+
+## 故障注入与恢复
+
+| 观察到的证据 | 诊断 | 恢复分支 | 再次验证 |
+| --- | --- | --- | --- |
+| `status` 出现不认识的修改 | 工作区可能有 Agent 或其他编辑器留下的变化 | 先 `git diff`，按文件确认来源；不清楚时复制练习目录后再处理 | `git status --short --branch` 与 `git diff` |
+| `diff --cached` 包含不相关文件 | 暂存范围过大，提交候选不符合意图 | `git restore --staged -- <path>`，重新选择性 `git add` | `git diff --cached` |
+| 恢复后仍有修改 | 只恢复了工作区或只恢复了暂存区，两个状态没有分别检查 | 先分别检查 `git diff` 与 `git diff --cached`；必要时请维护者确认 | `git status --short --branch` |
+| `secret-ignored` 失败 | 忽略规则不存在、路径匹配错误，或文件已经被追踪 | 停止提交；补规则并用 `git check-ignore --verbose` 验证。已提交真实凭据时走轮换/泄漏响应流程 | `git check-ignore` 与 `git ls-files` |
+| 没有可用的 `HEAD` | 还没有建立基线，或当前目录不是练习仓库 | 回到明确的练习目录，先建立并核对基线提交；不要盲目 reset | `git rev-parse --verify HEAD` |
+| 分支/历史与预期不符 | 可能切错 worktree、分支或目录 | 停止写入，运行 `git branch --show-current`、`git log` 和 `git status`；让人确认目录归属 | 三条只读命令都指向预期状态 |
+
+`git restore` 只对你指定的状态和路径负责；Git 不知道哪些修改“有价值”。恢复前保存必要副本，恢复后重新观察。冲突和 worktree 只在本课建立风险意识：多个目录可能指向不同分支，先确认当前目录和分支，再让 Agent 执行任何修改。
+
+## 迁移挑战
+
+在 macOS + zsh 或 Linux + bash 的临时练习仓库中完成同一目标，但不要复制 Windows 路径或 PowerShell 的文件写入语法：
+
+- 用 `mkdir`、编辑器或 heredoc 建立练习文件；Git 的 `status`、`diff`、`add`、`commit`、`branch`、`log`、`check-ignore` 和 `restore` 语义保持不变。
+- 把 `secrets/local.env` 换成相同的相对路径，使用同一个合成占位内容；不要把真实 `.env` 或研究数据放入仓库。
+- 如果安装了 PowerShell 7，可用同一个 `git-safety.ps1` 生成状态 fixture；否则按 `lesson_id`、`platform`、`shell` 和 8 个固定 `checks` 字段手写本地 fixture，再让 `course_check` 检查。不要伪造通过状态。
+
+迁移的验收目标不是复制命令，而是证明你能在另一个 Shell 中保持“先观察、选择性暂存、人工提交、可恢复、密钥不入历史”的不变量。
+
+## 可核验成果
+
+完成本课至少留下：
+
+1. `git-safety-practice`：一次性练习仓库，至少有基线提交、一次选择性暂存、一次分支/历史检查、一次恢复和一次忽略规则检查；不推送远端。
+2. `artifacts/git-safety-diagnostic.json`：脚本产生的状态型本地诊断，不含路径、提交文本、文件内容或凭据。
+3. `artifacts/git-safety-evidence.json`：`python -m course_check check t06-git-safety` 产生的匿名 evidence contract。
+4. 一份预测与恢复记录：写清看到的证据、采取的恢复动作和再次验证结果，不写身份、绝对路径、真实密钥或原始研究数据。
+
+成功证据的 8 个 ID 是：`status-baseline`、`diff-reviewed`、`selective-stage`、`intentional-commit`、`branch-inspected`、`history-inspected`、`secret-ignored`、`recovery-complete`。网页上的“已导入”不是替代文件、命令输出和提交记录的证据。
+
+## 风险、版本与来源卡片
+
+**版本与平台（最后核验：2026-08-13）**
+
+- 正式主路径是 Windows 11 + PowerShell 7.x；Git 使用课程基线的 2.x 系列。Git 命令语义以当前官方手册为准，安装版本和默认分支名称可能变化。
+- 课程判断是“先观察、再选择性暂存、验证后人工提交”。它不是 Git 官方唯一工作流，也不替学员决定哪些修改可提交。
+- `git restore`、`git check-ignore` 和 Pro Git 基础章节的链接是事实来源；本页面的练习仓库、故障注入、证据 ID 和安全边界是本课程原创教学设计。
+
+**账号、成本、权限与副作用**
+
+- 不需要 GitHub 账号、Coding Agent、模型、API 或网络；成本为免费。
+- 练习会在你明确指定的本地目录创建/修改 Git 元数据和合成文件；页面命令不会调用远端，也不要求 push。检查脚本为只读，只有显式 `-OutputPath` 时写一个状态 JSON。
+- 不要把真实密钥、个人信息、真实科研/企业数据或已有重要未提交修改放入练习。检查器只输出匿名状态，不上传源码或运行数据；网页导入只写浏览器本地存储。
+- `git restore`、分支切换、历史清理和冲突处理都可能造成不可逆损失。任何真实仓库操作先保留副本、确认分支和人工审批；本课不自动执行这些动作。
+
+**事实来源与许可证**
+
+事实来源：[Pro Git：记录变更](https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository)、[Pro Git：查看提交历史](https://git-scm.com/book/en/v2/Git-Basics-Viewing-the-Commit-History)、[Pro Git：撤销操作](https://git-scm.com/book/en/v2/Git-Basics-Undoing-Things.html)、[Pro Git：基本分支与合并](https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging.html)、[`git-check-ignore` 官方手册](https://git-scm.com/docs/git-check-ignore) 和 [`git-restore` 官方手册](https://git-scm.com/docs/git-restore)。正文、脚本与证据设计为本课程原创；代码按仓库 MIT，正文按 CC BY 4.0。

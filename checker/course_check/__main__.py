@@ -36,6 +36,19 @@ ENVIRONMENT_PLATFORM_SHELLS = {
     "macos": frozenset({"powershell", "zsh"}),
     "linux": frozenset({"powershell", "bash"}),
 }
+GIT_SAFETY_LESSON_ID = "t06-git-safety"
+GIT_SAFETY_CHECK_IDS = frozenset(
+    {
+        "status-baseline",
+        "diff-reviewed",
+        "selective-stage",
+        "intentional-commit",
+        "branch-inspected",
+        "history-inspected",
+        "secret-ignored",
+        "recovery-complete",
+    }
+)
 
 LESSON_REQUIRED_FIELDS = {
     "id",
@@ -369,6 +382,62 @@ def load_environment_checks(
     return checks
 
 
+def load_git_safety_checks(
+    evidence_file: Path,
+) -> list[dict[str, Any]]:
+    """Validate the status-only Git safety lab fixture.
+
+    The lab may inspect a disposable repository locally, but only the fixed
+    check identifiers and their result states are allowed to cross into the
+    browser evidence document.  This keeps branch names, paths, commit
+    messages, and accidental credential contents out of the public seam.
+    """
+
+    try:
+        value = json.loads(evidence_file.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise EvidenceError(f"Evidence fixture not found: {evidence_file.name}") from exc
+    except json.JSONDecodeError as exc:
+        raise EvidenceError(f"Invalid evidence fixture JSON: {exc.msg}") from exc
+    if not isinstance(value, dict):
+        raise EvidenceError("Evidence fixture must be a JSON object")
+
+    if value.get("lesson_id") != GIT_SAFETY_LESSON_ID:
+        raise EvidenceError("Git safety fixture lesson_id does not match the requested lesson")
+    platform = value.get("platform")
+    shell = value.get("shell")
+    if not isinstance(platform, str) or platform not in ENVIRONMENT_PLATFORM_SHELLS:
+        raise EvidenceError("Git safety fixture platform must be windows, macos, or linux")
+    if not isinstance(shell, str) or shell not in ENVIRONMENT_PLATFORM_SHELLS[platform]:
+        raise EvidenceError("Git safety fixture shell does not match its platform")
+
+    checks = value.get("checks")
+    if not isinstance(checks, list):
+        raise EvidenceError("Git safety fixture checks must be a list")
+    if any(not isinstance(check, dict) for check in checks):
+        raise EvidenceError("Git safety fixture checks must contain objects")
+    check_ids = [check.get("id") for check in checks]
+    if any(not isinstance(check_id, str) or not check_id for check_id in check_ids):
+        raise EvidenceError("Git safety fixture check ids must be non-empty strings")
+    if len(check_ids) != len(set(check_ids)):
+        raise EvidenceError("Git safety fixture checks must not repeat an id")
+    actual_ids = set(check_ids)
+    missing = sorted(GIT_SAFETY_CHECK_IDS - actual_ids)
+    unknown = sorted(actual_ids - GIT_SAFETY_CHECK_IDS)
+    if missing or unknown or len(checks) != len(GIT_SAFETY_CHECK_IDS):
+        details = []
+        if missing:
+            details.append("missing: " + ", ".join(missing))
+        if unknown:
+            details.append("unknown: " + ", ".join(str(item) for item in unknown))
+        raise EvidenceError(
+            "Git safety fixture checks are incomplete or unexpected ("
+            + "; ".join(details)
+            + ")"
+        )
+    return checks
+
+
 def check_lesson(
     root: Path,
     lesson_id: str,
@@ -377,7 +446,7 @@ def check_lesson(
 ) -> dict[str, Any]:
     """Run a public lesson check and build its anonymous result."""
 
-    if lesson_id not in {"t01-foundation", ENVIRONMENT_LESSON_ID}:
+    if lesson_id not in {"t01-foundation", ENVIRONMENT_LESSON_ID, GIT_SAFETY_LESSON_ID}:
         raise ContractError(f"Unsupported evidence lesson: {lesson_id}")
     course_version = validate_foundation(root)
     if lesson_id == "t01-foundation":
@@ -387,12 +456,18 @@ def check_lesson(
         ]
         if evidence_file is not None:
             checks = load_evidence_checks(evidence_file, expected_lesson_id=lesson_id)
-    else:
+    elif lesson_id == ENVIRONMENT_LESSON_ID:
         if evidence_file is None:
             raise EvidenceError(
                 "t05-environment requires --environment-file with the local diagnostic JSON"
             )
         checks = load_environment_checks(evidence_file)
+    else:
+        if evidence_file is None:
+            raise EvidenceError(
+                "t06-git-safety requires --evidence-file with the local Git safety JSON"
+            )
+        checks = load_git_safety_checks(evidence_file)
     return build_evidence_document(
         course_version=course_version,
         lesson_id=lesson_id,
@@ -413,11 +488,13 @@ def build_parser() -> argparse.ArgumentParser:
     check.add_argument(
         "--evidence-file",
         "--environment-file",
+        "--git-safety-file",
+        "--git-file",
         dest="evidence_file",
         type=Path,
         help=(
             "local fixture containing lesson_id and check result states; "
-            "use --environment-file for t05-environment"
+            "use --environment-file for t05-environment or the Git safety fixture for t06-git-safety"
         ),
     )
     check.add_argument(
