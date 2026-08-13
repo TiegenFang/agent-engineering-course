@@ -458,6 +458,59 @@
         "CC-BY-4.0",
         "MIT"
       ]
+    },
+    {
+      "id": "t15-context-recovery",
+      "title": "模块 5B：压缩、恢复与交接",
+      "stage": "alpha",
+      "duration_minutes": 50,
+      "prerequisites": ["t14-context-budget"],
+      "outcomes": [
+        "比较同一合成任务的上下文压缩前后结果并识别压缩失真",
+        "识别约束遗漏，把不可信备注隔离并恢复污染任务",
+        "创建包含目标、状态、证据、风险和下一步的跨会话交接包",
+        "区分上下文、历史和 Memory 的生命周期与权限边界"
+      ],
+      "artifacts": [
+        "三种压缩模式的 before/after 对照记录",
+        "污染任务 detect/quarantine/restore/revalidate 恢复记录",
+        "匿名 t15-context-recovery evidence JSON 与交接包"
+      ],
+      "primary_tool": "Deterministic browser context recovery simulator (mock fixture)",
+      "migration_tool": "Codex or Claude Code (conceptual cross-session handoff challenge; no live call from page)",
+      "platforms": {
+        "primary": "Desktop browser; Windows 11 + PowerShell 7 for course_check",
+        "secondary": [
+          "macOS/Linux browser; checker path not yet cross-platform verified"
+        ]
+      },
+      "versions": {
+        "client": "Astro/Starlight course page @ workspace baseline 0a10780; context recovery fixture v1",
+        "sdk": "not-applicable",
+        "model": "deterministic context fixture v1; no model call",
+        "protocol": "agent-engineering-course/evidence v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [],
+        "cost": "free for fixture, checker and browser tests; real-tool migration may require an account and paid usage",
+        "network": "browser experiment needs no network after page load; checker is local"
+      },
+      "risk": {
+        "permissions": "只读页面与本地导出的 JSON；checker 读取用户显式指定的 evidence 文件",
+        "side_effects": "fixture 不调用模型、API、真实 Coding Agent、设备、文件系统或网络；导出由用户主动触发",
+        "staleness": "OpenAI Compaction、Anthropic Context window 与 Checkpointing 产品事实按官方页面于 2026-08-13 核验；真实产品压缩和跨会话行为需发布前重新核验"
+      },
+      "sources": [
+        "course-context-recovery-original",
+        "openai-compaction-guide",
+        "anthropic-context-window-guide",
+        "anthropic-checkpointing-guide"
+      ],
+      "licenses": [
+        "CC-BY-4.0",
+        "MIT"
+      ]
     }
   ]
 }

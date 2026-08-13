@@ -482,6 +482,292 @@
   }
 }
 
+/* T15 context recovery lab: compact evidence cards that remain readable on mobile. */
+.context-recovery-lab {
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.6rem;
+  margin-block: 2rem;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  background: color-mix(in srgb, var(--sl-color-gray-7) 32%, transparent);
+}
+
+.context-recovery-lab__heading,
+.context-recovery-lab__section-heading {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.context-recovery-lab__heading h2,
+.context-recovery-lab__section-heading h3,
+.context-recovery-lab__comparison-card h4 {
+  margin-block: 0.2rem 0.6rem;
+}
+
+.context-recovery-lab__version {
+  color: var(--sl-color-gray-3);
+  font-family: var(--sl-font-mono);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.context-recovery-lab__lead {
+  max-width: 76ch;
+}
+
+.context-recovery-lab__layers,
+.context-recovery-lab__comparison-list {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-block: 1rem;
+}
+
+.context-recovery-lab__layers article,
+.context-recovery-lab__comparison-card {
+  background: var(--sl-color-black);
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.45rem;
+  min-width: 0;
+  padding: 0.9rem;
+}
+
+.context-recovery-lab__layers article h3 {
+  font-size: 1rem;
+  margin-block: 0 0.35rem;
+}
+
+.context-recovery-lab__layers article p {
+  font-size: 0.9rem;
+  margin-block: 0 0.55rem;
+}
+
+.context-recovery-lab__layers article span {
+  color: var(--sl-color-gray-3);
+  font-family: var(--sl-font-mono);
+  font-size: 0.75rem;
+}
+
+.context-recovery-lab__controls fieldset {
+  align-items: end;
+  display: grid;
+  gap: 0.55rem 0.75rem;
+  grid-template-columns: minmax(10rem, 1fr) minmax(10rem, 1fr) minmax(12rem, 1.4fr) auto;
+  margin-block: 1rem;
+  padding: 0.9rem;
+}
+
+.context-recovery-lab__controls legend {
+  grid-column: 1 / -1;
+  font-weight: 700;
+}
+
+.context-recovery-lab__controls label {
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.context-recovery-lab__controls select {
+  min-height: 2.65rem;
+  min-width: 0;
+}
+
+.context-recovery-lab__controls button,
+.context-recovery-lab button {
+  min-height: 2.65rem;
+}
+
+.context-recovery-lab__status,
+.context-recovery-lab__pollution-fixture,
+.context-recovery-lab__comparison-card p {
+  margin-block: 0.6rem 0;
+}
+
+.context-recovery-lab__comparison,
+.context-recovery-lab__recovery,
+.context-recovery-lab__handoff {
+  border-block-start: 1px solid var(--sl-color-gray-5);
+  margin-block-start: 1.4rem;
+  padding-block-start: 1.2rem;
+}
+
+.context-recovery-lab__comparison-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.context-recovery-lab__comparison-list > p {
+  grid-column: 1 / -1;
+}
+
+.context-recovery-lab__comparison-card table,
+.context-recovery-lab__noscript table {
+  display: table;
+  font-size: 0.84rem;
+  margin-block: 0.5rem;
+  width: 100%;
+}
+
+.context-recovery-lab__comparison-card th,
+.context-recovery-lab__comparison-card td,
+.context-recovery-lab__noscript th,
+.context-recovery-lab__noscript td {
+  padding: 0.4rem;
+  vertical-align: top;
+}
+
+.context-recovery-lab__button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.context-recovery-lab__recovery-steps {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-block: 1rem;
+  padding-inline-start: 1.25rem;
+}
+
+.context-recovery-lab__handoff-fields {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-block: 1rem;
+}
+
+.context-recovery-lab__handoff-fields > div {
+  border-inline-start: 3px solid var(--sl-color-accent-high);
+  min-width: 0;
+  padding-inline: 0.55rem;
+}
+
+.context-recovery-lab__handoff-fields dt {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.context-recovery-lab__handoff-fields dd {
+  font-size: 0.82rem;
+  margin: 0.25rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.context-recovery-lab__handoff-json {
+  max-height: 18rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.context-recovery-lab__footer-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-block-start: 1rem;
+}
+
+.context-recovery-lab__footer-actions p {
+  margin: 0;
+}
+
+.context-recovery-lab__checklist {
+  display: grid;
+  gap: 0.35rem 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-block: 1rem 0;
+  padding-inline-start: 1.25rem;
+}
+
+.context-recovery-lab__checklist li[data-result="passed"]::after {
+  content: " · passed";
+  color: var(--sl-color-accent-high);
+  font-family: var(--sl-font-mono);
+  font-size: 0.78rem;
+}
+
+.context-recovery-lab__checklist li[data-result="failed"]::after {
+  content: " · failed";
+  color: var(--sl-color-red-high);
+  font-family: var(--sl-font-mono);
+  font-size: 0.78rem;
+}
+
+.context-recovery-lab__noscript {
+  border: 1px dashed var(--sl-color-gray-4);
+  margin-block: 1rem;
+  padding: 0.9rem;
+}
+
+@media (max-width: 54rem) {
+  .context-recovery-lab__controls fieldset {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .context-recovery-lab__controls legend,
+  .context-recovery-lab__controls button {
+    grid-column: 1 / -1;
+  }
+
+  .context-recovery-lab__layers,
+  .context-recovery-lab__comparison-list,
+  .context-recovery-lab__handoff-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .context-recovery-lab__recovery-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 42rem) {
+  .context-recovery-lab__heading,
+  .context-recovery-lab__section-heading {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .context-recovery-lab__version {
+    white-space: normal;
+  }
+
+  .context-recovery-lab__controls fieldset,
+  .context-recovery-lab__layers,
+  .context-recovery-lab__comparison-list,
+  .context-recovery-lab__handoff-fields,
+  .context-recovery-lab__checklist {
+    grid-template-columns: 1fr;
+  }
+
+  .context-recovery-lab__controls legend,
+  .context-recovery-lab__controls button {
+    grid-column: auto;
+  }
+
+  .context-recovery-lab__recovery-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .context-recovery-lab__comparison-card table,
+  .context-recovery-lab__noscript table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .context-recovery-lab *,
+  .context-recovery-lab *::before,
+  .context-recovery-lab *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

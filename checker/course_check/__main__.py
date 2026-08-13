@@ -299,6 +299,38 @@ CLAUDE_MIGRATION_VARIANT = {
     "outputs": ("mean_kpa", "peak_kpa", "alarm_count"),
 }
 
+T15_CONTEXT_RECOVERY_LESSON_ID = "t15-context-recovery"
+T15_CONTEXT_RECOVERY_VERSION = "1"
+T15_CONTEXT_RECOVERY_BASELINE_ID = "telemetry-report-v1"
+T15_CONTEXT_RECOVERY_CHECK_IDS = (
+    "compression-compared",
+    "distortion-detected",
+    "constraint-omission-detected",
+    "pollution-recovered",
+    "handoff-complete",
+    "layers-distinguished",
+)
+T15_CONTEXT_RECOVERY_MODES = (
+    "faithful",
+    "distorted",
+    "constraint-omitted",
+)
+T15_CONTEXT_RECOVERY_AFTER_OUTCOMES = {
+    "faithful": "faithful",
+    "distorted": "distorted",
+    "constraint-omitted": "constraint-omitted",
+}
+T15_CONTEXT_RECOVERY_LAYER_VALUES = {
+    "context": "current-working-set",
+    "history": "record-only",
+    "memory": "owned-and-expiring",
+}
+T15_CONTEXT_RECOVERY_RISKS = {
+    "compressed-context-may-be-lossy",
+    "history-is-not-a-current-constraint",
+    "memory-promotion-requires-owner-and-lifetime",
+}
+
 
 class ContractError(ValueError):
     """Raised when the public Foundation contract is incomplete."""
@@ -1090,6 +1122,264 @@ def validate_t14_simulation(
         "observed": sorted(observed),
     }
 
+def validate_t15_evidence_checks(value: Any) -> list[dict[str, Any]]:
+    """Validate the stable public checks for context compression/recovery."""
+
+    if not isinstance(value, list) or not value:
+        raise EvidenceError("T15 context recovery evidence checks must be a non-empty list")
+    seen: set[str] = set()
+    actual_ids: list[str] = []
+    normalized: list[dict[str, Any]] = []
+    for index, check in enumerate(value):
+        if not isinstance(check, dict):
+            raise EvidenceError(f"T15 context recovery check {index} must be an object")
+        _reject_sensitive_unknown_fields(check, f"T15 context recovery check {index}")
+        check_id = check.get("id")
+        if not isinstance(check_id, str) or not check_id:
+            raise EvidenceError(f"T15 context recovery check {index} needs an id")
+        if check_id in seen:
+            raise EvidenceError(f"T15 context recovery check ID repeated: {check_id}")
+        result = check.get("result")
+        if result not in {"passed", "failed", "alternative"}:
+            raise EvidenceError(
+                f"T15 context recovery check {check_id}.result is not supported"
+            )
+        seen.add(check_id)
+        actual_ids.append(check_id)
+        normalized.append({"id": check_id, "result": result})
+
+    expected_ids = list(T15_CONTEXT_RECOVERY_CHECK_IDS)
+    if actual_ids != expected_ids:
+        missing = [check_id for check_id in expected_ids if check_id not in seen]
+        unknown = [check_id for check_id in actual_ids if check_id not in expected_ids]
+        raise EvidenceError(
+            "T15 context recovery evidence IDs must be exactly "
+            + ", ".join(expected_ids)
+            + (f"; missing: {', '.join(missing)}" if missing else "")
+            + (f"; unknown: {', '.join(unknown)}" if unknown else "")
+        )
+    return normalized
+
+
+def _require_bool(value: Any, label: str) -> bool:
+    if not isinstance(value, bool):
+        raise EvidenceError(f"{label} must be a boolean")
+    return value
+
+
+def _require_string_array(value: Any, label: str, *, allow_empty: bool = False) -> list[str]:
+    if not isinstance(value, list) or (not allow_empty and not value):
+        raise EvidenceError(f"{label} must be a non-empty list of strings")
+    if any(not isinstance(item, str) or not item.strip() for item in value):
+        raise EvidenceError(f"{label} must contain only non-empty strings")
+    return list(value)
+
+
+def validate_t15_experiment(
+    experiment: Any,
+    *,
+    checks: list[dict[str, Any]],
+    document_result: str,
+) -> dict[str, Any]:
+    """Validate and minimize the T15 compression/recovery experiment.
+
+    The fixture can contain explanatory details in the browser, but only the
+    enumerated outcomes and handoff fields cross the public seam.  Check
+    states are derived from the recorded modes and recovery state, so a hand
+    written list of ``passed`` values cannot forge completion.
+    """
+
+    if not isinstance(experiment, dict):
+        raise EvidenceError("T15 completed evidence must include an experiment object")
+    _reject_sensitive_unknown_fields(experiment, "T15 context recovery experiment")
+    allowed_fields = {
+        "version",
+        "baseline_id",
+        "compression_modes",
+        "comparisons",
+        "pollution",
+        "handoff",
+        "layers",
+    }
+    unexpected = sorted(set(experiment) - allowed_fields)
+    if unexpected:
+        raise EvidenceError(
+            "T15 context recovery experiment contains unsupported fields: "
+            + ", ".join(unexpected)
+        )
+    if experiment.get("version") != T15_CONTEXT_RECOVERY_VERSION:
+        raise EvidenceError("Unsupported T15 context recovery experiment version")
+    if experiment.get("baseline_id") != T15_CONTEXT_RECOVERY_BASELINE_ID:
+        raise EvidenceError("T15 context recovery evidence has an unknown baseline")
+
+    modes = _require_string_array(experiment.get("compression_modes"), "T15 compression_modes", allow_empty=True)
+    if len(modes) != len(set(modes)) or any(mode not in T15_CONTEXT_RECOVERY_MODES for mode in modes):
+        raise EvidenceError("T15 compression_modes must contain unique known modes")
+
+    comparisons = experiment.get("comparisons")
+    if not isinstance(comparisons, list):
+        raise EvidenceError("T15 comparisons must be a list")
+    if len(comparisons) != len(modes):
+        raise EvidenceError("T15 comparisons must match compression_modes")
+    normalized_comparisons: list[dict[str, Any]] = []
+    comparison_modes: list[str] = []
+    for index, comparison in enumerate(comparisons):
+        if not isinstance(comparison, dict):
+            raise EvidenceError(f"T15 comparison {index} must be an object")
+        _reject_sensitive_unknown_fields(comparison, f"T15 comparison {index}")
+        required = {
+            "mode",
+            "before_outcome",
+            "after_outcome",
+            "distortion_detected",
+            "constraint_omission_detected",
+        }
+        if set(comparison) != required:
+            missing = sorted(required - set(comparison))
+            unknown = sorted(set(comparison) - required)
+            detail = []
+            if missing:
+                detail.append("missing: " + ", ".join(missing))
+            if unknown:
+                detail.append("unknown: " + ", ".join(unknown))
+            raise EvidenceError(
+                f"T15 comparison {index} fields are incomplete or unexpected ("
+                + "; ".join(detail)
+                + ")"
+            )
+        mode = comparison["mode"]
+        if mode not in T15_CONTEXT_RECOVERY_MODES or mode in comparison_modes:
+            raise EvidenceError("T15 comparison modes must be unique known modes")
+        if mode not in modes or comparison["before_outcome"] != "report-ready":
+            raise EvidenceError(f"T15 comparison {mode} does not match the fixed baseline")
+        expected_after = T15_CONTEXT_RECOVERY_AFTER_OUTCOMES[mode]
+        if comparison["after_outcome"] != expected_after:
+            raise EvidenceError(f"T15 comparison {mode} has an unexpected after outcome")
+        distortion_detected = _require_bool(
+            comparison["distortion_detected"], f"T15 comparison {mode}.distortion_detected"
+        )
+        omission_detected = _require_bool(
+            comparison["constraint_omission_detected"],
+            f"T15 comparison {mode}.constraint_omission_detected",
+        )
+        if distortion_detected != (mode == "distorted"):
+            raise EvidenceError("T15 distortion diagnostic does not match its mode")
+        if omission_detected != (mode == "constraint-omitted"):
+            raise EvidenceError("T15 omission diagnostic does not match its mode")
+        comparison_modes.append(mode)
+        normalized_comparisons.append(
+            {
+                "mode": mode,
+                "before_outcome": "report-ready",
+                "after_outcome": expected_after,
+                "distortion_detected": distortion_detected,
+                "constraint_omission_detected": omission_detected,
+            }
+        )
+    if comparison_modes != modes:
+        raise EvidenceError("T15 comparisons must follow compression_modes order")
+
+    pollution = experiment.get("pollution")
+    if not isinstance(pollution, dict):
+        raise EvidenceError("T15 pollution must be an object")
+    _reject_sensitive_unknown_fields(pollution, "T15 pollution")
+    pollution_fields = {"injected", "observed", "recovered", "outcome"}
+    if set(pollution) != pollution_fields:
+        raise EvidenceError("T15 pollution fields must be injected, observed, recovered and outcome")
+    injected = _require_bool(pollution["injected"], "T15 pollution.injected")
+    observed = _require_bool(pollution["observed"], "T15 pollution.observed")
+    recovered = _require_bool(pollution["recovered"], "T15 pollution.recovered")
+    outcome = pollution["outcome"]
+    if outcome not in {"not-run", "polluted", "recovered"}:
+        raise EvidenceError("T15 pollution outcome is not supported")
+    if outcome == "not-run" and (injected or observed or recovered):
+        raise EvidenceError("T15 not-run pollution cannot have recovery flags")
+    if outcome == "polluted" and (not injected or not observed or recovered):
+        raise EvidenceError("T15 polluted outcome must be observed and unrecovered")
+    if outcome == "recovered" and (not injected or not observed or not recovered):
+        raise EvidenceError("T15 recovered outcome must include injection and observation")
+
+    handoff = experiment.get("handoff")
+    if not isinstance(handoff, dict):
+        raise EvidenceError("T15 handoff must be an object")
+    _reject_sensitive_unknown_fields(handoff, "T15 handoff")
+    handoff_fields = {"goal", "status", "evidence", "risks", "next_steps"}
+    if set(handoff) != handoff_fields:
+        raise EvidenceError("T15 handoff must contain goal, status, evidence, risks and next_steps")
+    goal = handoff["goal"]
+    status = handoff["status"]
+    if goal != "report-task":
+        raise EvidenceError("T15 handoff goal does not match the fixed task")
+    if status not in {"blocked", "ready-for-next-session"}:
+        raise EvidenceError("T15 handoff status is not supported")
+    handoff_evidence = _require_string_array(handoff["evidence"], "T15 handoff.evidence", allow_empty=True)
+    handoff_risks = _require_string_array(handoff["risks"], "T15 handoff.risks")
+    handoff_next_steps = _require_string_array(handoff["next_steps"], "T15 handoff.next_steps")
+    if any(len(item) > 120 for item in handoff_evidence + handoff_risks + handoff_next_steps):
+        raise EvidenceError("T15 handoff fields must contain short stable notes")
+    if not set(handoff_risks).issubset(T15_CONTEXT_RECOVERY_RISKS):
+        raise EvidenceError("T15 handoff.risks contains an unknown risk")
+    if status == "ready-for-next-session":
+        required_handoff_evidence = {
+            "compression-before-after",
+            "compression-distortion-diagnosed",
+            "constraint-omission-diagnosed",
+            "pollution-recovered",
+        }
+        if not required_handoff_evidence.issubset(set(handoff_evidence)):
+            raise EvidenceError("T15 ready handoff is missing recovery evidence")
+        if not recovered:
+            raise EvidenceError("T15 ready handoff requires recovered pollution")
+
+    layers = experiment.get("layers")
+    if not isinstance(layers, dict) or set(layers) != set(T15_CONTEXT_RECOVERY_LAYER_VALUES):
+        raise EvidenceError("T15 layers must distinguish context, history and memory")
+    normalized_layers: dict[str, str] = {}
+    for layer, expected in T15_CONTEXT_RECOVERY_LAYER_VALUES.items():
+        if layers[layer] != expected:
+            raise EvidenceError(f"T15 layer {layer} does not match its boundary")
+        normalized_layers[layer] = expected
+
+    check_results = {check["id"]: check["result"] for check in checks}
+    expected_checks = {
+        "compression-compared": "passed" if modes else "failed",
+        "distortion-detected": "passed" if "distorted" in modes else "failed",
+        "constraint-omission-detected": "passed" if "constraint-omitted" in modes else "failed",
+        "pollution-recovered": "passed" if recovered else "failed",
+        "handoff-complete": "passed" if status == "ready-for-next-session" else "failed",
+        "layers-distinguished": "passed",
+    }
+    for check_id, expected in expected_checks.items():
+        if check_results[check_id] != expected:
+            raise EvidenceError(f"T15 evidence check {check_id} does not match the experiment")
+
+    complete = set(modes) == set(T15_CONTEXT_RECOVERY_MODES) and recovered and status == "ready-for-next-session"
+    if document_result in {"passed", "alternative"} and not complete:
+        raise EvidenceError("Completed T15 evidence is missing a compression mode, recovery, or handoff")
+    if document_result == "passed" and any(result != "passed" for result in check_results.values()):
+        raise EvidenceError("Passed T15 evidence cannot contain failed or alternative checks")
+
+    return {
+        "version": T15_CONTEXT_RECOVERY_VERSION,
+        "baseline_id": T15_CONTEXT_RECOVERY_BASELINE_ID,
+        "compression_modes": modes,
+        "comparisons": normalized_comparisons,
+        "pollution": {
+            "injected": injected,
+            "observed": observed,
+            "recovered": recovered,
+            "outcome": outcome,
+        },
+        "handoff": {
+            "goal": goal,
+            "status": status,
+            "evidence": handoff_evidence,
+            "risks": handoff_risks,
+            "next_steps": handoff_next_steps,
+        },
+        "layers": normalized_layers,
+    }
+
 
 def validate_claude_migration_checks(value: Any) -> list[dict[str, Any]]:
     """Validate the stable public checks for the Claude migration journey."""
@@ -1438,6 +1728,14 @@ def load_evidence_checks(
                 evidence_file,
                 expected_course_version=expected_course_version,
             )
+        if expected_lesson_id == T15_CONTEXT_RECOVERY_LESSON_ID:
+            checks = validate_t15_evidence_checks(document["evidence"])
+            experiment = validate_t15_experiment(
+                value.get("experiment"),
+                checks=checks,
+                document_result=document["result"],
+            )
+            return checks, experiment
         return document["evidence"], None
     checks = value.get("checks")
     if not isinstance(checks, list):
@@ -1469,6 +1767,14 @@ def load_evidence_checks(
         return load_claude_migration_checks(
             evidence_file,
             expected_course_version=expected_course_version,
+        )
+    if expected_lesson_id == T15_CONTEXT_RECOVERY_LESSON_ID:
+        checks = validate_t15_evidence_checks(checks)
+        result = classify_checks([check["result"] for check in checks])
+        return checks, validate_t15_experiment(
+            value.get("experiment"),
+            checks=checks,
+            document_result=result,
         )
     return checks, None
 
@@ -1901,6 +2207,7 @@ def check_lesson(
         CONTEXT_BUDGET_LESSON_ID,
         CODEX_TASK_LESSON_ID,
         CLAUDE_MIGRATION_LESSON_ID,
+        T15_CONTEXT_RECOVERY_LESSON_ID,
     }:
         raise ContractError(f"Unsupported evidence lesson: {lesson_id}")
     course_version = validate_foundation(root)
@@ -2089,7 +2396,7 @@ def check_lesson(
                 expected_lesson_id=lesson_id,
                 expected_course_version=course_version,
             )
-    else:
+    elif lesson_id == "t03-agent-instruction":
         checks = [
             {
                 "id": "instruction-page",
@@ -2122,6 +2429,51 @@ def check_lesson(
             },
             {"id": "instruction-evidence-executed", "result": "failed"},
             {"id": "instruction-migration-executed", "result": "failed"},
+        ]
+        if evidence_file is not None:
+            checks, trace = load_evidence_checks(
+                evidence_file,
+                expected_lesson_id=lesson_id,
+                expected_course_version=course_version,
+            )
+    elif lesson_id == T15_CONTEXT_RECOVERY_LESSON_ID:
+        checks = [
+            {
+                "id": "context-recovery-page",
+                "result": "passed"
+                if (root / "site/src/content/docs/module-5-context-recovery.mdx").is_file()
+                else "failed",
+            },
+            {
+                "id": "context-recovery-simulator",
+                "result": "passed"
+                if (root / "site/src/lib/context-recovery.mjs").is_file()
+                else "failed",
+            },
+            {
+                "id": "context-recovery-contract",
+                "result": "passed"
+                if (root / "labs/context-recovery/README.md").is_file()
+                else "failed",
+            },
+            {
+                "id": "context-recovery-scenarios",
+                "result": "passed"
+                if all(
+                    token in (root / "site/src/lib/context-recovery.mjs").read_text(
+                        encoding="utf-8"
+                    )
+                    for token in (
+                        "distorted",
+                        "constraint-omitted",
+                        "recoverPollutedTask",
+                        "buildHandoffPackage",
+                    )
+                )
+                else "failed",
+            },
+            {"id": "context-recovery-evidence-executed", "result": "failed"},
+            {"id": "context-recovery-handoff-executed", "result": "failed"},
         ]
         if evidence_file is not None:
             checks, trace = load_evidence_checks(

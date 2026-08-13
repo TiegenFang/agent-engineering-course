@@ -1,0 +1,413 @@
+---
+import courseVersion from "../../../course-version.json";
+import {
+  COMPRESSION_MODES,
+  POLLUTION_MODES,
+  PREDICTION_OPTIONS,
+} from "../lib/context-recovery.mjs";
+
+const expectedCourseVersion = courseVersion.course_version;
+---
+
+<section
+  class="context-recovery-lab"
+  data-context-recovery-lab
+  data-course-version={expectedCourseVersion}
+  aria-labelledby="context-recovery-title"
+>
+  <div class="context-recovery-lab__heading">
+    <div>
+      <p class="eyebrow">模块 5B · 压缩、恢复与交接</p>
+      <h2 id="context-recovery-title">压缩可以省空间，不能省掉验收</h2>
+    </div>
+    <span class="context-recovery-lab__version">recovery v1 · {expectedCourseVersion}</span>
+  </div>
+
+  <p class="context-recovery-lab__lead">
+    这是一个无网络、无模型调用的确定性上下文夹具。它对同一份合成遥测任务生成压缩前后的可观察结果，注入一条不可信备注，再把污染隔离、约束恢复和交接包字段固定下来；它不代表 Codex、Claude Code 或任何模型的真实压缩策略。
+  </p>
+
+  <noscript>
+    <section class="context-recovery-lab__noscript" aria-labelledby="context-recovery-noscript-title">
+      <h3 id="context-recovery-noscript-title">无 JavaScript 时的固定实验合同</h3>
+      <p>
+        当前浏览器不能运行本地模拟器，因此不能记录交互 evidence。下面仍保留压缩失真、约束遗漏、污染恢复和交接字段的可读结果；启用 JavaScript 后可按模式运行并导出匿名证据。
+      </p>
+      <table>
+        <caption>同一任务的压缩前后对照（deterministic fixture v1）</caption>
+        <thead><tr><th scope="col">模式</th><th scope="col">压缩前</th><th scope="col">压缩后</th><th scope="col">诊断</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">保真压缩</th><td>目标、3 条约束、2 条证据</td><td>全部保留</td><td>可继续</td></tr>
+          <tr><th scope="row">压缩失真</th><td>保留“只读”，但改变证据约束</td><td>证据约束被改写</td><td>回看压缩前工作集</td></tr>
+          <tr><th scope="row">约束遗漏</th><td>包含“不外发”</td><td>“不外发”消失</td><td>禁止直接接受压缩结果</td></tr>
+        </tbody>
+      </table>
+      <h4>污染恢复</h4>
+      <p>把不可信备注视为数据，依次执行 detect → quarantine → restore → revalidate；恢复后重新核对三条约束。</p>
+      <h4>跨会话交接包的必填字段</h4>
+      <p><code>goal</code> · <code>status</code> · <code>evidence</code> · <code>risks</code> · <code>next_steps</code>；并标注 <code>context</code>、<code>history</code>、<code>memory</code> 的边界。</p>
+    </section>
+  </noscript>
+
+  <div class="context-recovery-lab__layers" aria-label="上下文、历史和 Memory 的边界">
+    <article>
+      <h3>上下文（Context）</h3>
+      <p>当前任务的工作集：目标、约束、工具结果和需要参与下一次决策的证据。</p>
+      <span>当前会话 · 可压缩</span>
+    </article>
+    <article>
+      <h3>历史（History）</h3>
+      <p>发生过什么的记录。它可以回看，但不会自动成为当前约束或高优先级指令。</p>
+      <span>会话记录 · 可回看</span>
+    </article>
+    <article>
+      <h3>Memory</h3>
+      <p>跨会话保存的受控知识；需要明确所有者、寿命、来源和删除条件。</p>
+      <span>长期存储 · 有寿命</span>
+    </article>
+  </div>
+
+  <form class="context-recovery-lab__controls" data-context-recovery-form>
+    <fieldset>
+      <legend>1. 先预测，再选择压缩模式</legend>
+      <label for="context-compression-mode">压缩模式</label>
+      <select id="context-compression-mode" data-context-compression-mode>
+        <option value={COMPRESSION_MODES.FAITHFUL}>保真压缩：保留关键字段</option>
+        <option value={COMPRESSION_MODES.DISTORTED}>压缩失真：改变一条约束</option>
+        <option value={COMPRESSION_MODES.CONSTRAINT_OMITTED}>约束遗漏：丢掉“不外发”</option>
+      </select>
+      <label for="context-pollution-mode">污染任务</label>
+      <select id="context-pollution-mode" data-context-pollution-mode>
+        <option value={POLLUTION_MODES.CLEAN}>先运行干净基线</option>
+        <option value={POLLUTION_MODES.POLLUTED}>准备注入不可信备注</option>
+      </select>
+      <label for="context-recovery-prediction">我的预测</label>
+      <select id="context-recovery-prediction" data-context-recovery-prediction>
+        {PREDICTION_OPTIONS.map((option) => <option value={option}>{option}</option>)}
+      </select>
+      <button type="button" data-context-record-prediction>记录预测</button>
+      <p class="context-recovery-lab__status" data-context-recovery-status role="status" aria-live="polite">
+        先选择预测，再运行当前压缩模式。
+      </p>
+    </fieldset>
+  </form>
+
+  <section class="context-recovery-lab__comparison" aria-labelledby="context-comparison-title">
+    <div class="context-recovery-lab__section-heading">
+      <div>
+        <p class="eyebrow">2. 压缩前 / 压缩后</p>
+        <h3 id="context-comparison-title">结果差异必须可解释</h3>
+      </div>
+      <button type="button" data-context-run-compression>运行当前压缩对照</button>
+    </div>
+    <div class="context-recovery-lab__comparison-list" data-context-comparison-list aria-live="polite">
+      <p>尚未运行；先记录预测。</p>
+    </div>
+  </section>
+
+  <section class="context-recovery-lab__recovery" aria-labelledby="context-pollution-title">
+    <div class="context-recovery-lab__section-heading">
+      <div>
+        <p class="eyebrow">3. 故障注入与恢复</p>
+        <h3 id="context-pollution-title">恢复污染任务，不把备注当指令</h3>
+      </div>
+      <div class="context-recovery-lab__button-row">
+        <button type="button" data-context-run-polluted>注入污染任务</button>
+        <button type="button" data-context-recover-polluted disabled>隔离并恢复</button>
+      </div>
+    </div>
+    <p class="context-recovery-lab__pollution-fixture" data-context-pollution-fixture>
+      不可信备注尚未注入；恢复流程会保留固定的“检测—隔离—恢复—复核”证据。
+    </p>
+    <ol class="context-recovery-lab__recovery-steps" data-context-recovery-steps>
+      <li>detect · 等待污染</li>
+      <li>quarantine · 未执行</li>
+      <li>restore · 未执行</li>
+      <li>revalidate · 未执行</li>
+    </ol>
+  </section>
+
+  <section class="context-recovery-lab__handoff" aria-labelledby="context-handoff-title">
+    <div class="context-recovery-lab__section-heading">
+      <div>
+        <p class="eyebrow">4. 跨会话交接</p>
+        <h3 id="context-handoff-title">把继续工作所需的边界写出来</h3>
+      </div>
+      <button type="button" data-context-generate-handoff>生成交接包</button>
+    </div>
+    <dl class="context-recovery-lab__handoff-fields" data-context-handoff-fields>
+      <div><dt>目标（goal）</dt><dd>等待生成</dd></div>
+      <div><dt>状态（status）</dt><dd>blocked</dd></div>
+      <div><dt>证据（evidence）</dt><dd>—</dd></div>
+      <div><dt>风险（risks）</dt><dd>—</dd></div>
+      <div><dt>下一步（next_steps）</dt><dd>—</dd></div>
+    </dl>
+    <pre class="context-recovery-lab__handoff-json" data-context-handoff-json aria-label="交接包 JSON">尚未生成交接包。</pre>
+  </section>
+
+  <div class="context-recovery-lab__footer-actions">
+    <button type="button" data-context-export-evidence>导出匿名 evidence</button>
+    <p data-context-evidence-status role="status" aria-live="polite">
+      当前 evidence 是 partial；完成三种压缩对照、污染恢复和交接后才会通过。
+    </p>
+  </div>
+
+  <ol class="context-recovery-lab__checklist" data-context-checklist aria-label="T15 evidence 检查项">
+    <li data-check-id="compression-compared">压缩前后对照</li>
+    <li data-check-id="distortion-detected">压缩失真被识别</li>
+    <li data-check-id="constraint-omission-detected">约束遗漏被识别</li>
+    <li data-check-id="pollution-recovered">污染任务已恢复</li>
+    <li data-check-id="handoff-complete">交接包含五类字段</li>
+    <li data-check-id="layers-distinguished">上下文 / 历史 / Memory 已区分</li>
+  </ol>
+</section>
+
+<script>
+  import {
+    PREDICTION_OPTIONS,
+    buildContextRecoveryEvidence,
+    describeContextRecoverySession,
+    generateHandoffPackage,
+    createContextRecoverySession,
+    recoverPollutedTask,
+    runCompressionComparison,
+    runPollutedTask,
+    selectContextRecoveryInput,
+    submitContextPrediction,
+  } from "../lib/context-recovery.mjs";
+
+  const root = document.querySelector("[data-context-recovery-lab]");
+  if (root instanceof HTMLElement) {
+    const courseVersion = root.dataset.courseVersion ?? "";
+    const modeInput = root.querySelector("[data-context-compression-mode]");
+    const pollutionInput = root.querySelector("[data-context-pollution-mode]");
+    const predictionInput = root.querySelector("[data-context-recovery-prediction]");
+    const recordPrediction = root.querySelector("[data-context-record-prediction]");
+    const runCompression = root.querySelector("[data-context-run-compression]");
+    const runPolluted = root.querySelector("[data-context-run-polluted]");
+    const recoverPolluted = root.querySelector("[data-context-recover-polluted]");
+    const generateHandoff = root.querySelector("[data-context-generate-handoff]");
+    const exportEvidence = root.querySelector("[data-context-export-evidence]");
+    const status = root.querySelector("[data-context-recovery-status]");
+    const comparisonList = root.querySelector("[data-context-comparison-list]");
+    const pollutionFixture = root.querySelector("[data-context-pollution-fixture]");
+    const recoverySteps = root.querySelector("[data-context-recovery-steps]");
+    const handoffFields = root.querySelector("[data-context-handoff-fields]");
+    const handoffJson = root.querySelector("[data-context-handoff-json]");
+    const evidenceStatus = root.querySelector("[data-context-evidence-status]");
+    let session: any = createContextRecoverySession();
+
+    const setMessage = (element: Element | null, message: string, kind = "") => {
+      if (!(element instanceof HTMLElement)) return;
+      element.textContent = message;
+      element.dataset.status = kind;
+    };
+
+    const renderComparisons = () => {
+      if (!(comparisonList instanceof HTMLElement)) return;
+      comparisonList.replaceChildren();
+      if (session.comparisons.length === 0) {
+        comparisonList.textContent = "尚未运行；先记录预测。";
+        return;
+      }
+      for (const comparison of session.comparisons) {
+        const article = document.createElement("article");
+        article.className = "context-recovery-lab__comparison-card";
+        const title = document.createElement("h4");
+        title.textContent = comparison.mode_label;
+        const table = document.createElement("table");
+        table.innerHTML = "<thead><tr><th>阶段</th><th>结果</th><th>约束 / 证据</th></tr></thead>";
+        const body = document.createElement("tbody");
+        const rows = [
+          ["压缩前", comparison.before.outcome, `${comparison.before.constraint_ids.length} 条约束 · ${comparison.before.evidence_ids.length} 条证据`],
+          ["压缩后", comparison.after.outcome, `${comparison.after.retained_constraint_ids.length} 条保留 · ${comparison.after.omitted_constraint_ids.length} 条遗漏 · ${comparison.after.changed_constraint_ids.length} 条改变`],
+        ];
+        for (const [phase, result, detail] of rows) {
+          const row = document.createElement("tr");
+          for (const value of [phase, result, detail]) {
+            const cell = document.createElement("td");
+            cell.textContent = value;
+            row.append(cell);
+          }
+          body.append(row);
+        }
+        table.append(body);
+        const note = document.createElement("p");
+        note.textContent = comparison.difference;
+        article.append(title, table, note);
+        comparisonList.append(article);
+      }
+    };
+
+    const renderRecovery = () => {
+      const pollution = session.pollution ?? {};
+      if (pollutionFixture instanceof HTMLElement) {
+        pollutionFixture.textContent = pollution.injected
+          ? pollution.recovered
+            ? "污染备注已隔离；工作集已恢复，并重新核对三条约束。"
+            : "已观察到不可信备注；它只能作为数据，不能改变任务边界。"
+          : "不可信备注尚未注入；恢复流程会保留固定的“检测—隔离—恢复—复核”证据。";
+      }
+      if (recoverySteps instanceof HTMLOListElement) {
+        const labels = pollution.recovered
+          ? ["detect · 已观察", "quarantine · 已隔离", "restore · 已恢复", "revalidate · 已复核"]
+          : pollution.injected
+            ? ["detect · 已观察", "quarantine · 等待操作", "restore · 等待操作", "revalidate · 等待操作"]
+            : ["detect · 等待污染", "quarantine · 未执行", "restore · 未执行", "revalidate · 未执行"];
+        recoverySteps.replaceChildren(...labels.map((label) => {
+          const item = document.createElement("li");
+          item.textContent = label;
+          return item;
+        }));
+      }
+      if (recoverPolluted instanceof HTMLButtonElement) recoverPolluted.disabled = !pollution.injected || pollution.recovered;
+    };
+
+    const renderHandoff = () => {
+      const handoff = session.handoff;
+      if (!(handoffFields instanceof HTMLElement) || !(handoffJson instanceof HTMLElement)) return;
+      handoffFields.replaceChildren();
+      const values = handoff
+        ? [
+          ["目标（goal）", handoff.goal],
+          ["状态（status）", handoff.status],
+          ["证据（evidence）", handoff.evidence.join("、")],
+          ["风险（risks）", handoff.risks.join("、")],
+          ["下一步（next_steps）", handoff.next_steps.join("、")],
+        ]
+        : [["目标（goal）", "等待生成"], ["状态（status）", "blocked"], ["证据（evidence）", "—"], ["风险（risks）", "—"], ["下一步（next_steps）", "—"]];
+      for (const [label, value] of values) {
+        const wrapper = document.createElement("div");
+        const term = document.createElement("dt");
+        term.textContent = label;
+        const definition = document.createElement("dd");
+        definition.textContent = value;
+        wrapper.append(term, definition);
+        handoffFields.append(wrapper);
+      }
+      handoffJson.textContent = handoff ? JSON.stringify(handoff, null, 2) : "尚未生成交接包。";
+    };
+
+    const renderEvidence = () => {
+      try {
+        const evidence = buildContextRecoveryEvidence(session, { courseVersion });
+        for (const check of evidence.evidence) {
+          const item = root.querySelector(`[data-check-id="${check.id}"]`);
+          if (item instanceof HTMLElement) {
+            item.dataset.result = check.result;
+            item.setAttribute("aria-label", `${item.textContent}：${check.result}`);
+          }
+        }
+        if (evidenceStatus instanceof HTMLElement) {
+          evidenceStatus.textContent = `当前 evidence：${evidence.result} · 已通过 ${evidence.evidence.filter((check) => check.result === "passed").length} / ${evidence.evidence.length} 项。`;
+          evidenceStatus.dataset.status = evidence.result;
+        }
+      } catch (error) {
+        setMessage(evidenceStatus, `证据暂不可用：${error instanceof Error ? error.message : "输入无效"}`, "error");
+      }
+    };
+
+    const render = () => {
+      renderComparisons();
+      renderRecovery();
+      renderHandoff();
+      renderEvidence();
+      const summary = describeContextRecoverySession(session);
+      if (runCompression instanceof HTMLButtonElement) runCompression.disabled = session.status !== "ready";
+      if (generateHandoff instanceof HTMLButtonElement) generateHandoff.disabled = session.comparisons.length === 0;
+      if (modeInput instanceof HTMLSelectElement) modeInput.value = session.compressionMode;
+      if (pollutionInput instanceof HTMLSelectElement) pollutionInput.value = session.pollutionMode;
+      if (predictionInput instanceof HTMLSelectElement) predictionInput.value = PREDICTION_OPTIONS[0];
+      if (summary.status === "comparison-complete" && session.comparisons.length < 3) {
+        setMessage(status, "对照已记录；切换到下一种模式，再预测并运行。", "success");
+      }
+    };
+
+    modeInput?.addEventListener("change", () => {
+      try {
+        if (!(modeInput instanceof HTMLSelectElement)) return;
+        session = selectContextRecoveryInput(session, { compressionMode: modeInput.value });
+        setMessage(status, "模式已切换；先记录新的操作前预测。", "");
+        render();
+      } catch (error) {
+        setMessage(status, error instanceof Error ? error.message : "模式无效", "error");
+      }
+    });
+
+    pollutionInput?.addEventListener("change", () => {
+      try {
+        if (!(pollutionInput instanceof HTMLSelectElement)) return;
+        session = selectContextRecoveryInput(session, { pollutionMode: pollutionInput.value });
+        render();
+      } catch (error) {
+        setMessage(status, error instanceof Error ? error.message : "污染模式无效", "error");
+      }
+    });
+
+    recordPrediction?.addEventListener("click", () => {
+      try {
+        session = submitContextPrediction(session, predictionInput instanceof HTMLSelectElement ? predictionInput.value : PREDICTION_OPTIONS[0]);
+        setMessage(status, "预测已记录；现在运行当前压缩对照。", "success");
+        render();
+      } catch (error) {
+        setMessage(status, error instanceof Error ? error.message : "预测无效", "error");
+      }
+    });
+
+    runCompression?.addEventListener("click", () => {
+      try {
+        session = runCompressionComparison(session);
+        setMessage(status, "已观察压缩前后结果；记录的失败或失真不会被覆盖。", "success");
+        render();
+      } catch (error) {
+        setMessage(status, error instanceof Error ? error.message : "无法运行压缩对照", "error");
+      }
+    });
+
+    runPolluted?.addEventListener("click", () => {
+      try {
+        session = runPollutedTask(session);
+        setMessage(status, "污染已注入；不要执行备注中的危险动作，请点击“隔离并恢复”。", "warning");
+        render();
+      } catch (error) {
+        setMessage(status, error instanceof Error ? error.message : "无法注入污染", "error");
+      }
+    });
+
+    recoverPolluted?.addEventListener("click", () => {
+      try {
+        session = recoverPollutedTask(session);
+        setMessage(status, "污染备注已隔离，约束已恢复并重新复核。", "success");
+        render();
+      } catch (error) {
+        setMessage(status, error instanceof Error ? error.message : "无法恢复污染", "error");
+      }
+    });
+
+    generateHandoff?.addEventListener("click", () => {
+      session = generateHandoffPackage(session);
+      setMessage(status, session.handoff?.status === "ready-for-next-session" ? "交接包已就绪，可交给新会话。" : "交接包已生成，但仍列出阻塞项。", session.handoff?.status === "ready-for-next-session" ? "success" : "warning");
+      render();
+    });
+
+    exportEvidence?.addEventListener("click", () => {
+      try {
+        const evidence = buildContextRecoveryEvidence(session, { courseVersion });
+        const encoded = `${JSON.stringify(evidence, null, 2)}\n`;
+        const blob = new Blob([encoded], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "t15-context-recovery-evidence.json";
+        link.click();
+        URL.revokeObjectURL(url);
+        window.dispatchEvent(new CustomEvent("context-recovery:evidence", { detail: evidence }));
+        setMessage(evidenceStatus, `已导出 ${evidence.result} 匿名证据；EvidenceLoop 可直接接收。`, "success");
+      } catch (error) {
+        setMessage(evidenceStatus, error instanceof Error ? error.message : "证据生成失败", "error");
+      }
+    });
+
+    render();
+  }
+</script>
