@@ -41,6 +41,8 @@ jobs:
         run: npm run browser:install
       - name: Validate course contracts
         run: npm run test:python
+      - name: Run offline release audit
+        run: npm run audit:release
       - name: Typecheck site
         run: npm run check
       - name: Build site
