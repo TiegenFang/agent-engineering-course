@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CHECKER = ROOT / "checker"
-COURSE_VERSION = "0.1.0-foundation"
+COURSE_VERSION = "0.1.0-alpha"
 CHECK_IDS = [
     "prediction-recorded",
     "baseline-compared",
@@ -82,6 +82,7 @@ class InstructionCheckerTests(unittest.TestCase):
             env=env,
             capture_output=True,
             text=True,
+            encoding="utf-8",
             check=False,
         )
 

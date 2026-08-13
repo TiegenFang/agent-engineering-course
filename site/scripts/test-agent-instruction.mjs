@@ -19,7 +19,7 @@ import {
   submitInstructionPrediction,
 } from "../src/lib/instruction-engine.mjs";
 
-const COURSE_VERSION = "0.1.0-foundation";
+const COURSE_VERSION = "0.1.0-alpha";
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const workspaceRoot = resolve(siteRoot, "..");
 const checkerRoot = join(workspaceRoot, "checker");
