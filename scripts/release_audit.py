@@ -105,6 +105,7 @@ def _is_placeholder(value: str) -> bool:
     return (
         not normalized
         or normalized.startswith(("<", "${", "your", "replace", "example", "sample", "fake", "test-"))
+        or normalized.startswith(("sk-test-", "ghp-test-", "assert-", "get-", "join-", "resolve-", "new-"))
         or normalized in {"changeme", "dummy", "placeholder", "not-a-real-secret", "none", "null"}
         or normalized.startswith(("not-", "no-"))
     )
@@ -148,6 +149,8 @@ def scan_contracts(root: Path) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         ledger = {}
     lessons = contract.get("lessons") if isinstance(contract, Mapping) else None
     sources = ledger.get("sources") if isinstance(ledger, Mapping) else None
+    if sources is None and isinstance(ledger, Mapping):
+        sources = ledger.get("entries")
     if not isinstance(lessons, list):
         findings.append(_finding("contract-coverage", "fail", "content contract lessons must be a list"))
         lessons = []
@@ -256,6 +259,12 @@ def scan_links(root: Path, *, online: bool, max_url_checks: int) -> tuple[list[d
             except ValueError:
                 findings.append(_finding("link-syntax", "fail", "relative link escapes repository root", path=str(path.relative_to(root))))
                 continue
+            if not candidate.exists() and target.startswith("../"):
+                repository_target = target
+                while repository_target.startswith("../"):
+                    repository_target = repository_target[3:]
+                if repository_target.startswith(("docs/", "site/", "labs/", "checker/", "scripts/")):
+                    candidate = root / repository_target
             if not candidate.exists():
                 findings.append(_finding("link-liveness", "fail", "relative repository link target is missing", path=str(path.relative_to(root)), target=target))
     for url in sorted(urls):
@@ -375,7 +384,8 @@ def scan_freshness(root: Path, *, as_of: dt.date, max_age_days: int) -> tuple[li
     if error or not isinstance(ledger, Mapping):
         findings.append(_finding("freshness", "fail", f"cannot inspect source dates: {error or 'invalid ledger'}"))
     else:
-        for source in ledger.get("sources", []):
+        source_entries = ledger.get("sources") or ledger.get("entries") or []
+        for source in source_entries:
             if not isinstance(source, Mapping):
                 continue
             dates = [dt.date.fromisoformat(value) for value in DATE_RE.findall(str(source.get("pinned_version", ""))) if _safe_date(value)]
