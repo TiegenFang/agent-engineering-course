@@ -33,5 +33,27 @@ python -m course_check check t01-foundation --root .. --output ..\evidence.json
 
 随后在课程首页选择 `evidence.json` 导入。检查器结果只包含课程版本、课节身份、结果和证据摘要；网页只在浏览器本地保存学习记录，并支持导出和清除。
 
+## 模块 0：环境诊断
+
+在 Windows 11 + PowerShell 7 中，先运行只读环境诊断：
+
+```powershell
+pwsh -NoProfile -File .\labs\module-0\diagnose-environment.ps1 `
+  -EditorReady -GitHubReady -CodingAgent codex `
+  -OutputPath .\environment-diagnostic.json
+```
+
+它只记录命令可见性、版本状态和你主动确认的布尔状态，不联网、不读取源码或身份变量，也不把绝对路径写进 JSON。再在 `checker` 目录运行：
+
+```powershell
+python -m course_check check t05-environment `
+  --root .. `
+  --environment-file ..\environment-diagnostic.json `
+  --output ..\environment-evidence.json `
+  --json
+```
+
+只有 `environment-evidence.json` 是可导入网页的匿名 evidence contract；两个本地 JSON 文件已加入 `.gitignore`，不要提交。macOS/Linux 的 `python3`、`command -v` 和 Shell 差异见模块 0 页面，正式实验主路径仍是 Windows 11 + PowerShell 7。
+
 课程正文与图解采用 CC BY 4.0；自有代码、练习脚手架和检查器采用 MIT。第三方依赖和资产保留各自许可证，详见 `THIRD_PARTY_NOTICES.md` 与来源账本。
 

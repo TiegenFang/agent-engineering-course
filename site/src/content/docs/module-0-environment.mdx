@@ -1,0 +1,146 @@
+---
+title: 模块 0：环境诊断学习旅程
+description: 在 Windows 11 与 PowerShell 7 中建立可恢复、无凭据泄露的环境基线
+---
+
+> 这是“前置技能补给站”的第一段实战。它面向能使用编辑器和终端、但还没有稳定环境检查习惯的技术型 Agent 初学者。正文可在移动设备阅读；终端实验必须在桌面完成。
+
+## 真实问题
+
+后续课程要在真实代码仓库里使用 Python、Git 和 Coding Agent。最常见的第一类失败不是 Agent 本身，而是终端找不到 `python`、`git` 或编辑器命令，版本低于课程基线，或者 Windows 的 PATH/应用执行别名让“看起来装好了”的命令无法运行。
+
+本课把“我的电脑应该能工作”改成一组可以观察、修复、再次检查的证据。课程不要求现在调用模型或修改仓库；先把环境问题和账号准备分开。
+
+## 心智模型
+
+把诊断看成四层，而不是把安装成功当成完成：
+
+1. **可见性**：`Get-Command` 能否在当前 PowerShell 进程中找到命令？
+2. **可执行性**：找到的命令能否在当前终端返回版本？
+3. **基线**：版本是否满足本课的课程基线（PowerShell 7.x、Python 3.11+、Git 2.x）？
+4. **人工准备**：编辑器和 GitHub/Coding Agent 账号是否由你本人确认可用？脚本只记录布尔状态，不读取身份信息。
+
+“缺失工具”“错误版本”和“PATH/别名故障”是三个不同分支。先观察再修复；修复后重新打开一个 PowerShell 7 窗口，再运行同一诊断。
+
+## 操作前预测
+
+运行脚本前，先写下你的预测：
+
+- 哪一个检查会失败？是 `Get-Command` 找不到，还是版本命令执行失败？
+- 如果编辑器能从图形界面打开但没有 `code` 命令，你预计哪一项失败？
+- 如果没有立即使用 Coding Agent，账号检查会不会自动知道你的登录状态？为什么？
+
+不要把用户名、邮箱、绝对路径或任何凭据写进预测记录或提交。
+
+## 主工具演示
+
+主路径是 Windows 11 + PowerShell 7。把仓库根目录作为当前目录，运行课程提供的只读诊断脚本：
+
+```powershell
+pwsh -NoProfile -File .\labs\module-0\diagnose-environment.ps1 `
+  -EditorReady `
+  -GitHubReady `
+  -CodingAgent codex `
+  -OutputPath .\environment-diagnostic.json
+```
+
+`-EditorReady`、`-GitHubReady` 和 `-CodingAgent` 是你主动确认的无身份开关；不提供它们不会读取账号。脚本只查询 PowerShell 版本、`python`/`git` 版本和已知编辑器命令是否可见，不联网、不读取源码，也不把命令路径写入 JSON。
+
+随后在 `checker` 目录生成现有匿名 evidence contract 的结果：
+
+```powershell
+Push-Location .\checker
+python -m course_check check t05-environment `
+  --root .. `
+  --environment-file ..\environment-diagnostic.json `
+  --output ..\environment-evidence.json `
+  --json
+Pop-Location
+```
+
+只有第二条命令生成的 `environment-evidence.json` 适合导入课程网页。它沿用 T02 的 `agent-engineering-course/evidence` v1 契约；诊断输入里的平台、Shell 和未知说明不会穿过网页边界。
+
+## 本地实验
+
+打开诊断 JSON，应该只能看到稳定标识、`passed`/`failed` 状态、`platform` 和 `shell`。一个成功形态如下（版本号和检查顺序可能随脚本更新）：
+
+```json
+{
+  "lesson_id": "t05-environment",
+  "platform": "windows",
+  "shell": "powershell",
+  "checks": [
+    { "id": "powershell-7", "result": "passed" },
+    { "id": "editor-command", "result": "passed" },
+    { "id": "python-on-path", "result": "passed" },
+    { "id": "python-version", "result": "passed" },
+    { "id": "git-on-path", "result": "passed" },
+    { "id": "git-version", "result": "passed" },
+    { "id": "github-account", "result": "passed" },
+    { "id": "coding-agent-account", "result": "passed" }
+  ]
+}
+```
+
+把 `environment-evidence.json` 导入本页或课程首页的“导入可核验成果”控件。网页只在浏览器本地保存课程版本、课节身份、结果和证据 ID；刷新、导出和清除都不需要账号。
+
+## 故障注入与恢复
+
+可以安全地验证分支，而不用卸载工具或删除 PATH。先在一个临时 PowerShell 7 窗口运行诊断，再根据失败的证据选择分支：
+
+| 观察到的证据 | 诊断 | 恢复分支 | 再次验证 |
+| --- | --- | --- | --- |
+| `*-on-path` 失败 | 当前终端找不到命令，属于缺失或 PATH 未刷新 | 通过对应官方安装入口安装；或修复 PATH 后关闭并重新打开 PowerShell 7 | 先运行 `Get-Command python`/`Get-Command git`，再运行脚本 |
+| `*-on-path` 通过、`*-version` 失败 | 命令可见但不能执行，可能是 Windows 应用执行别名、损坏安装或旧版本包装器 | 检查命令是否来自预期安装，关闭应用执行别名冲突或重新安装；不要把 PATH 全文粘贴到记录 | 用 `python --version`/`git --version`，再运行脚本 |
+| `*-version` 通过但低于基线 | 工具存在但版本不满足本课要求 | 安装满足课程基线的版本；保留旧环境前先确认 `Get-Command` 指向的实例 | 重新打开 PowerShell 7 并运行脚本 |
+| `editor-command` 失败 | 编辑器可能能从图形界面启动，但 CLI 不在 PATH | 安装任意可用编辑器；若 GUI 已可用，可用 `-EditorReady` 做人工确认，不要提交安装路径 | 运行脚本并确认状态 |
+| 账号项失败 | 脚本不会探测账号登录状态 | 在官方客户端中自行确认至少一个后续 Coding Agent 账号和需要的 GitHub 账号；只用开关记录“已确认” | 重新运行脚本；不写用户名、邮箱或凭据 |
+
+故障注入的目标是识别证据和恢复动作，不是把系统改到“神秘地能用”。本课不展开 Git 回滚、冲突或 worktree 恢复；那些属于后续 Git 课程边界。
+
+若要在不卸载任何工具的情况下演练“错误版本”分支，可以在临时窗口把 Python 主版本门槛提高到一个不可能满足的值：
+
+```powershell
+pwsh -NoProfile -File .\labs\module-0\diagnose-environment.ps1 -MinimumPythonMajor 99
+```
+
+这是故障注入，不是修改课程基线；恢复时省略该参数并重新打开 PowerShell 7。
+
+## 迁移挑战
+
+在 macOS 或 Linux 上完成一条差异复核，不要复制 Windows 路径：
+
+| 平台 | 命令差异 | 保持不变的验收 |
+| --- | --- | --- |
+| macOS + zsh | 常见 Python 命令为 `python3`；可用 `command -v python3`、`python3 --version` | 先确认可见性，再确认可执行性和版本；证据仍只有状态 |
+| Linux + bash | 常见 Python 命令为 `python3`；发行版可能通过包管理器提供 Git | 不把发行版名称、用户目录或包管理输出写入证据 |
+| PowerShell 7 on macOS/Linux | 本脚本可在 PowerShell 7 中运行，但平台字段会标为 `macos` 或 `linux` | 课程主路径仍以 Windows 为准，平台差异要写进迁移记录 |
+
+迁移挑战的可核验成果是一段不含绝对路径和账号信息的命令输出摘要，或同一 `checks` 形状的本地 fixture；不要伪造 Windows 通过结果。
+
+## 可核验成果
+
+完成本课至少留下：
+
+1. `environment-diagnostic.json`：诊断脚本输出，包含 `lesson_id`、平台/Shell 标签和检查状态。
+2. `environment-evidence.json`：`python -m course_check check t05-environment` 生成的匿名 evidence contract JSON。
+3. 一份修复记录：每个失败项的类别（缺失、版本、PATH/别名或人工账号确认）与重新验证结果，不含路径、用户名、邮箱、源码或凭据。
+4. 网页导入后的本地学习记录；网页状态本身不是唯一成果，文件和命令结果才是证据。
+
+如果某一项仍失败，导入 `partial` 或 `failed` 结果也有价值：它会保留证据 ID，便于恢复后覆盖同一课节记录。
+
+## 风险与来源卡片
+
+**版本与平台（最后核验：2026-08-13）**
+
+- 课程基线是课程判断：PowerShell 7.x、Python 3.11+、Git 2.x，以及任意能打开练习仓库的编辑器。课程不要求某个 VS Code 版本，也不把 `code` 命令当成唯一编辑器。
+- Windows 11 + PowerShell 7 是正式主路径；macOS/Linux 只提供明确标注的差异复核。安装、命令别名和账号策略可能变化，使用前应查看官方文档。
+- 本课不调用 Codex、Claude Code、模型 API 或 MCP；后续课程再说明各工具账号、成本和权限。
+
+**权限、副作用与隐私**
+
+- 脚本默认只读查询；只有明确提供 `-OutputPath` 才新建一个 JSON 文件，不覆盖同名文件。
+- 诊断结果不收集用户名、邮箱、绝对路径、源码、原始研究数据、凭据或 token。账号开关只记录你是否自行确认，不证明服务端登录状态。
+- `course_check` 会把本地诊断缩减为既有 evidence contract 的课节身份、结果和证据 ID；网页导入后只写浏览器本地记录，不上传任何文件。
+
+事实来源：[Microsoft PowerShell 安装文档](https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell-on-windows)、[Python Windows 文档](https://docs.python.org/3/using/windows.html)、[Git 安装章节](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)、[VS Code 命令行文档](https://code.visualstudio.com/docs/configure/command-line) 和 [GitHub 账号文档](https://docs.github.com/en/account-and-profile/how-tos/account-management/creating-an-account-on-github)。正文与脚本为本课程原创；代码按仓库 MIT，正文按 CC BY 4.0。

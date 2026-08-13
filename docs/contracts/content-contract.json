@@ -45,6 +45,60 @@
         "CC-BY-4.0",
         "MIT"
       ]
+    },
+    {
+      "id": "t05-environment",
+      "title": "模块 0：环境诊断学习旅程",
+      "stage": "alpha",
+      "duration_minutes": 45,
+      "prerequisites": ["t01-foundation"],
+      "outcomes": [
+        "在 Windows 11 + PowerShell 7 中诊断编辑器、Python、Git 与 PATH 状态",
+        "区分工具缺失、版本不满足和 PATH/别名故障，并选择可恢复修复分支",
+        "在不暴露账号、绝对路径或凭据的前提下生成并导入匿名环境证据"
+      ],
+      "artifacts": [
+        "environment-diagnostic.json（仅含状态）",
+        "environment-evidence.json（既有匿名 evidence contract）",
+        "一份不含个人信息的诊断与修复记录"
+      ],
+      "primary_tool": "PowerShell 7",
+      "migration_tool": "macOS zsh / Linux bash（差异复核）",
+      "platforms": {
+        "primary": "Windows 11 + PowerShell 7",
+        "secondary": ["macOS + zsh", "Linux + bash"]
+      },
+      "versions": {
+        "client": "PowerShell 7.x; Python 3.11+; Git 2.x; 任意可用编辑器",
+        "sdk": "not-applicable",
+        "model": "not-applicable",
+        "protocol": "agent-engineering-course/evidence v1"
+      },
+      "verified_on": "2026-08-13",
+      "access": {
+        "accounts": [
+          "GitHub account (manual check)",
+          "one Coding Agent account (manual check)"
+        ],
+        "cost": "free; 后续 Coding Agent 可能需要单独账号或付费额度",
+        "network": "诊断与本地检查不需要网络；安装或登录时按官方入口联网"
+      },
+      "risk": {
+        "permissions": "只读查询版本和命令可见性；只有显式 -OutputPath 时写入一个新 JSON 文件",
+        "side_effects": "脚本不调用网络、不登录、不读取源码或环境变量中的凭据；课程检查器只生成匿名摘要",
+        "staleness": "版本下限是课程基线判断；安装入口、编辑器命令和账号策略发布前须重新核验"
+      },
+      "sources": [
+        "powershell-install-windows",
+        "python-using-windows",
+        "git-installation-book",
+        "vscode-command-line",
+        "github-account-basics"
+      ],
+      "licenses": [
+        "CC-BY-4.0",
+        "MIT"
+      ]
     }
   ]
 }

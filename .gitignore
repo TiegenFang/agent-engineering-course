@@ -10,3 +10,7 @@ __pycache__/
 .env.*
 !.env.example
 
+# Local module 0 evidence may contain machine-specific pass/fail states.
+environment-diagnostic.json
+environment-evidence.json
+

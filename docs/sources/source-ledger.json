@@ -111,6 +111,56 @@
       "usage": "三套 T03 方向 demo 的官方 Claude Code logo；entry Anthropic media resources/Anthropic logos/Claude logos/2 Claude Code logo/SVG/Claude Code logo - Slate.svg; local site/public/brands/claude-code-logo-slate.svg; asset SHA-256 8d42fc0238362e163af2cbf8d9a25e9bd8666bfd6702de58197844092d7f2665",
       "license_or_terms": "Archive provided no separate logo license text; reference-only Anthropic press-kit/trademark asset, original proportions, direct Claude Code context only, no MIT/Apache/CC relicensing or endorsement claim; recheck terms before production",
       "copied_assets": true
+    },
+    {
+      "id": "powershell-install-windows",
+      "title": "Install PowerShell on Windows",
+      "url": "https://learn.microsoft.com/powershell/scripting/install/install-powershell-on-windows",
+      "source_role": "fact-source",
+      "pinned_version": "PowerShell 7.x; reviewed 2026-08-13",
+      "usage": "确认 Windows 主路径使用 PowerShell 7 及官方安装入口；正文为原创改写",
+      "license_or_terms": "reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "python-using-windows",
+      "title": "Python Using Python on Windows",
+      "url": "https://docs.python.org/3/using/windows.html",
+      "source_role": "fact-source",
+      "pinned_version": "Python 3 documentation; reviewed 2026-08-13",
+      "usage": "确认 Python Windows 安装与命令行入口；版本下限是课程判断",
+      "license_or_terms": "reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "git-installation-book",
+      "title": "Git Book: Getting Started Installing Git",
+      "url": "https://git-scm.com/book/en/v2/Getting-Started-Installing-Git",
+      "source_role": "fact-source",
+      "pinned_version": "Git Book installation chapter; reviewed 2026-08-13",
+      "usage": "确认 Git 安装与版本检查入口；正文为原创安全分支",
+      "license_or_terms": "reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "vscode-command-line",
+      "title": "Visual Studio Code Command Line Interface",
+      "url": "https://code.visualstudio.com/docs/configure/command-line",
+      "source_role": "fact-source",
+      "pinned_version": "VS Code command-line documentation; reviewed 2026-08-13",
+      "usage": "说明 code 命令是可选编辑器 CLI 信号，不把某个编辑器作为课程强制依赖",
+      "license_or_terms": "reference-only; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "github-account-basics",
+      "title": "GitHub: Creating an account",
+      "url": "https://docs.github.com/en/account-and-profile/how-tos/account-management/creating-an-account-on-github",
+      "source_role": "fact-source",
+      "pinned_version": "GitHub documentation; reviewed 2026-08-13",
+      "usage": "提供账号准备的官方入口；课程只要求学员自查，不读取身份信息",
+      "license_or_terms": "reference-only; no copied assets",
+      "copied_assets": false
     }
   ]
 }

@@ -18,6 +18,7 @@ EXPECTED_BOUNDARIES = {
     "checker": "checker",
     "docs": "docs",
 }
+ENVIRONMENT_LESSON_ID = "t05-environment"
 
 LESSON_REQUIRED_FIELDS = {
     "id",
@@ -311,16 +312,23 @@ def check_lesson(
     *,
     evidence_file: Path | None = None,
 ) -> dict[str, Any]:
-    """Run the first public lesson check and build its anonymous result."""
+    """Run a public lesson check and build its anonymous result."""
 
-    if lesson_id != "t01-foundation":
+    if lesson_id not in {"t01-foundation", ENVIRONMENT_LESSON_ID}:
         raise ContractError(f"Unsupported evidence lesson: {lesson_id}")
     course_version = validate_foundation(root)
-    checks: list[dict[str, Any]] = [
-        {"id": "course-version-lock", "result": "passed"},
-        {"id": "foundation-contract", "result": "passed"},
-    ]
-    if evidence_file is not None:
+    if lesson_id == "t01-foundation":
+        checks: list[dict[str, Any]] = [
+            {"id": "course-version-lock", "result": "passed"},
+            {"id": "foundation-contract", "result": "passed"},
+        ]
+        if evidence_file is not None:
+            checks = load_evidence_checks(evidence_file, expected_lesson_id=lesson_id)
+    else:
+        if evidence_file is None:
+            raise EvidenceError(
+                "t05-environment requires --environment-file with the local diagnostic JSON"
+            )
         checks = load_evidence_checks(evidence_file, expected_lesson_id=lesson_id)
     return build_evidence_document(
         course_version=course_version,
@@ -341,8 +349,13 @@ def build_parser() -> argparse.ArgumentParser:
     check.add_argument("--root", type=Path, required=True)
     check.add_argument(
         "--evidence-file",
+        "--environment-file",
+        dest="evidence_file",
         type=Path,
-        help="optional local fixture containing lesson_id and check result states",
+        help=(
+            "local fixture containing lesson_id and check result states; "
+            "use --environment-file for t05-environment"
+        ),
     )
     check.add_argument(
         "--output",
