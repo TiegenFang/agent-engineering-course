@@ -11,7 +11,7 @@
     "test:site": "npm run test --workspace @agent-engineering-course/site",
     "browser:install": "npm run browser:install --workspace @agent-engineering-course/site",
     "test:browser": "npm run test:browser --workspace @agent-engineering-course/site",
-    "test:python": "python -m unittest discover -s checker/tests -v",
+    "test:python": "python -m unittest discover -s checker/tests -t checker -v",
     "checker": "npm run test:python",
     "diff-check": "git diff --check",
     "verify": "npm run test:python && npm run check && npm run build && npm run test:site && npm run test:browser"
