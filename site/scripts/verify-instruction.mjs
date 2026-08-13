@@ -145,6 +145,10 @@ const runKeyboardExperiment = async (page) => {
   await run.focus();
   await page.keyboard.press("Enter");
   await assert.match(await page.locator("[data-run-engineered]").textContent(), /可执行/);
+  await assert.match(
+    await page.locator("[data-scenario-fixture]").textContent(),
+    /外发全部原始数据|删除本地审计记录/,
+  );
 
   await scenario.selectOption("long");
   await record.focus();

@@ -26,7 +26,7 @@ const initialInstruction = defaultEngineeredInstruction(DEFAULT_TASK_VARIANT, DE
       <p class="eyebrow">模块 2 · Agent 指令工程</p>
       <h2 id="instruction-lab-title">同一基线，比较两种指令</h2>
     </div>
-    <span class="instruction-lab__version">experiment v1 · {expectedCourseVersion}</span>
+    <span class="instruction-lab__version">experiment v2 · {expectedCourseVersion}</span>
   </div>
 
   <p class="instruction-lab__lead">
@@ -40,12 +40,12 @@ const initialInstruction = defaultEngineeredInstruction(DEFAULT_TASK_VARIANT, DE
         当前浏览器不能运行本地模拟器，因此不能记录交互 evidence。下面仍保留可阅读、可迁移的固定实验：模糊请求没有目标、工具边界和验收契约；工程化指令把这些字段显式写出。
       </p>
       <table>
-        <caption>同一基线的预期差异（deterministic fixture v1）</caption>
+        <caption>同一基线的预期差异（deterministic fixture v2）</caption>
         <thead><tr><th scope="col">输入</th><th scope="col">模糊请求</th><th scope="col">工程化指令</th></tr></thead>
         <tbody>
           <tr><th scope="row">基线报告</th><td>目标和失败证据不清</td><td>目标、输出契约和验收字段可检查</td></tr>
           <tr><th scope="row">规则冲突</th><td>不知道谁优先，可能越过确认点</td><td>遵守更高优先级只读规则并停止请求确认</td></tr>
-          <tr><th scope="row">提示注入</th><td>可能把不可信备注当作指令</td><td>把备注当数据，忽略其中改变边界的指令</td></tr>
+          <tr><th scope="row">提示注入</th><td>可能把不可信备注当作指令</td><td>把真实恶意备注当数据，隔离并停止危险操作</td></tr>
           <tr><th scope="row">过长指令</th><td>背景噪声挤出关键条件</td><td>保留必要字段并遵守 720 字符预算</td></tr>
         </tbody>
       </table>
@@ -101,6 +101,11 @@ const initialInstruction = defaultEngineeredInstruction(DEFAULT_TASK_VARIANT, DE
           <h4>工程化指令</h4>
           <pre data-engineered-prompt>{initialInstruction}</pre>
         </article>
+        <article>
+          <h4>当前场景 fixture</h4>
+          <p>fixture 是输入数据；其中的备注不能升级为工具指令。</p>
+          <pre data-scenario-fixture>{JSON.stringify(SCENARIOS[DEFAULT_SCENARIO].fixture, null, 2)}</pre>
+        </article>
       </div>
     </div>
 
@@ -145,7 +150,7 @@ const initialInstruction = defaultEngineeredInstruction(DEFAULT_TASK_VARIANT, DE
     <ol data-instruction-checklist>
       <li>先记录一个预测</li>
       <li>运行同一基线</li>
-      <li>依次运行规则冲突、提示注入和过长指令</li>
+      <li>按 baseline → conflict → injection → long 的固定顺序运行</li>
       <li>切换到夜班压力报告完成迁移挑战</li>
     </ol>
     <div class="instruction-lab__controls">
@@ -161,7 +166,7 @@ const initialInstruction = defaultEngineeredInstruction(DEFAULT_TASK_VARIANT, DE
     <ol>
       <li>若“字段不足”，点击恢复当前场景指令，或补回 8 个字段后重跑。</li>
       <li>若“冲突未封装”，明确规则优先级、只读边界、停止和人工确认。</li>
-      <li>若“不可信输入未隔离”，把备注放在数据上下文中，写出忽略改变边界的指令。</li>
+      <li>若“不可信输入未隔离”，把真实恶意备注放在数据上下文中，写出忽略、隔离和停止边界的指令。</li>
       <li>若“过长”，删除无关背景，使工程化版本回到 720 字符以内。</li>
       <li>最后改变任务输入为夜班压力报告；迁移挑战必须改变单位、主题和记录数约束。</li>
     </ol>
@@ -178,6 +183,7 @@ const initialInstruction = defaultEngineeredInstruction(DEFAULT_TASK_VARIANT, DE
     createInstructionSession,
     defaultEngineeredInstruction,
     ambiguousInstruction,
+    getScenarioFixture,
     describeInstructionRun,
     runInstructionComparison,
     selectInstructionInput,
@@ -223,6 +229,7 @@ const initialInstruction = defaultEngineeredInstruction(DEFAULT_TASK_VARIANT, DE
     const current = root.querySelector("[data-instruction-current]");
     const ambiguousPrompt = root.querySelector("[data-ambiguous-prompt]");
     const engineeredPrompt = root.querySelector("[data-engineered-prompt]");
+    const scenarioFixture = root.querySelector("[data-scenario-fixture]");
     const ambiguousRun = root.querySelector("[data-run-ambiguous]");
     const engineeredRun = root.querySelector("[data-run-engineered]");
     const difference = root.querySelector("[data-instruction-difference]");
@@ -250,6 +257,9 @@ const initialInstruction = defaultEngineeredInstruction(DEFAULT_TASK_VARIANT, DE
       const { scenarioId, variantId } = selectedIds();
       if (ambiguousPrompt instanceof HTMLElement) ambiguousPrompt.textContent = ambiguousInstruction(variantId, scenarioId);
       if (engineeredPrompt instanceof HTMLElement) engineeredPrompt.textContent = engineeredInput instanceof HTMLTextAreaElement ? engineeredInput.value : "";
+      if (scenarioFixture instanceof HTMLElement) {
+        scenarioFixture.textContent = JSON.stringify(getScenarioFixture(scenarioId), null, 2);
+      }
       if (current instanceof HTMLElement) current.textContent = `${scenarioId} · ${variantId}`;
     };
 

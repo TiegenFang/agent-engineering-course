@@ -52,13 +52,19 @@ def evidence_document(results: list[str], *, experiment: dict[str, object] | Non
         "experiment": experiment
         if experiment is not None
         else {
-            "version": "1",
+            "version": "2",
             "baseline_id": "telemetry-report-v1",
             "completed_scenarios": ["baseline", "conflict", "injection", "long"],
             "migration_variants": ["pressure-night"],
+            "migration_contracts": [
+                {"id": "pressure-night", "subject": "压力", "unit": "kPa", "limit": "最近 3 条有效记录"}
+            ],
             "latest": {
                 "scenario_id": "long",
                 "variant_id": "pressure-night",
+                "variant_subject": "压力",
+                "variant_unit": "kPa",
+                "variant_limit": "最近 3 条有效记录",
                 "ambiguous_outcome": "overloaded",
                 "engineered_outcome": "scoped",
             },
@@ -129,13 +135,17 @@ class InstructionCheckerTests(unittest.TestCase):
 
     def test_t03_preserves_partial_result_for_incomplete_runs(self) -> None:
         experiment = {
-            "version": "1",
+            "version": "2",
             "baseline_id": "telemetry-report-v1",
             "completed_scenarios": ["baseline"],
             "migration_variants": [],
+            "migration_contracts": [],
             "latest": {
                 "scenario_id": "baseline",
                 "variant_id": "temperature-daily",
+                "variant_subject": "温度",
+                "variant_unit": "°C",
+                "variant_limit": "最近 5 条有效记录",
                 "ambiguous_outcome": "under-specified",
                 "engineered_outcome": "controlled",
             },
@@ -164,10 +174,13 @@ class InstructionCheckerTests(unittest.TestCase):
     def test_t03_rejects_passed_injection_without_injection_run(self) -> None:
         value = evidence_document(["passed"] * len(CHECK_IDS))
         value["experiment"] = {
-            "version": "1",
+            "version": "2",
             "baseline_id": "telemetry-report-v1",
             "completed_scenarios": ["baseline", "conflict", "long"],
             "migration_variants": ["pressure-night"],
+            "migration_contracts": [
+                {"id": "pressure-night", "subject": "压力", "unit": "kPa", "limit": "最近 3 条有效记录"}
+            ],
             "latest": None,
         }
         with tempfile.TemporaryDirectory() as temporary:
@@ -202,6 +215,47 @@ class InstructionCheckerTests(unittest.TestCase):
             )
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("unsupported fields", result.stderr.lower())
+
+    def test_t03_rejects_out_of_order_scenarios(self) -> None:
+        value = evidence_document(["passed"] * len(CHECK_IDS))
+        value["experiment"]["completed_scenarios"] = [  # type: ignore[index]
+            "baseline",
+            "injection",
+            "conflict",
+            "long",
+        ]
+        with tempfile.TemporaryDirectory() as temporary:
+            evidence_path = Path(temporary) / "order.json"
+            evidence_path.write_text(json.dumps(value), encoding="utf-8")
+            result = self.run_checker(
+                "check",
+                "t03-agent-instruction",
+                "--root",
+                str(ROOT),
+                "--evidence-file",
+                str(evidence_path),
+                "--json",
+            )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("fixed order", result.stderr.lower())
+
+    def test_t03_rejects_mismatched_migration_contract(self) -> None:
+        value = evidence_document(["passed"] * len(CHECK_IDS))
+        value["experiment"]["migration_contracts"][0]["unit"] = "°C"  # type: ignore[index]
+        with tempfile.TemporaryDirectory() as temporary:
+            evidence_path = Path(temporary) / "variant-contract.json"
+            evidence_path.write_text(json.dumps(value, ensure_ascii=False), encoding="utf-8")
+            result = self.run_checker(
+                "check",
+                "t03-agent-instruction",
+                "--root",
+                str(ROOT),
+                "--evidence-file",
+                str(evidence_path),
+                "--json",
+            )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("migration contract", result.stderr.lower())
 
 
 if __name__ == "__main__":

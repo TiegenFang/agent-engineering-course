@@ -58,7 +58,7 @@
       "url": "https://www.npmjs.com/package/playwright",
       "source_role": "development-dependency",
       "pinned_version": "1.62.1",
-      "usage": "site/scripts/verify-directions.mjs 的固定 Chromium 桌面/移动浏览器验证；运行时版本写入 artifacts/t03-screenshots/manifest.json",
+      "usage": "site/scripts/verify-directions.mjs 与 site/scripts/verify-instruction.mjs 的固定 Chromium 桌面/移动端验证，覆盖方向交互、T08 键盘/ARIA/移动端无横向溢出和禁用 JavaScript 降级；T03 方向运行时版本写入 artifacts/t03-screenshots/manifest.json",
       "license_or_terms": "Apache-2.0",
       "copied_assets": false
     },

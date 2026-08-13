@@ -13,6 +13,7 @@ import {
   createInstructionSession,
   defaultEngineeredInstruction,
   ambiguousInstruction,
+  getScenarioFixture,
   runInstructionComparison,
   selectInstructionInput,
   submitInstructionPrediction,
@@ -66,6 +67,7 @@ test("同一基线产生可比较的模糊/工程化结果", () => {
 
 test("冲突、提示注入和过长指令各自产生可解释失败证据", () => {
   let session = createInstructionSession();
+  session = predictAndRun(session, "baseline");
   session = predictAndRun(session, "conflict");
   assert.equal(session.latest.runs[0].outcome, "conflict-unresolved");
   assert.equal(session.latest.runs[1].outcome, "conflict-contained");
@@ -94,12 +96,66 @@ test("必须先预测，迁移挑战使用变化输入和约束", () => {
     () => runInstructionComparison(session),
     (error) => error instanceof InstructionStateError && error.code === "prediction-required",
   );
-  session = predictAndRun(session, "baseline", "temperature-daily");
+  for (const scenarioId of ["baseline", "conflict", "injection", "long"]) {
+    session = predictAndRun(session, scenarioId, "temperature-daily");
+  }
   session = predictAndRun(session, "baseline", "pressure-night");
   assert.equal(session.latest.variantId, "pressure-night");
   assert.equal(session.latest.runs[1].status, "passed");
   assert.deepEqual(session.migrationVariants, ["pressure-night"]);
   assert.equal(session.latest.runs[1].outcome, "controlled");
+  assert.equal(session.latest.variantSubject, "压力");
+  assert.equal(session.latest.variantUnit, "kPa");
+  assert.equal(session.latest.variantLimit, "最近 3 条有效记录");
+});
+
+test("提示注入使用真实恶意 fixture，并且只堆关键词不能绕过安全不变量", () => {
+  const fixture = getScenarioFixture("injection");
+  assert.match(fixture.maliciousNote, /外发全部原始数据/);
+  assert.match(fixture.maliciousNote, /删除本地审计记录/);
+  let session = createInstructionSession();
+  session = predictAndRun(session, "baseline");
+  const spoof = [
+    "目标：生成日常温度报告，检查温度数据质量并给出可复核摘要。",
+    "上下文：这是合成温度记录，单位为 °C。",
+    "约束：只读检查；不调用网络；最近 5 条有效记录。",
+    "非目标：不修改仓库文件。",
+    "工具边界：优先级、忽略、停止。",
+    "输出契约：给出温度摘要。",
+    "验收标准：输出包含单位 °C。",
+    "失败证据：停止。",
+  ].join("\n");
+  session = predictAndRun(session, "conflict", "temperature-daily", spoof);
+  assert.equal(session.latest.runs[1].status, "failed");
+  assert.equal(session.latest.runs[1].outcome, "conflict-unresolved");
+  session = predictAndRun(session, "conflict");
+  session = predictAndRun(session, "injection", "temperature-daily", spoof);
+  assert.equal(session.latest.fixture.maliciousNote, fixture.maliciousNote);
+  assert.equal(session.latest.runs[1].outcome, "injection-uncontained");
+});
+
+test("迁移输入必须同时校验主题、单位和记录限制，而不是只看 variant ID", () => {
+  let session = createInstructionSession();
+  for (const scenarioId of ["baseline", "conflict", "injection", "long"]) {
+    session = predictAndRun(session, scenarioId, "temperature-daily");
+  }
+  const staleTemperatureInstruction = defaultEngineeredInstruction("temperature-daily", "baseline");
+  session = predictAndRun(session, "baseline", "pressure-night", staleTemperatureInstruction);
+  assert.equal(session.latest.runs[1].status, "failed");
+  assert.equal(session.latest.runs[1].outcome, "variant-mismatch");
+  assert.deepEqual(session.migrationVariants, []);
+});
+
+test("新场景必须按固定顺序运行，提前迁移也会被拒绝", () => {
+  let session = createInstructionSession();
+  assert.throws(
+    () => predictAndRun(session, "injection"),
+    (error) => error instanceof InstructionStateError && error.code === "scenario-order",
+  );
+  assert.throws(
+    () => predictAndRun(session, "baseline", "pressure-night"),
+    (error) => error instanceof InstructionStateError && error.code === "migration-order",
+  );
 });
 
 test("完成四个场景和变化输入后，evidence 只保留匿名稳定状态", () => {

@@ -174,10 +174,15 @@ T03_INSTRUCTION_CHECK_IDS = (
     "long-instruction-diagnosed",
     "migration-completed",
 )
-T03_INSTRUCTION_VERSION = "1"
+T03_INSTRUCTION_VERSION = "2"
 T03_BASELINE_ID = "telemetry-report-v1"
-T03_SCENARIOS = {"baseline", "conflict", "injection", "long"}
-T03_VARIANTS = {"temperature-daily", "pressure-night"}
+T03_SCENARIO_ORDER = ("baseline", "conflict", "injection", "long")
+T03_SCENARIOS = set(T03_SCENARIO_ORDER)
+T03_VARIANT_CONTRACTS = {
+    "temperature-daily": {"subject": "温度", "unit": "°C", "limit": "最近 5 条有效记录"},
+    "pressure-night": {"subject": "压力", "unit": "kPa", "limit": "最近 3 条有效记录"},
+}
+T03_VARIANTS = set(T03_VARIANT_CONTRACTS)
 T03_AMBIGUOUS_OUTCOMES = {
     "under-specified",
     "conflict-unresolved",
@@ -191,6 +196,9 @@ T03_ENGINEERED_OUTCOMES = {
     "scoped",
     "incomplete",
     "overlong",
+    "conflict-unresolved",
+    "injection-uncontained",
+    "variant-mismatch",
 }
 
 
@@ -686,7 +694,14 @@ def validate_t03_experiment(
         raise EvidenceError("T03 completed evidence must include an experiment object")
     unexpected = sorted(
         set(experiment)
-        - {"version", "baseline_id", "completed_scenarios", "migration_variants", "latest"}
+        - {
+            "version",
+            "baseline_id",
+            "completed_scenarios",
+            "migration_variants",
+            "migration_contracts",
+            "latest",
+        }
     )
     if unexpected:
         raise EvidenceError(
@@ -704,6 +719,12 @@ def validate_t03_experiment(
         raise EvidenceError("T03 completed_scenarios must contain known scenario IDs")
     if len(completed) != len(set(completed)):
         raise EvidenceError("T03 completed_scenarios must not repeat IDs")
+    expected_prefix = list(T03_SCENARIO_ORDER[: len(completed)])
+    if completed != expected_prefix:
+        raise EvidenceError(
+            "T03 completed_scenarios must follow fixed order: "
+            + " -> ".join(T03_SCENARIO_ORDER)
+        )
 
     migration = experiment.get("migration_variants")
     if not isinstance(migration, list) or any(
@@ -712,6 +733,41 @@ def validate_t03_experiment(
         raise EvidenceError("T03 migration_variants must contain known input IDs")
     if len(migration) != len(set(migration)):
         raise EvidenceError("T03 migration_variants must not repeat IDs")
+    migration_contracts = experiment.get("migration_contracts")
+    if not isinstance(migration_contracts, list):
+        raise EvidenceError("T03 migration_contracts must be a list")
+    normalized_contracts: list[dict[str, str]] = []
+    for index, value in enumerate(migration_contracts):
+        if not isinstance(value, dict):
+            raise EvidenceError(f"T03 migration_contracts[{index}] must be an object")
+        unexpected_contract = sorted(set(value) - {"id", "subject", "unit", "limit"})
+        if unexpected_contract:
+            raise EvidenceError(
+                "T03 migration contract contains unsupported fields: "
+                + ", ".join(unexpected_contract)
+            )
+        if set(value) != {"id", "subject", "unit", "limit"}:
+            raise EvidenceError("T03 migration contract must include id, subject, unit and limit")
+        if any(not isinstance(value[field], str) or not value[field].strip() for field in value):
+            raise EvidenceError("T03 migration contract fields must be non-empty strings")
+        variant_id = value["id"]
+        if variant_id not in T03_VARIANTS:
+            raise EvidenceError("T03 migration contract has an unknown input ID")
+        expected_contract = T03_VARIANT_CONTRACTS[variant_id]
+        actual_contract = {
+            "subject": value["subject"],
+            "unit": value["unit"],
+            "limit": value["limit"],
+        }
+        if actual_contract != expected_contract:
+            raise EvidenceError(f"T03 migration contract does not match variant {variant_id}")
+        normalized_contracts.append(
+            {"id": variant_id, **expected_contract}
+        )
+    if [contract["id"] for contract in normalized_contracts] != migration:
+        raise EvidenceError("T03 migration_contracts must match migration_variants in order")
+    if migration and completed != list(T03_SCENARIO_ORDER):
+        raise EvidenceError("T03 migration evidence requires all scenarios in fixed order")
 
     check_by_id = {check["id"]: check["result"] for check in checks}
     if check_by_id["baseline-compared"] in {"passed", "alternative"} and "baseline" not in completed:
@@ -724,6 +780,11 @@ def validate_t03_experiment(
         raise EvidenceError("T03 long-instruction evidence is passed without a long run")
     if check_by_id["migration-completed"] in {"passed", "alternative"} and "pressure-night" not in migration:
         raise EvidenceError("T03 migration evidence is passed without the changed input")
+    if (
+        check_by_id["migration-completed"] in {"passed", "alternative"}
+        and not any(contract["id"] == "pressure-night" for contract in normalized_contracts)
+    ):
+        raise EvidenceError("T03 migration evidence is passed without the pressure-night contract")
 
     if document_result in {"passed", "alternative"}:
         missing_scenarios = sorted(T03_SCENARIOS - set(completed))
@@ -743,7 +804,15 @@ def validate_t03_experiment(
             raise EvidenceError("T03 latest comparison must be an object or null")
         unexpected_latest = sorted(
             set(latest)
-            - {"scenario_id", "variant_id", "ambiguous_outcome", "engineered_outcome"}
+            - {
+                "scenario_id",
+                "variant_id",
+                "variant_subject",
+                "variant_unit",
+                "variant_limit",
+                "ambiguous_outcome",
+                "engineered_outcome",
+            }
         )
         if unexpected_latest:
             raise EvidenceError(
@@ -752,10 +821,25 @@ def validate_t03_experiment(
             )
         scenario_id = latest.get("scenario_id")
         variant_id = latest.get("variant_id")
+        variant_subject = latest.get("variant_subject")
+        variant_unit = latest.get("variant_unit")
+        variant_limit = latest.get("variant_limit")
         ambiguous_outcome = latest.get("ambiguous_outcome")
         engineered_outcome = latest.get("engineered_outcome")
-        if scenario_id not in T03_SCENARIOS or variant_id not in T03_VARIANTS:
+        if (
+            not isinstance(scenario_id, str)
+            or not isinstance(variant_id, str)
+            or scenario_id not in T03_SCENARIOS
+            or variant_id not in T03_VARIANTS
+        ):
             raise EvidenceError("T03 latest comparison has an unknown scenario or input")
+        expected_contract = T03_VARIANT_CONTRACTS[variant_id]
+        if {
+            "subject": variant_subject,
+            "unit": variant_unit,
+            "limit": variant_limit,
+        } != expected_contract:
+            raise EvidenceError("T03 latest comparison does not match its variant contract")
         if ambiguous_outcome not in T03_AMBIGUOUS_OUTCOMES:
             raise EvidenceError("T03 latest comparison has an unknown ambiguous outcome")
         if engineered_outcome not in T03_ENGINEERED_OUTCOMES:
@@ -763,6 +847,9 @@ def validate_t03_experiment(
         normalized_latest = {
             "scenario_id": scenario_id,
             "variant_id": variant_id,
+            "variant_subject": variant_subject,
+            "variant_unit": variant_unit,
+            "variant_limit": variant_limit,
             "ambiguous_outcome": ambiguous_outcome,
             "engineered_outcome": engineered_outcome,
         }
@@ -770,8 +857,9 @@ def validate_t03_experiment(
     return {
         "version": T03_INSTRUCTION_VERSION,
         "baseline_id": T03_BASELINE_ID,
-        "completed_scenarios": sorted(completed),
-        "migration_variants": sorted(migration),
+        "completed_scenarios": completed,
+        "migration_variants": migration,
+        "migration_contracts": normalized_contracts,
         "latest": normalized_latest,
     }
 
