@@ -4,10 +4,11 @@
 
 ## Current state
 
-- 当前处于 Alpha 纵向切片实施阶段；Foundation 的版本、内容、来源与站点合同已建立，每次只推进依赖前沿中已经解除阻塞的 ticket。
+- 模块 0–12 的课节、实验与检查器已全部在 main 上；当前处于 v1 发布验收阶段：T32 无障碍与 T33 发布审计的自动化门已合入 CI，剩余 T34 真人跨平台与真实工具验收、T12 试学审计和 T35 正式发布。
 - v1 总规格是 GitHub [Issue #1](https://github.com/TiegenFang/agent-engineering-course/issues/1)，状态为 `ready-for-agent`。
-- 实施顺序固定为 Foundation、Alpha 纵向切片、Core Beta、v1；当前 Alpha ticket 只推进已解除阻塞的纵向切片，不直接批量制作全部 13 个模块。
-- 当前工作区可能尚未连接 Git remote；GitHub 操作在此之前显式使用 `--repo TiegenFang/agent-engineering-course`。
+- 实施顺序固定为 Foundation、Alpha 纵向切片、Core Beta、v1；推进时仍按依赖前沿逐个 ticket 解锁，不在实现中顺手扩展范围。
+- 工作区已连接 Git remote（origin/main）；GitHub 操作按 [issue tracker](./docs/agents/issue-tracker.md) 约定显式使用 `--repo TiegenFang/agent-engineering-course`。
+- 本地 ticket 工作区使用 git worktree；`node_modules` 通过目录 junction 共享主工作区副本，操作约定见 [worktree workflow](./docs/agents/worktree-workflow.md)。
 
 ## Source-of-truth order
 
