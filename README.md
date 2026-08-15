@@ -2,7 +2,7 @@
 
 从 Codex 与 Claude Code，到 Memory、Skills、MCP 与 API 实战。
 
-本仓库统一承载中文课程站、设备遥测练习、课程检查器和规划文档。模块 0–12 的内容已全部就绪，当前处于 v1 发布验收阶段（版本仍为 `0.1.0-alpha`，待 T34 真人验收与 T35 发布解锁）。
+本仓库统一承载中文课程站、设备遥测练习、课程检查器和规划文档。**v1.0.0 已发布（2026-08-16）**，正式站点：https://tiegenfang.github.io/agent-engineering-course/ 。真实工具现场验收（T34）与试学审计（T12）延后进行，边界记录见[工程工作日志](docs/worklog.md)。
 
 ## 工作区边界
 

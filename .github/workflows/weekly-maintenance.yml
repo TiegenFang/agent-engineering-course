@@ -1,0 +1,42 @@
+name: Weekly maintenance audit
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ASTRO_TELEMETRY_DISABLED: '1'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run release audit with bounded online link check
+        run: |
+          python scripts/release_audit.py --root . \
+            --as-of "$(date +%F)" \
+            --online --max-url-checks 100 \
+            --report .audit/t33-release-audit-weekly.md \
+            --json-output .audit/t33-release-audit-weekly.json
+      - name: Run accessibility audit
+        run: |
+          python scripts/accessibility_audit.py --root . \
+            --report .audit/t32-accessibility-audit-weekly.md \
+            --json-output .audit/t32-accessibility-audit-weekly.json
+      - name: Report dependency drift
+        run: npm ci --ignore-scripts && npm outdated --all || true
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-audit-${{ github.run_id }}
+          path: .audit/
+          retention-days: 90

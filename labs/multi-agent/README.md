@@ -35,7 +35,7 @@ python -m course_check check t22-multi-agent --root .. --json
 {
   "contract": "agent-engineering-course/evidence",
   "contract_version": "1",
-  "course_version": "0.1.0-alpha",
+  "course_version": "1.0.0",
   "lesson_id": "t22-multi-agent",
   "result": "partial",
   "anonymous": true,

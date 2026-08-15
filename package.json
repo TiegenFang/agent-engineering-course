@@ -1,6 +1,6 @@
 {
   "name": "agent-engineering-course",
-  "version": "0.1.0-alpha",
+  "version": "1.0.0",
   "private": true,
   "workspaces": [
     "site"

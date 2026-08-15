@@ -127,6 +127,6 @@ python -m course_check check t29-production --root . --evidence-file $output --j
 - **账号与成本**：本课 evaluator、页面和 checker 免费；不需要账号、API key、网络或付费 API。真实 T27/T28 API 运行可能产生按量费用，必须使用小额预算和人工批准。
 - **权限与副作用**：离线脚本只读合成 fixture，并写入用户显式指定的新 JSON；不联网、不读取环境变量中的凭据、不执行模型工具、不发送消息。不要把临时输出路径指向真实研究或企业数据目录。
 - **日志与隐私**：公共 evidence 只保留稳定 ID、状态、计数、版本和估算；不保存源码、绝对路径、原始数据、token、Authorization、API key、完整 prompt、工具 payload 或隐藏推理。
-- **版本**：`production-evaluator-v1`、fixture `1`、`agent-engineering-course/evidence v1` 与课程版本 `0.1.0-alpha` 锁定；价格只是教学估算，现场价卡必须在执行当天重新核验。
+- **版本**：`production-evaluator-v1`、fixture `1`、`agent-engineering-course/evidence v1` 与课程版本 `1.0.0` 锁定；价格只是教学估算，现场价卡必须在执行当天重新核验。
 - **验证边界**：验证离线 evaluator、checker、Node 单测和浏览器路径；未验证 OpenAI/Anthropic live API、真实账单、SLO、供应商限流、跨云部署、Codex/Claude Code live tool call 或生产数据。
 - **来源**：官方 API/SDK 文档只用于适配层事实核验；本课 rubric、fixture、evaluator、页面和 checker 为课程原创。第三方资料不直接复制正文、代码或模型输出。具体来源和许可证见 [`docs/sources/source-ledger.json`](../../../docs/sources/source-ledger.json)。

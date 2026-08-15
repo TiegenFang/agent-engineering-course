@@ -1,0 +1,36 @@
+---
+title: 下一步学习地图
+description: v1 之外的进阶主题导航，附先修关系与官方真源入口
+---
+
+# 下一步学习地图
+
+本课程 v1 刻意不覆盖以下主题。每个条目给出先修要求（本课程模块）与官方真源入口；外部链接以官方文档域为主，社区教程请自行甄别时效。
+
+## 按先修顺序的地图
+
+| 主题 | 先修 | 入口（官方真源） |
+| --- | --- | --- |
+| Codex/Claude Code 完整参数与配置手册 | 模块 3–4 | [openai/codex](https://github.com/openai/codex)、[anthropics/claude-code](https://github.com/anthropics/claude-code) |
+| 其他 Coding Agent（Copilot、Cursor、Gemini CLI） | 模块 3 的迁移经验 | [GitHub Copilot 文档](https://code.visualstudio.com/docs/copilot/overview)、[Cursor 文档](https://cursor.com/docs)、[google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli) |
+| Agent 框架深入（Agents SDK、Claude Agent SDK） | 模块 11 手写 loop 之后 | [OpenAI Agents SDK (Python)](https://openai.github.io/openai-agents-python/)、[Anthropic 文档](https://docs.anthropic.com/) |
+| 多 Agent 系统与编排框架 | 模块 10 的受控对照 | [LangGraph](https://langchain-ai.github.io/langgraph/)、[LangChain](https://python.langchain.com/) |
+| 完整 RAG 与向量数据库 | 模块 5 上下文 + 模块 11 API | [OpenAI 文档](https://platform.openai.com/docs/)、[Anthropic 文档](https://docs.anthropic.com/) |
+| 模型微调与训练 | 模块 11–12 | [OpenAI 微调指南](https://platform.openai.com/docs/guides/fine-tuning)、[PyTorch 教程](https://pytorch.org/tutorials/) |
+| MCP 深入与自定义 Server 开发 | 模块 9 | [MCP 规范](https://modelcontextprotocol.io/) |
+| 云部署与平台工程 | 模块 12 生产化 | [Docker 文档](https://docs.docker.com/)、[Kubernetes 文档](https://kubernetes.io/docs/home/) |
+
+## 先修关系说明
+
+- **先学手写，再学框架**：模块 11 的最小 Agent loop 是所有框架主题的先修。没有手写过响应—工具—停止循环就学框架，容易把框架魔法当成协议本身。
+- **迁移经验先于第二工具**：在学其他 Coding Agent 之前，先完成模块 3 的双工具迁移挑战，理解「能力目标相同、操作差异在哪」。
+- **RAG 在上下文工程之后**：模块 5 的预算与压缩经验决定你在 RAG 里检索多少、塞多少；顺序颠倒容易做出无预算约束的堆料系统。
+- **微调是最后手段**：只有当指令工程（模块 2）、上下文工程（模块 5）和评测（模块 12）都无法满足时，再考虑训练。
+
+## 明确不在地图内的内容
+
+认证考试题库、防作弊系统、无代码 Agent 平台导览不属于学习路径，本课程不提供。
+
+## 链接维护
+
+本页链接由每周维护自动化做存活检查（有界 HTTP HEAD）；失效链接以 issue 形式报告，人工复核后更新，不自动改写。

@@ -51,7 +51,7 @@ test("evidence contains stable states only and reaches passed with the safe run"
   let session = createHooksTasksSession(DEFAULT_HOOKS_TASKS_INPUT);
   session = recordHooksTasksObservation(session);
   const evidence = buildHooksTasksEvidence(session, {
-    courseVersion: "0.1.0-alpha",
+    courseVersion: "1.0.0",
     checkedOn: "2026-08-13",
   });
   assert.equal(evidence.lesson_id, "t21-hooks-tasks");

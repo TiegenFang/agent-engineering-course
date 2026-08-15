@@ -48,7 +48,7 @@ test("three recorded observations produce complete anonymous evidence", () => {
   }
 
   const evidence = buildPluginAuditEvidence(session, {
-    courseVersion: "0.1.0-alpha",
+    courseVersion: "1.0.0",
     checkedOn: "2026-08-13",
   });
   assert.equal(evidence.lesson_id, "t18-plugin-audit");

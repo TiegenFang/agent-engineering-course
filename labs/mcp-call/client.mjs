@@ -101,7 +101,7 @@ function buildOfflineEvidence() {
   return {
     contract: 'agent-engineering-course/evidence',
     contract_version: '1',
-    course_version: '0.1.0-alpha',
+    course_version: '1.0.0',
     lesson_id: LESSON_ID,
     result: 'partial',
     anonymous: true,
@@ -265,7 +265,7 @@ async function runLive(options, outputRoot) {
   return {
     contract: 'agent-engineering-course/evidence',
     contract_version: '1',
-    course_version: '0.1.0-alpha',
+    course_version: '1.0.0',
     lesson_id: LESSON_ID,
     result: classifyChecks(checks),
     anonymous: true,

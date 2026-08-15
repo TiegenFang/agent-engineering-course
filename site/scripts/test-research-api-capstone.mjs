@@ -20,7 +20,7 @@ test('T30 keeps the budget and failure-recovery cases visible', () => {
   const run = buildResearchApiRun('temperature-daily');
   assert.equal(run.experiment.cases[1].recovery, 'safe-default');
   assert.equal(run.experiment.cases[2].budget_status, 'stopped');
-  const evidence = buildResearchApiEvidence(run, '0.1.0-alpha');
+  const evidence = buildResearchApiEvidence(run, '1.0.0');
   assert.equal(evidence.anonymous, true);
   assert.equal(evidence.experiment.live_smoke.network, 'not-called');
 });

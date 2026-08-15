@@ -18,7 +18,7 @@ param(
   [string]$Stage,
   [string]$EvidenceDirectory,
   [string]$OutputPath,
-  [string]$CourseVersion = "0.1.0-alpha",
+  [string]$CourseVersion = "1.0.0",
   [switch]$HumanApproved,
   [switch]$AllowOverwrite
 )

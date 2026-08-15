@@ -10,7 +10,7 @@ from pathlib import Path
 LESSON_ID = "t31-enterprise-api"
 COURSE_CONTRACT = "agent-engineering-course/evidence"
 COURSE_CONTRACT_VERSION = "1"
-COURSE_VERSION = "0.1.0-alpha"
+COURSE_VERSION = "1.0.0"
 CHECK_IDS = (
     "scope-bounded",
     "approval-gated",
