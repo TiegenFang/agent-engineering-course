@@ -13,6 +13,7 @@
     "test:browser": "npm run test:browser --workspace @agent-engineering-course/site",
     "test:python": "python -m unittest discover -s checker/tests -t checker -v",
     "audit:release": "python scripts/release_audit.py --root . --report .audit/t33-release-audit.md --json-output .audit/t33-release-audit.json",
+    "audit:accessibility": "python scripts/accessibility_audit.py --root . --report .audit/t32-accessibility-audit.md --json-output .audit/t32-accessibility-audit.json",
     "checker": "npm run test:python",
     "diff-check": "git diff --check",
     "verify": "npm run test:python && npm run check && npm run build && npm run test:site && npm run test:browser"
