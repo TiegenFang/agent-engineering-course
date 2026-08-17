@@ -1,0 +1,203 @@
+---
+// 教学插画层 · 拟物配角三件套：带计费的钥匙 / 贴 token 标签的包裹 / 环跑道。
+// 无生命、纯示意，不模拟任何服务商产品 UI（ADR-0009）；标签数字由使用方传入真实记录数据。
+import { castRoles, type CastRole } from "./poses";
+
+interface Props {
+  /** 配角：key 带计费的钥匙 | package 贴 token 标签的包裹 | track 环跑道 */
+  role?: CastRole;
+  /** 渲染宽度（px）；key 默认 160、package 默认 200、track 默认 260，等比缩放 */
+  size?: number;
+  /** package 专属：标签文字（约 10 个半角字符预算，如 "428 tokens"），必须是真实记录的数字，不编造 */
+  label?: string;
+  /** 覆盖默认无障碍名称 */
+  ariaLabel?: string;
+  /** 纯装饰用途时置 true */
+  decorative?: boolean;
+  /** 配色：auto 跟随站点深浅色（默认），light/dark 强制指定（用于预览页深色面板） */
+  scheme?: "auto" | "light" | "dark";
+  class?: string;
+}
+
+const { role = "key", size, label, ariaLabel, decorative = false, scheme = "auto", class: className } = Astro.props;
+
+const meta = castRoles.find((r) => r.value === role) ?? castRoles[0];
+const currentRole: CastRole = meta.value;
+
+const defaultSize = currentRole === "key" ? 160 : currentRole === "package" ? 200 : 260;
+const width = size ?? defaultSize;
+const viewBox =
+  currentRole === "key" ? "0 0 160 140" : currentRole === "package" ? "0 0 160 150" : "0 0 220 130";
+const [vbW, vbH] = viewBox.split(" ").slice(2).map(Number);
+const height = Math.round((width * vbH) / vbW);
+
+const defaultLabel = currentRole === "package" ? (label ?? "123 tokens") : undefined;
+const resolvedAria =
+  ariaLabel ??
+  (currentRole === "package" ? `贴 token 标签的包裹（标签：${defaultLabel}）` : `教学插画配角：${meta.label}`);
+
+const schemeClass = scheme === "dark" ? "xun xun--dark" : scheme === "light" ? "xun xun--light" : "xun";
+---
+
+<svg
+  class:list={["xun-cast", `xun-cast--${currentRole}`, schemeClass, className]}
+  viewBox={viewBox}
+  width={width}
+  height={height}
+  role={decorative ? undefined : "img"}
+  aria-label={decorative ? undefined : resolvedAria}
+  aria-hidden={decorative ? "true" : undefined}
+  focusable="false"
+>
+  <g
+    class="xun-strokes"
+    stroke="var(--xun-ink)"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    {
+      /* 带计费的钥匙：证明身份的钥匙 + 计费表 + 正在掉落的硬币 */
+      currentRole === "key" && (
+        <g>
+          {/* 钥匙柄环 */}
+          <circle cx="46" cy="52" r="22" fill="var(--xun-accent)"></circle>
+          <circle cx="46" cy="52" r="10" fill="var(--xun-paper)"></circle>
+          {/* 钥匙杆与齿 */}
+          <rect x="64" y="46" width="58" height="12" rx="5" fill="var(--xun-paper)"></rect>
+          <rect x="106" y="58" width="10" height="14" rx="2" fill="var(--xun-paper)"></rect>
+          <rect x="122" y="58" width="10" height="10" rx="2" fill="var(--xun-paper)"></rect>
+          {/* 掉落的硬币（下落动线为静态装饰短线） */}
+          <line x1="114" y1="76" x2="122" y2="76"></line>
+          <line x1="110" y1="84" x2="116" y2="84"></line>
+          <circle cx="124" cy="106" r="15" fill="var(--xun-yellow)"></circle>
+          <circle cx="124" cy="106" r="9.5" fill="none"></circle>
+          <rect x="121" y="101" width="6" height="10" rx="2" fill="none"></rect>
+          {/* 计费表 */}
+          <rect x="20" y="102" width="36" height="26" rx="4" fill="var(--xun-paper)"></rect>
+          <path d="M 26 122 A 12 12 0 0 1 50 122" fill="none"></path>
+          <line x1="38" y1="122" x2="46" y2="112" stroke="var(--xun-warn)"></line>
+        </g>
+      )
+    }
+
+    {
+      /* 贴 token 标签的包裹：请求/响应载体，标签数字由使用方传入 */
+      currentRole === "package" && (
+        <g>
+          <rect x="44" y="30" width="72" height="16" rx="5" fill="var(--xun-fill)"></rect>
+          <rect x="30" y="44" width="100" height="74" rx="10" fill="var(--xun-paper)"></rect>
+          <line x1="80" y1="44" x2="80" y2="118"></line>
+          <line x1="30" y1="81" x2="130" y2="81"></line>
+          {/* 邮戳圆点 */}
+          <circle cx="55" cy="63" r="9" fill="var(--xun-accent)"></circle>
+          <path d="M 50.5 63 l 3.5 3.5 l 7 -7" fill="none" stroke="var(--xun-on-accent)" stroke-width="3"></path>
+          {/* token 标签：运单式挂签，插画内文字 12 视图单位（默认 200px 渲染为 15px），仅 ink 色 */}
+          <rect x="62" y="94" width="92" height="24" rx="4" fill="var(--xun-yellow)"></rect>
+          <text
+            class="xun-label"
+            x="108"
+            y="110"
+            text-anchor="middle"
+            fill="var(--xun-ink)"
+            stroke="none"
+          >
+            {defaultLabel}
+          </text>
+        </g>
+      )
+    }
+
+    {
+      /* 环跑道：Agent loop 闭环轨道与四站点（1 输入 → 2 生成 → 3 调工具 → 4 观察决定） */
+      currentRole === "track" && (
+        <g>
+          <rect x="18" y="20" width="184" height="90" rx="45" fill="var(--xun-fill)"></rect>
+          <rect
+            x="32"
+            y="34"
+            width="156"
+            height="62"
+            rx="31"
+            fill="none"
+            stroke-width="2"
+            stroke-dasharray="10 8"
+          ></rect>
+          {/* 行进方向箭头 */}
+          <polygon points="146,13 158,20 146,27" fill="var(--xun-ink)" stroke="none"></polygon>
+          {/* 四个站点：数字仅 ink/on-accent 高对比组合 */}
+          {[
+            { x: 110, y: 20, n: "1" },
+            { x: 202, y: 65, n: "2" },
+            { x: 110, y: 110, n: "3" },
+            { x: 18, y: 65, n: "4" },
+          ].map((station) => (
+            <g>
+              <circle cx={station.x} cy={station.y} r="11" fill="var(--xun-accent)"></circle>
+              <text
+                class="xun-station"
+                x={station.x}
+                y={station.y + 4.5}
+                text-anchor="middle"
+                fill="var(--xun-on-accent)"
+                stroke="none"
+              >
+                {station.n}
+              </text>
+            </g>
+          ))}
+        </g>
+      )
+    }
+  </g>
+</svg>
+
+<style>
+  /* 配色与 Mascot.astro 同一体系；对比度核算见 docs/design/v3-illustration-design-spec.md */
+  .xun {
+    --xun-ink: #1c2b26;
+    --xun-accent: #087f68;
+    --xun-accent-deep: #05604f;
+    --xun-fill: #eaf6f1;
+    --xun-paper: #ffffff;
+    --xun-yellow: #ffd76a;
+    --xun-warn: #b0492a;
+    --xun-on-accent: #ffffff;
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  .xun--dark {
+    --xun-ink: #e9f5ef;
+    --xun-accent: #6dd9bd;
+    --xun-accent-deep: #9ff0d9;
+    --xun-fill: #143a32;
+    --xun-paper: #17181c;
+    --xun-yellow: #ffd76a;
+    --xun-warn: #e09a72;
+    --xun-on-accent: #17181c;
+  }
+
+  :global([data-theme="dark"]) .xun:not(.xun--light) {
+    --xun-ink: #e9f5ef;
+    --xun-accent: #6dd9bd;
+    --xun-accent-deep: #9ff0d9;
+    --xun-fill: #143a32;
+    --xun-paper: #17181c;
+    --xun-yellow: #ffd76a;
+    --xun-warn: #e09a72;
+    --xun-on-accent: #17181c;
+  }
+
+  .xun-label {
+    font-family: var(--sl-font-mono, ui-monospace, monospace);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .xun-station {
+    font-family: var(--sl-font-mono, ui-monospace, monospace);
+    font-size: 13px;
+    font-weight: 700;
+  }
+</style>

@@ -1,0 +1,280 @@
+---
+// 教学插画层 · 主角「小循」：圆头圆脑的小机器人实习生，中性、无性别年龄指向。
+// 只做向导、不做事实来源；从不模拟任何产品 UI（ADR-0009）。
+// 用法：<Mascot pose="puzzled" size={120} />；静态等价物即本组件本身，动画由使用方的状态机切 pose 驱动。
+import { mascotPoses, type MascotPose } from "./poses";
+
+interface Props {
+  /** 姿态：calm 平静 | puzzled 疑惑 | insight 恍然 | effort 努力 | done 完成 */
+  pose?: MascotPose;
+  /** 渲染宽度（px），默认 120；等比缩放，描边随缩放 */
+  size?: number;
+  /** 覆盖默认无障碍名称（默认「小循（姿态）」） */
+  label?: string;
+  /** 纯装饰用途时置 true：aria-hidden 且不输出角色名 */
+  decorative?: boolean;
+  /** 配色：auto 跟随站点深浅色（默认），light/dark 强制指定（用于预览页深色面板） */
+  scheme?: "auto" | "light" | "dark";
+  class?: string;
+}
+
+const { pose = "calm", size = 120, label, decorative = false, scheme = "auto", class: className } = Astro.props;
+
+const meta = mascotPoses.find((p) => p.value === pose) ?? mascotPoses[0];
+const currentPose: MascotPose = meta.value;
+const ariaLabel = label ?? `小循（${meta.label}）`;
+const height = Math.round((size * 150) / 120);
+const schemeClass = scheme === "dark" ? "xun xun--dark" : scheme === "light" ? "xun xun--light" : "xun";
+---
+
+<svg
+  class:list={["xun-mascot", schemeClass, className]}
+  viewBox="0 0 120 150"
+  width={size}
+  height={height}
+  role={decorative ? undefined : "img"}
+  aria-label={decorative ? undefined : ariaLabel}
+  aria-hidden={decorative ? "true" : undefined}
+  focusable="false"
+>
+  <g
+    class="xun-strokes"
+    stroke="var(--xun-ink)"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    {
+      /* 天线：恍然姿态换成灯泡，其余为默认圆头天线 */
+      currentPose === "insight" ? (
+        <g>
+          <circle cx="60" cy="16" r="6" fill="var(--xun-yellow)"></circle>
+          <line x1="60" y1="6" x2="60" y2="1.5"></line>
+          <line x1="46" y1="16" x2="41" y2="16"></line>
+          <line x1="74" y1="16" x2="79" y2="16"></line>
+          <line x1="50" y1="8" x2="46.5" y2="4.5"></line>
+          <line x1="70" y1="8" x2="73.5" y2="4.5"></line>
+        </g>
+      ) : (
+        <g>
+          <line x1="60" y1="22" x2="60" y2="30"></line>
+          <circle cx="60" cy="18" r="3.5" fill="var(--xun-accent-deep)"></circle>
+        </g>
+      )
+    }
+
+    {/* 侧耳 */}
+    <rect x="26" y="50" width="8" height="12" rx="3" fill="var(--xun-accent)"></rect>
+    <rect x="86" y="50" width="8" height="12" rx="3" fill="var(--xun-accent)"></rect>
+
+    {/* 圆头 */}
+    <circle cx="60" cy="56" r="26" fill="var(--xun-paper)"></circle>
+
+    {
+      /* 表情：眼睛 + 眉/嘴，按姿态组合 */
+      currentPose === "calm" && (
+        <g fill="var(--xun-ink)">
+          <circle cx="50" cy="54" r="2.8" stroke="none"></circle>
+          <circle cx="70" cy="54" r="2.8" stroke="none"></circle>
+        </g>
+      )
+    }
+    {
+      currentPose === "calm" && (
+        <path d="M 54 66 Q 60 71 66 66" fill="none"></path>
+      )
+    }
+
+    {
+      currentPose === "puzzled" && (
+        <g>
+          <g fill="var(--xun-ink)">
+            <circle cx="50" cy="54" r="2.8" stroke="none"></circle>
+            <circle cx="70" cy="54" r="2.8" stroke="none"></circle>
+          </g>
+          <line x1="45" y1="48" x2="53" y2="45"></line>
+          <line x1="75" y1="48" x2="67" y2="45"></line>
+          <ellipse cx="60" cy="68" rx="3.5" ry="4.5" fill="none"></ellipse>
+          <text
+            class="xun-glyph"
+            x="93"
+            y="42"
+            text-anchor="middle"
+            fill="var(--xun-warn)"
+            stroke="none"
+            aria-hidden="true"
+          >
+            ?
+          </text>
+        </g>
+      )
+    }
+
+    {
+      currentPose === "insight" && (
+        <g>
+          <path d="M 45 55 Q 50 49 55 55" fill="none"></path>
+          <path d="M 65 55 Q 70 49 75 55" fill="none"></path>
+          <path d="M 52 65 Q 60 73 68 65" fill="none"></path>
+        </g>
+      )
+    }
+
+    {
+      currentPose === "effort" && (
+        <g>
+          <g fill="var(--xun-ink)">
+            <circle cx="50" cy="54" r="2.8" stroke="none"></circle>
+            <circle cx="70" cy="54" r="2.8" stroke="none"></circle>
+          </g>
+          <line x1="44" y1="46" x2="54" y2="49"></line>
+          <line x1="76" y1="46" x2="66" y2="49"></line>
+          <line x1="55" y1="68" x2="65" y2="68"></line>
+          {/* 汗滴：努力状态的装饰，带描边承托 */}
+          <path d="M 96 32 C 100 38, 100 42, 96 43 C 92 42, 92 38, 96 32 Z" fill="var(--xun-fill)"></path>
+        </g>
+      )
+    }
+
+    {
+      currentPose === "done" && (
+        <g>
+          <path d="M 45 55 Q 50 49 55 55" fill="none"></path>
+          <path d="M 65 55 Q 70 49 75 55" fill="none"></path>
+          <path d="M 54 66 Q 60 72 66 66" fill="none"></path>
+        </g>
+      )
+    }
+
+    {/* 身体 */}
+    <rect x="38" y="84" width="44" height="38" rx="14" fill="var(--xun-fill)"></rect>
+
+    {
+      /* 胸口：完成姿态亮对勾徽章，其余为待机指示灯 */
+      currentPose === "done" ? (
+        <g>
+          <circle cx="60" cy="103" r="9" fill="var(--xun-paper)"></circle>
+          <path d="M 55 103 l 3.5 3.5 l 7 -7" fill="none" stroke="var(--xun-accent-deep)" stroke-width="3"></path>
+        </g>
+      ) : (
+        <g>
+          <circle cx="60" cy="103" r="9" fill="var(--xun-paper)"></circle>
+          <circle cx="60" cy="103" r="3" fill="var(--xun-accent)" stroke="none"></circle>
+        </g>
+      )
+    }
+
+    {/* 双脚 */}
+    <rect x="44" y="120" width="12" height="9" rx="4" fill="var(--xun-accent)"></rect>
+    <rect x="64" y="120" width="12" height="9" rx="4" fill="var(--xun-accent)"></rect>
+
+    {
+      /* 手臂按姿态：平静=双臂下垂；疑惑=单手抬起；恍然/努力=双手举起；完成=单手举旗 */
+      currentPose === "calm" && (
+        <g>
+          <line x1="38" y1="98" x2="27" y2="108"></line>
+          <circle cx="26" cy="110" r="4" fill="var(--xun-paper)"></circle>
+          <line x1="82" y1="98" x2="93" y2="108"></line>
+          <circle cx="94" cy="110" r="4" fill="var(--xun-paper)"></circle>
+        </g>
+      )
+    }
+    {
+      currentPose === "done" && (
+        <g>
+          <line x1="38" y1="98" x2="27" y2="108"></line>
+          <circle cx="26" cy="110" r="4" fill="var(--xun-paper)"></circle>
+        </g>
+      )
+    }
+    {
+      currentPose === "puzzled" && (
+        <g>
+          <line x1="38" y1="98" x2="27" y2="108"></line>
+          <circle cx="26" cy="110" r="4" fill="var(--xun-paper)"></circle>
+          <line x1="82" y1="94" x2="94" y2="80"></line>
+          <circle cx="96" cy="78" r="4" fill="var(--xun-paper)"></circle>
+        </g>
+      )
+    }
+    {
+      currentPose === "insight" && (
+        <g>
+          <line x1="38" y1="94" x2="26" y2="80"></line>
+          <circle cx="24" cy="78" r="4" fill="var(--xun-paper)"></circle>
+          <line x1="82" y1="94" x2="94" y2="80"></line>
+          <circle cx="96" cy="78" r="4" fill="var(--xun-paper)"></circle>
+        </g>
+      )
+    }
+    {
+      currentPose === "effort" && (
+        <g>
+          <line x1="38" y1="94" x2="26" y2="80"></line>
+          <circle cx="24" cy="78" r="4" fill="var(--xun-paper)"></circle>
+          <line x1="82" y1="94" x2="94" y2="80"></line>
+          <circle cx="96" cy="78" r="4" fill="var(--xun-paper)"></circle>
+          {/* 运动短线：静态装饰，不参与动效 */}
+          <line x1="12" y1="76" x2="18" y2="79"></line>
+          <line x1="12" y1="86" x2="18" y2="86"></line>
+          <line x1="108" y1="76" x2="102" y2="79"></line>
+          <line x1="108" y1="86" x2="102" y2="86"></line>
+        </g>
+      )
+    }
+    {
+      currentPose === "done" && (
+        <g>
+          {/* 旗杆 + 旗面：完成旗 */}
+          <line x1="96" y1="78" x2="96" y2="50"></line>
+          <polygon points="96,50 112,55 96,60" fill="var(--xun-yellow)"></polygon>
+          <line x1="82" y1="94" x2="94" y2="80"></line>
+          <circle cx="96" cy="78" r="4" fill="var(--xun-paper)"></circle>
+        </g>
+      )
+    }
+  </g>
+</svg>
+
+<style>
+  /* 浅色默认（页面底 #ffffff）：对比度核算见 docs/design/v3-illustration-design-spec.md */
+  .xun {
+    --xun-ink: #1c2b26;
+    --xun-accent: #087f68;
+    --xun-accent-deep: #05604f;
+    --xun-fill: #eaf6f1;
+    --xun-paper: #ffffff;
+    --xun-yellow: #ffd76a;
+    --xun-warn: #b0492a;
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  /* 强制深色（预览页深色面板等） */
+  .xun--dark {
+    --xun-ink: #e9f5ef;
+    --xun-accent: #6dd9bd;
+    --xun-accent-deep: #9ff0d9;
+    --xun-fill: #143a32;
+    --xun-paper: #17181c;
+    --xun-yellow: #ffd76a;
+    --xun-warn: #e09a72;
+  }
+
+  /* 跟随站点深浅色（Starlight 在 html[data-theme='dark'] 切换，深色页面底约 #17181c） */
+  :global([data-theme="dark"]) .xun:not(.xun--light) {
+    --xun-ink: #e9f5ef;
+    --xun-accent: #6dd9bd;
+    --xun-accent-deep: #9ff0d9;
+    --xun-fill: #143a32;
+    --xun-paper: #17181c;
+    --xun-yellow: #ffd76a;
+    --xun-warn: #e09a72;
+  }
+
+  .xun-glyph {
+    font-family: var(--sl-font-mono, ui-monospace, monospace);
+    font-size: 16px;
+    font-weight: 700;
+  }
+</style>

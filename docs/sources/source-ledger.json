@@ -1191,6 +1191,16 @@
       "usage": "核验 BYO-key 实验页 OpenAI 端点与浏览器调用",
       "license_or_terms": "reference-only; OpenAI documentation terms apply",
       "copied_assets": false
+    },
+    {
+      "id": "v3-illustration-cast-original",
+      "title": "V3 教学插画层原创角色与配角（小循、钥匙、包裹、环跑道）",
+      "url": "site/src/components/mascot/",
+      "source_role": "course-original",
+      "pinned_version": "V3-2 implementation v1; geometry-minimal; verified 2026-08-17",
+      "usage": "网页端起步章 W1–W4 概念解释插画：小循 5 姿态与三拟物配角 Astro 组件（Mascot.astro、Cast.astro、poses.ts），一处定义按 props 复用；边界见 ADR-0009，设计语言见 docs/design/v3-illustration-design-spec.md；预览页 /mascot-preview/",
+      "license_or_terms": "project-original; SVG illustration assets CC-BY-4.0 (authors: repository contributors); component code MIT; no copied assets",
+      "copied_assets": false
     }
   ]
 }

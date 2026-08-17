@@ -1,0 +1,290 @@
+---
+// 教学插画层预览页（V3-2 交付物）：查看小循 5 姿态、三拟物配角与深浅色可辨识性。
+// 刻意不进侧栏导航（sidebar 为手动配置）；仅供维护者评审与后续课节接入时对照。
+// 边界见 docs/adr/0009-teaching-illustration-layer-boundaries.md；设计语言见 docs/design/v3-illustration-design-spec.md。
+import Mascot from "../components/mascot/Mascot.astro";
+import Cast from "../components/mascot/Cast.astro";
+import { mascotPoses, castRoles, illustrationPalette } from "../components/mascot/poses";
+
+const base = import.meta.env.BASE_URL;
+
+// WCAG 2.2 相对亮度法核算（2026-08-17，方法与完整数字记录于 docs/design/v3-illustration-design-spec.md）
+const contrastEvidence: Record<string, { light: string; dark: string }> = {
+  "--xun-ink": { light: "14.76", dark: "15.86" },
+  "--xun-accent": { light: "4.95", dark: "10.40" },
+  "--xun-accent-deep": { light: "7.52", dark: "13.46" },
+  "--xun-on-accent": { light: "4.95", dark: "10.40" },
+  "--xun-fill": { light: "1.11（装饰填充，形状由 ink 描边承托 ≥ 3:1）", dark: "1.42（同左）" },
+  "--xun-paper": { light: "页面底色本身", dark: "页面底色本身" },
+  "--xun-yellow": { light: "1.38（状态提示填充，ink 描边承托；ink 于黄底 10.67）", dark: "12.82" },
+  "--xun-warn": { light: "5.48", dark: "7.63" },
+};
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="教学插画层预览：小循 5 姿态、三拟物配角与深浅色可辨识性（V3-2）" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>教学插画层预览 · Agent 工程入门</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到主要内容</a>
+    <header>
+      <a href={`${base}`}>← 回课程首页</a><span>V3-2 / 教学插画层</span>
+    </header>
+
+    <main id="main">
+      <p class="eyebrow">内部评审页 · 不进侧栏</p>
+      <h1>小循与三配角 · 定稿预览</h1>
+      <p class="intro">
+        本页展示 V3-2 定稿的教学插画角色系统：主角「小循」（几何极简路线，纯仓内原创 SVG）与三个拟物配角。
+        插画只解释概念，从不模拟任何产品 UI；小循只做向导、不做事实来源（ADR-0009）。
+        设计规范：<code>docs/design/v3-illustration-design-spec.md</code>；组件：<code>site/src/components/mascot/</code>。
+      </p>
+
+      <section aria-labelledby="poses-title">
+        <h2 id="poses-title">一、小循的 5 种基础姿态</h2>
+        <p>点击单选按钮切换姿态——这一「操作 + aria-live 播报」模式即未来动画课节的最低交互基线。</p>
+        <div class="pose-playground">
+          <fieldset>
+            <legend>选择姿态</legend>
+            <div class="pose-radios">
+              {
+                mascotPoses.map((pose, index) => (
+                  <label>
+                    <input type="radio" name="xun-pose" value={pose.value} checked={index === 0} />
+                    {pose.label}
+                  </label>
+                ))
+              }
+            </div>
+          </fieldset>
+          <div class="pose-stage">
+            {
+              mascotPoses.map((pose) => (
+                <figure data-pose={pose.value} hidden={pose.value !== "calm"}>
+                  <Mascot pose={pose.value} size={132} />
+                </figure>
+              ))
+            }
+            <p class="pose-status" role="status" aria-live="polite" data-pose-status>
+              小循（平静）：中性表情，双臂自然下垂。
+            </p>
+          </div>
+        </div>
+
+        <ul class="pose-grid">
+          {
+            mascotPoses.map((pose) => (
+              <li>
+                <Mascot pose={pose.value} size={96} decorative />
+                <h3>{pose.label}</h3>
+                <p>{pose.description}</p>
+                <code>{`<Mascot pose="${pose.value}" />`}</code>
+              </li>
+            ))
+          }
+        </ul>
+      </section>
+
+      <section aria-labelledby="cast-title">
+        <h2 id="cast-title">二、三个拟物配角（无生命、纯示意）</h2>
+        <ul class="cast-grid">
+          {
+            castRoles.map((cast) => (
+              <li>
+                <Cast role={cast.value} />
+                <h3>{cast.label}</h3>
+                <p>{cast.description}</p>
+                <code>{`<Cast role="${cast.value}" />`}</code>
+              </li>
+            ))
+          }
+        </ul>
+        <p class="note">
+          包裹标签必须传真实记录的数字（token 数/耗时），预算约 10 个半角字符，例如
+          <code>{`<Cast role="package" label="428 tokens" />`}</code>；课程不编造用量数据。
+        </p>
+      </section>
+
+      <section aria-labelledby="dark-title">
+        <h2 id="dark-title">三、深浅色模式下可辨识</h2>
+        <p>
+          组件默认跟随站点 <code>data-theme</code> 自动切换；本页用强制配色演示两种模式。
+          描边与文字使用高对比 ink 色，低对比填充（青绿浅底、暖黄）一律由 ink 描边承托形状边界。
+        </p>
+        <div class="scheme-row">
+          <div class="scheme-panel scheme-panel--light">
+            <p>浅色（页面底 #ffffff）</p>
+            <Mascot pose="insight" size={96} scheme="light" decorative />
+            <Mascot pose="puzzled" size={96} scheme="light" decorative />
+            <Cast role="key" size={110} scheme="light" decorative />
+            <Cast role="track" size={220} scheme="light" decorative />
+          </div>
+          <div class="scheme-panel scheme-panel--dark">
+            <p>深色（页面底约 #17181c）</p>
+            <Mascot pose="insight" size={96} scheme="dark" decorative />
+            <Mascot pose="puzzled" size={96} scheme="dark" decorative />
+            <Cast role="key" size={110} scheme="dark" decorative />
+            <Cast role="track" size={220} scheme="dark" decorative />
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="palette-title">
+        <h2 id="palette-title">四、色板与对比度核算</h2>
+        <p>
+          主色沿用站点 accent（浅 <code>#087f68</code> / 深 <code>#6dd9bd</code>）；插画内文字 ≥ 4.5:1，
+          图形轮廓 ≥ 3:1。核算方法：WCAG 2.2 相对亮度公式，浅色底 #ffffff、深色底 #17181c（Starlight 深色页面底 hsl(224,10%,10%)）。
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Token</th><th>浅色值</th><th>浅色对比度</th><th>深色值</th><th>深色对比度</th><th>用途</th></tr>
+            </thead>
+            <tbody>
+              {
+                illustrationPalette.map((entry) => (
+                  <tr>
+                    <td><code>{entry.token}</code></td>
+                    <td><span class="swatch" style={`background:${entry.light}`} aria-hidden="true" />{entry.light}</td>
+                    <td>{contrastEvidence[entry.token].light}</td>
+                    <td><span class="swatch" style={`background:${entry.dark}`} aria-hidden="true" />{entry.dark}</td>
+                    <td>{contrastEvidence[entry.token].dark}</td>
+                    <td>{entry.usage}</td>
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
+        </div>
+        <p class="note">
+          暖黄 <code>#ffd76a</code> 与警示橙 <code>#b0492a/#e09a72</code> 只作状态提示填充/细节；
+          警示橙与 Claude Code mark 的赤陶橙 <code>#d97757</code> 为不同色值，且不用于任何品牌语境。
+        </p>
+      </section>
+
+      <section aria-labelledby="rules-title">
+        <h2 id="rules-title">五、使用红线（摘自 ADR-0009）</h2>
+        <ul class="rules">
+          <li>插画只解释概念（Agent 循环、请求旅程、指令结构），从不模拟 Codex、Claude Code 或任何服务商的产品界面。</li>
+          <li>小循只做向导，不做事实来源：不陈述价格、版本、限额等易变产品事实，事实一律由正文以证据先行语气承载。</li>
+          <li>不给 Codex / Claude Code 画拟人化身；不引入 AI 生成插画或第三方 IP 素材；不用 emoji 图标。</li>
+          <li>动画必须有静态等价物，<code>prefers-reduced-motion</code> 下退为静态分帧 + 手动「下一帧」。</li>
+          <li>资产为仓内原创，内容层 CC BY 4.0、组件代码 MIT，已登记来源账本。</li>
+        </ul>
+      </section>
+    </main>
+
+    <footer>
+      <span>V3-2 交付预览 · 2026-08-17</span>
+      <a
+        href="https://github.com/TiegenFang/agent-engineering-course/blob/main/docs/adr/0009-teaching-illustration-layer-boundaries.md"
+        target="_blank"
+        rel="noreferrer">ADR-0009 ↗</a
+      >
+      <a
+        href="https://github.com/TiegenFang/agent-engineering-course/blob/main/docs/design/v3-illustration-design-spec.md"
+        target="_blank"
+        rel="noreferrer">插画设计语言 spec ↗</a
+      >
+    </footer>
+
+    <script>
+      const radios = document.querySelectorAll<HTMLInputElement>("input[name='xun-pose']");
+      const figures = document.querySelectorAll<HTMLElement>("[data-pose]");
+      const status = document.querySelector<HTMLElement>("[data-pose-status]");
+      const poseText: Record<string, string> = {
+        calm: "小循（平静）：中性表情，双臂自然下垂。",
+        puzzled: "小循（疑惑）：头顶问号，提示先猜再看。",
+        insight: "小循（恍然）：头顶亮起灯泡，概念揭晓。",
+        effort: "小循（努力）：举起双臂，陪你动手实验。",
+        done: "小循（完成）：举起完成旗，亮出对勾徽章。",
+      };
+
+      radios.forEach((radio) => {
+        radio.addEventListener("change", () => {
+          figures.forEach((figure) => {
+            figure.hidden = figure.dataset.pose !== radio.value;
+          });
+          if (status && radio.value in poseText) {
+            status.textContent = poseText[radio.value];
+          }
+        });
+      });
+    </script>
+
+    <style>
+      :global(*) { box-sizing: border-box; }
+      :global(body) {
+        margin: 0;
+        background: #f7f8f6;
+        color: #1c2b26;
+        font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+        font-size: 16px;
+        line-height: 1.7;
+      }
+      :global(a) { color: #05604f; }
+      .skip-link { min-height: 44px; position: fixed; left: 1rem; top: -5rem; display: inline-flex; align-items: center; background: #1c2b26; color: #fff; padding: 0.6rem 0.8rem; text-decoration: none; }
+      .skip-link:focus { top: 1rem; }
+      header, main, footer { width: min(1100px, calc(100% - 2.5rem)); margin-inline: auto; }
+      header { display: flex; justify-content: space-between; align-items: center; padding-block: 1rem; border-bottom: 1px solid #cad3cd; font-size: 0.9rem; }
+      header a { min-height: 44px; display: inline-flex; align-items: center; font-weight: 700; text-decoration: none; }
+      header span { color: #52615b; font-family: ui-monospace, monospace; font-size: 0.78rem; }
+      main { padding-block: 2rem 3rem; }
+      .eyebrow { margin: 1.5rem 0 0; color: #05604f; font-family: ui-monospace, monospace; font-size: 0.78rem; letter-spacing: 0.08em; }
+      h1 { margin: 0.4rem 0 0.8rem; font-size: clamp(1.6rem, 4vw, 2.4rem); line-height: 1.25; }
+      .intro { max-width: 60em; color: #3d4a45; }
+      section { margin-block: 2.6rem; }
+      h2 { font-size: 1.3rem; margin-block: 0.4rem 0.6rem; }
+      section > p { max-width: 60em; color: #3d4a45; }
+      code { background: #e9ede9; border-radius: 4px; padding: 0.05rem 0.35rem; font-size: 0.88em; overflow-wrap: anywhere; }
+      .note { font-size: 0.92rem; color: #52615b; }
+
+      .pose-playground { display: grid; grid-template-columns: minmax(13rem, 1fr) minmax(14rem, 1fr); gap: 1.2rem; align-items: start; border: 1px solid #cad3cd; border-radius: 10px; padding: 1.1rem; background: #fff; }
+      .pose-playground fieldset { border: 1px solid #cad3cd; border-radius: 8px; margin: 0; padding: 0.8rem; }
+      .pose-playground legend { font-weight: 700; padding-inline: 0.3rem; }
+      .pose-radios { display: grid; gap: 0.4rem; }
+      .pose-radios label { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; padding: 0.3rem 0.5rem; border-radius: 6px; cursor: pointer; }
+      .pose-radios label:has(input:checked) { background: #e6f3ee; }
+      .pose-radios input { width: 1.15rem; height: 1.15rem; accent-color: #087f68; }
+      .pose-radios label:focus-within { outline: 2px solid #05604f; outline-offset: 2px; }
+      .pose-stage { display: grid; justify-items: center; gap: 0.6rem; }
+      .pose-stage figure { margin: 0; }
+      .pose-status { margin: 0; min-height: 3.2em; border-inline-start: 3px solid #087f68; padding: 0.5rem 0.8rem; background: #f2f7f4; font-size: 0.92rem; }
+
+      .pose-grid, .cast-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr)); gap: 1rem; padding: 0; list-style: none; margin-block: 1.4rem; }
+      .pose-grid li, .cast-grid li { display: grid; gap: 0.45rem; align-content: start; justify-items: start; border: 1px solid #cad3cd; border-radius: 10px; padding: 1rem; background: #fff; }
+      .pose-grid h3, .cast-grid h3 { margin: 0; font-size: 1.02rem; }
+      .pose-grid p, .cast-grid p { margin: 0; font-size: 0.88rem; color: #3d4a45; }
+
+      .scheme-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; margin-block: 1.2rem; }
+      .scheme-panel { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem; border-radius: 10px; padding: 1rem; border: 1px solid #cad3cd; }
+      .scheme-panel p { width: 100%; margin: 0 0 0.4rem; font-family: ui-monospace, monospace; font-size: 0.8rem; }
+      .scheme-panel--light { background: #ffffff; color: #1c2b26; }
+      .scheme-panel--dark { background: #17181c; color: #e9f5ef; border-color: #2c2f36; }
+
+      .table-wrap { overflow-x: auto; margin-block: 1rem; }
+      table { border-collapse: collapse; min-width: 46rem; font-size: 0.88rem; background: #fff; }
+      th, td { border: 1px solid #cad3cd; padding: 0.5rem 0.65rem; text-align: start; vertical-align: middle; }
+      th { background: #eef2ee; }
+      .swatch { display: inline-block; width: 1rem; height: 1rem; border: 1px solid #52615b; border-radius: 3px; margin-right: 0.4rem; vertical-align: -2px; }
+
+      .rules { max-width: 60em; padding-inline-start: 1.4rem; }
+      .rules li { margin-block: 0.4rem; }
+
+      footer { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; padding-block: 1.2rem; border-top: 1px solid #cad3cd; font-size: 0.85rem; color: #52615b; }
+
+      @media (max-width: 46rem) {
+        .pose-playground { grid-template-columns: 1fr; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+      }
+    </style>
+  </body>
+</html>
