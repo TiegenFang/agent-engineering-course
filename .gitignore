@@ -15,3 +15,6 @@ __pycache__/
 environment-diagnostic.json
 environment-evidence.json
 
+
+# Local ticket body files from engineering skills
+.scratch/
