@@ -26,7 +26,9 @@ export default defineConfig({
           label: "网页端起步（无需安装）",
           items: [
             { label: "W1 · 什么是 Agent", link: "/start-1-what-is-agent/" },
+            { label: "W2 · 与模型对话的正确姿势", link: "/start-2-dialogue-basics/" },
             { label: "W3 · API key 与第一次真实调用", link: "/start-3-api-key-chat/" },
+            { label: "W4 · 从网页到终端", link: "/start-4-web-to-terminal/" },
           ],
         },
         {

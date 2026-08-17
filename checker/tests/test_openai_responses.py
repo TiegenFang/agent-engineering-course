@@ -102,7 +102,7 @@ class OpenAIResponsesAdapterTests(unittest.TestCase):
             path = Path(directory) / "t27-fixture.json"
             path.write_text(json.dumps(fixture, ensure_ascii=False), encoding="utf-8")
             checks, experiment = load_openai_responses_checks(
-                path, expected_course_version="1.0.0"
+                path, expected_course_version="2.0.0"
             )
             self.assertTrue(all(check["result"] == "passed" for check in checks))
             self.assertEqual(experiment["live_smoke"]["status"], "not-run")
@@ -114,13 +114,13 @@ class OpenAIResponsesAdapterTests(unittest.TestCase):
             invalid["api_key"] = "not-a-real-key"
             path.write_text(json.dumps(invalid, ensure_ascii=False), encoding="utf-8")
             with self.assertRaises(EvidenceError):
-                load_openai_responses_checks(path, expected_course_version="1.0.0")
+                load_openai_responses_checks(path, expected_course_version="2.0.0")
 
             invalid = ADAPTER.build_offline_evidence(checked_on="2026-08-13")
             invalid["experiment"]["cases"][0]["access"] = "present"
             path.write_text(json.dumps(invalid, ensure_ascii=False), encoding="utf-8")
             with self.assertRaises(EvidenceError):
-                load_openai_responses_checks(path, expected_course_version="1.0.0")
+                load_openai_responses_checks(path, expected_course_version="2.0.0")
 
 
 if __name__ == "__main__":

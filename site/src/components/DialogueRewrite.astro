@@ -1,0 +1,126 @@
+---
+// 网页端起步章 W2 的浏览器内改写练习：模糊指令 → 四要素改写 → 自评，完成状态存本地，零网络、免安装。
+type Round = { id: string; vague: string; reference: string; points: string[] };
+
+const rounds: Round[] = [
+  {
+    id: "r1",
+    vague: "帮我把这份传感器数据周报的结论部分改得更清楚些。",
+    reference:
+      "请改写这份设备遥测周报的「结论」一节，方向是先说结果、再说证据，让读者 10 秒内抓住重点（目标）。读者是车间主管，只关心哪台设备要检修、还剩多少时间；数据来自课程合成的设备遥测平台（上下文）。保留原有数据一个字不改，只动「结论」一节，正文不超过 5 句，不引入新术语（约束）。改完我会逐条检查：结论第一句是否直接给出设备、问题、建议动作，其余每句是否都能在周报数据里找到支撑（验收标准）。",
+    points: [
+      "目标：把「更清楚些」落实为「先说结果、再说证据」，改写方向可以检查，模型不用猜。",
+      "上下文：交代读者是谁、关心什么，模型才知道哪些细节该删、哪些必须保留。",
+      "约束：圈定改动范围（只动结论一节、数据零改动）和篇幅，防止自由发挥。",
+      "验收标准：写明你逐条核对什么，模型会主动把输出往这个标准上靠。",
+    ],
+  },
+  {
+    id: "r2",
+    vague: "这周的温度告警记录有点乱，你帮我弄一下。",
+    reference:
+      "请把过去 7 天 3 台温度传感器的告警记录整理成一页摘要表（目标）。数据是设备遥测平台的 CSV 导出，共三列：时间戳、设备编号、温度读数，设备编号从 T-01 到 T-03（上下文）。只汇总已有记录，不推测故障原因，按设备分组，每组最多 3 行，超温阈值沿用平台默认的 45°C（约束）。完成后我会核对两个数字：每台设备的告警次数、全周最高读数，与你摘要里的数字一致才算通过（验收标准）。",
+    points: [
+      "目标：「弄一下」变成「一页摘要表」，交付物明确到可以直接对照。",
+      "上下文：说明数据来源、列结构和编号格式，模型不需要反问也不需要猜。",
+      "约束：划定禁区（不推测原因）与格式（分组、行数上限），让输出稳定可比较。",
+      "验收标准：给出可核对的数字检查点，交出去之前你自己就能验收。",
+    ],
+  },
+];
+---
+
+<section class="dialogue-rewrite" data-dialogue-rewrite data-lesson-id="start-2" aria-labelledby="dialogue-rewrite-title">
+  <h3 id="dialogue-rewrite-title">改写练习</h3>
+  <p>每轮先自己改写，再点「对照参考」，最后勾选自评。参考不是唯一答案：四要素都在、验收标准可检查，你的版本就是合格版本。完成状态保存在你的浏览器本地。</p>
+  {rounds.map((round, index) => (
+    <fieldset class="round">
+      <legend>{index + 1}. 模糊指令</legend>
+      <p class="vague">「{round.vague}」</p>
+      <label class="input-label" for={`dialogue-input-${round.id}`}>你的改写（对照四要素：目标、上下文、约束、验收标准）</label>
+      <textarea id={`dialogue-input-${round.id}`} rows="6" placeholder="写下你的改写，四要素各占一句即可，顺序不限。"></textarea>
+      <button type="button" data-dialogue-reveal={round.id}>对照参考</button>
+      <div class="reference" data-dialogue-reference={round.id} role="status" aria-live="polite" hidden>
+        <h4>参考改写</h4>
+        <p>{round.reference}</p>
+        <h4>要点解释</h4>
+        <ul>
+          {round.points.map((point) => (
+            <li>{point}</li>
+          ))}
+        </ul>
+      </div>
+      <label class="self-check">
+        <input type="checkbox" data-dialogue-check />
+        我覆盖了全部四要素（目标、上下文、约束、验收标准）
+      </label>
+    </fieldset>
+  ))}
+  <p class="dialogue-result" role="status" aria-live="polite" data-dialogue-result>尚未自评。两轮都勾选自评后，本课将标记为完成。</p>
+  <noscript>
+    <p>改写练习需要 JavaScript。不开启时，可以把两条模糊指令当作纸上练习：自己按四要素改写，再回顾正文中的两个对照示例检查。</p>
+  </noscript>
+</section>
+
+<script>
+  const section = document.querySelector<HTMLElement>("[data-dialogue-rewrite]");
+
+  if (section) {
+    const lessonId = section.dataset.lessonId ?? "start-2";
+    const result = section.querySelector<HTMLElement>("[data-dialogue-result]");
+    const checks = Array.from(section.querySelectorAll<HTMLInputElement>("[data-dialogue-check]"));
+
+    section.querySelectorAll<HTMLButtonElement>("[data-dialogue-reveal]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const reference = section.querySelector<HTMLElement>(`[data-dialogue-reference="${button.dataset.dialogueReveal}"]`);
+        if (!reference) return;
+        if (reference.hasAttribute("hidden")) {
+          reference.removeAttribute("hidden");
+          button.textContent = "收起参考";
+        } else {
+          reference.setAttribute("hidden", "");
+          button.textContent = "对照参考";
+        }
+      });
+    });
+
+    const syncProgress = () => {
+      if (!result || checks.length === 0) return;
+      const done = checks.filter((checkbox) => checkbox.checked).length;
+      if (done === checks.length) {
+        result.textContent = `两轮练习（${done}/${checks.length}）都已自评完成！本课已在你的浏览器中标记为完成。`;
+        try {
+          localStorage.setItem("course-start-progress", JSON.stringify({ ...(JSON.parse(localStorage.getItem("course-start-progress") ?? "{}") as Record<string, boolean>), [lessonId]: true }));
+        } catch {
+          /* 本地存储不可用时（隐私模式等）只降级为会话内提示 */
+        }
+      } else {
+        result.textContent = `已自评 ${done}/${checks.length} 轮。两轮都勾选自评后，本课将标记为完成。`;
+      }
+    };
+
+    checks.forEach((checkbox) => checkbox.addEventListener("change", syncProgress));
+  }
+</script>
+
+<style>
+  .dialogue-rewrite { border: 1px solid var(--sl-color-gray-5); border-radius: 8px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
+  .dialogue-rewrite fieldset { display: grid; gap: 0.5rem; margin: 0.75rem 0; }
+  .dialogue-rewrite .vague { border-left: 3px solid var(--sl-color-gray-5); padding-left: 0.75rem; margin: 0.25rem 0; }
+  .dialogue-rewrite .input-label { display: block; font-weight: 600; }
+  .dialogue-rewrite textarea { min-height: 96px; padding: 0.5rem; font: inherit; }
+  .dialogue-rewrite button { min-height: 44px; padding: 0.5rem 1.25rem; cursor: pointer; }
+  .dialogue-rewrite .self-check { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; padding: 0.5rem; }
+  .dialogue-rewrite .reference { border-top: 1px dashed var(--sl-color-gray-5); padding-top: 0.5rem; }
+  .dialogue-rewrite .reference[hidden] { display: none; }
+  .dialogue-result { min-height: 1.5rem; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .dialogue-rewrite .reference:not([hidden]) { animation: dialogue-reveal 160ms ease-out; }
+  }
+
+  @keyframes dialogue-reveal {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+  }
+</style>

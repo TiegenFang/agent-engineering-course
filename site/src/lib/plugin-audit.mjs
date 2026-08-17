@@ -83,7 +83,7 @@ export const PLUGIN_AUDIT_PROFILES = Object.freeze({
     network: { install: false, runtime: false },
     dependencies: [
       { name: "python", version: ">=3.11", pinned: true },
-      { name: "synthetic-telemetry-schema", version: "1.0.0", pinned: true },
+      { name: "synthetic-telemetry-schema", version: "2.0.0", pinned: true },
     ],
     installScripts: false,
     lifecycle: {

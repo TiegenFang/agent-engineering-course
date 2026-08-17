@@ -184,7 +184,7 @@ function checkResult(session, stageId, ...observationKeys) {
 export function buildMemoryEvidence(session, { courseVersion, checkedOn } = {}) {
   const safeCourseVersion = typeof courseVersion === "string" && courseVersion.trim()
     ? courseVersion
-    : "1.0.0";
+    : "2.0.0";
   const checks = [
     { id: "purpose-defined", result: checkResult(session, "design", "purpose") },
     { id: "owner-defined", result: checkResult(session, "design", "owner") },

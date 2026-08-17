@@ -9,10 +9,22 @@ const base = import.meta.env.BASE_URL;
 
 const chapterDirectory = [
   {
+    id: "W1–W4",
+    title: "网页端起步章（无需安装）",
+    description: "面向零基础网页学员：只用浏览器就能完成入门，概念讲解、知识检查与自带密钥实验都在网页内闭环。",
+    status: "现在可学",
+    track: "网页起步",
+    links: [
+      { label: "W1 · 什么是 Agent", href: `${base}start-1-what-is-agent/` },
+      { label: "W3 · API key 与真实调用", href: `${base}start-3-api-key-chat/` },
+    ],
+  },
+  {
     id: "M0",
     title: "前置技能补给站",
     description: "先诊断环境，再练习可恢复的 Git 安全修改。",
     status: "现在可学",
+    track: "进阶线",
     links: [
       { label: "环境诊断", href: `${base}module-0-environment/` },
       { label: "Git 安全修改", href: `${base}module-0-git-safety/` },
@@ -23,6 +35,7 @@ const chapterDirectory = [
     title: "Agent、模型与 Harness",
     description: "用确定性 trace 看见响应、工具、结果回填和停止条件。",
     status: "现在可学",
+    track: "进阶线",
     links: [{ label: "打开 Agent loop", href: `${base}module-1-agent-loop/` }],
   },
   {
@@ -30,6 +43,7 @@ const chapterDirectory = [
     title: "Agent 指令工程",
     description: "把目标、上下文、约束、输出契约和验收标准写成可执行指令。",
     status: "现在可学",
+    track: "进阶线",
     links: [{ label: "打开指令工程", href: `${base}module-2-agent-instruction/` }],
   },
   {
@@ -37,6 +51,7 @@ const chapterDirectory = [
     title: "Codex 与 Claude Code 安全起步",
     description: "在真实仓库里完成澄清、计划、执行、验证和迁移挑战。",
     status: "现在可学",
+    track: "进阶线",
     links: [
       { label: "Codex 安全仓库任务", href: `${base}module-3-codex-task/` },
       { label: "Claude Code 迁移挑战", href: `${base}module-3-claude-migration/` },
@@ -47,6 +62,7 @@ const chapterDirectory = [
     title: "规则、上下文、Memory、Skill、Plugin、MCP 与编排",
     description: "围绕同一公共练习仓库继续累积能力和证据。",
     status: "现在可学",
+    track: "进阶线",
     links: [
       { label: "项目规则作用域", href: `${base}module-4-project-rules/` },
       { label: "上下文预算", href: `${base}module-5-context-budget/` },
@@ -63,6 +79,7 @@ const chapterDirectory = [
     title: "Python 最小 API Agent loop",
     description: "先用离线 fixture 拥有响应、工具、状态、结构化输出、预算和恢复，再迁移到 OpenAI Responses 与 Anthropic Messages。",
     status: "现在可学",
+    track: "进阶线",
     links: [
       { label: "打开离线最小 loop", href: `${base}module-11-agent-loop/` },
       { label: "迁移到 OpenAI Responses", href: `${base}module-11-openai-responses/` },
@@ -74,6 +91,7 @@ const chapterDirectory = [
     title: "生产化与双轨结课",
     description: "在完成 API 控制流之后，进入科研/企业结课轨道和现场验证。",
     status: "现在可学",
+    track: "进阶线",
     links: [
       { label: "生产评测与成本控制", href: `${base}module-12-production/` },
       { label: "科研核心结课", href: `${base}module-12-research-capstone/` },
@@ -99,11 +117,11 @@ const evidencePoints = [
       <h1 id="course-shell-title">把 Agent 能力，变成可核验的工作流。</h1>
       <p class="shell-subtitle">{courseVersion.course.subtitle}</p>
       <p class="shell-lede">
-        面向科研与企业团队中的技术型 Agent 初学者，从 Windows 11 与 PowerShell 7 的安全基线开始，在真实代码仓库中练习澄清、计划、执行、恢复、验证和交付，再把方法迁移到另一种 Coding Agent 与最小 API Agent loop。
+        零基础网页学员先在浏览器内完成网页端起步章，无需安装任何工具；进阶线再承接科研与企业团队中的技术型 Agent 初学者，从 Windows 11 与 PowerShell 7 的安全基线开始，在真实代码仓库中练习澄清、计划、执行、恢复、验证和交付，并把方法迁移到另一种 Coding Agent 与最小 API Agent loop。
       </p>
       <div class="shell-actions">
-        <a class="shell-button shell-button-primary" href="#path">沿学习路径开始</a>
-        <a class="shell-button shell-button-quiet" href={`${base}module-0-environment/`}>先做环境诊断</a>
+        <a class="shell-button shell-button-primary" href={`${base}start-1-what-is-agent/`}>零基础？从 W1 开始学</a>
+        <a class="shell-button shell-button-quiet" href={`${base}module-0-environment/`}>进阶线：先做环境诊断</a>
       </div>
     </div>
 
@@ -175,26 +193,34 @@ const evidencePoints = [
           <div class="section-heading">
             <div>
               <p class="shell-eyebrow">02 / Editorial Manual chapter directory</p>
-              <h2 id="path-heading">从安全基线走到可迁移的交付。</h2>
+              <h2 id="path-heading">先在浏览器起步，再走进阶线。</h2>
             </div>
-            <p>同一公共练习仓库逐步增强。当前只把已经实现并可核验的课节标成“现在可学”，未实现内容保留为带状态的路线图。</p>
+            <p>网页端起步章面向零基础学员、无需安装；进阶线（模块 0–12）在同一公共练习仓库逐步增强。当前只把已经实现并可核验的课节标成“现在可学”，未实现内容保留为带状态的路线图。</p>
           </div>
 
           <ol class="chapter-list">
-            {chapterDirectory.map((chapter) => (
-              <li>
-                <span class="chapter-id">{chapter.id}</span>
-                <div class="chapter-body">
-                  <h3>{chapter.title}</h3>
-                  <p>{chapter.description}</p>
-                  {chapter.links.length > 0 && (
-                    <p class="chapter-links">
-                      {chapter.links.map((link) => <a href={link.href}>{link.label} ↗</a>)}
-                    </p>
-                  )}
-                </div>
-                <span class:list={["chapter-status", chapter.status === "现在可学" && "is-live"]}>{chapter.status}</span>
-              </li>
+            {chapterDirectory.map((chapter, index) => (
+              <Fragment>
+                {index > 0 && chapter.track !== chapterDirectory[index - 1].track && (
+                  <li class="chapter-divider">
+                    <p><strong>进入进阶线</strong>模块 0–12 需要终端、Git 与桌面环境；零基础学员建议先完成上方网页端起步章。</p>
+                  </li>
+                )}
+                <li>
+                  <span class="chapter-id">{chapter.id}</span>
+                  <div class="chapter-body">
+                    <span class="chapter-track">{chapter.track}</span>
+                    <h3>{chapter.title}</h3>
+                    <p>{chapter.description}</p>
+                    {chapter.links.length > 0 && (
+                      <p class="chapter-links">
+                        {chapter.links.map((link) => <a href={link.href}>{link.label} ↗</a>)}
+                      </p>
+                    )}
+                  </div>
+                  <span class:list={["chapter-status", chapter.status === "现在可学" && "is-live"]}>{chapter.status}</span>
+                </li>
+              </Fragment>
             ))}
           </ol>
 
@@ -485,6 +511,20 @@ const evidencePoints = [
   .chapter-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--shell-ink); }
   .chapter-list li { display: grid; grid-template-columns: 4rem minmax(0, 1fr) 7rem; gap: 1rem; padding-block: 1.2rem; border-bottom: 1px solid var(--shell-line); }
   .chapter-id { margin: 0; font-size: 0.78rem; }
+  .chapter-track {
+    display: inline-block;
+    margin: 0 0 0.5rem;
+    border: 1px solid var(--shell-line);
+    padding: 0.05rem 0.55rem;
+    color: var(--shell-muted);
+    font-family: "Cascadia Mono", "Geist Mono", Consolas, monospace;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+  .chapter-list .chapter-divider { display: block; padding-block: 0.9rem 0.4rem; }
+  .chapter-list .chapter-divider p { margin: 0; color: var(--shell-muted); font-size: 0.82rem; }
+  .chapter-list .chapter-divider strong { margin-right: 0.55rem; color: var(--shell-ink); }
   .chapter-body h3 { margin: 0; color: var(--shell-ink); font-size: 1.18rem; }
   .chapter-body p { margin: 0.35rem 0 0; color: var(--shell-muted); font-size: 0.9rem; }
   .chapter-links { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 0.65rem !important; }

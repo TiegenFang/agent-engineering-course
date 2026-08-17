@@ -13,13 +13,23 @@ test("课程首页使用统一课程壳并公开学习路径", () => {
   const shell = read("src/components/CourseShell.astro");
 
   assert.match(page, /<CourseShell\s*\/>/);
+  // v2 双轨受众：零基础网页学员起步，进阶承接技术型初学者。
+  assert.match(shell, /零基础网页学员/);
   assert.match(shell, /技术型 Agent 初学者/);
   assert.match(shell, /核心课程结业线/);
   assert.match(shell, /进阶实战线/);
+  assert.match(shell, /进阶线/);
   assert.match(shell, /阅读、概念和本地 mock\/checker 路径免费/);
+  assert.match(shell, /网页端起步章/);
+  assert.match(shell, /start-1-what-is-agent/);
+  assert.match(shell, /start-3-api-key-chat/);
   assert.match(shell, /module-0-environment/);
   assert.match(shell, /module-0-git-safety/);
   assert.match(shell, /module-1-agent-loop/);
+  assert.ok(
+    shell.indexOf("start-1-what-is-agent") < shell.indexOf("module-0-environment"),
+    "网页端起步章链接应排在模块 0 环境诊断之前",
+  );
 });
 
 test("能力地图明确分离稳定知识与工具适配并提供 READ/VERIFY", () => {

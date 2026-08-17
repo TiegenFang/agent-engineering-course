@@ -40,7 +40,7 @@ Get-Content -LiteralPath ..\t16-memory-checked.json
 {
   "contract": "agent-engineering-course/evidence",
   "contract_version": "1",
-  "course_version": "1.0.0",
+  "course_version": "2.0.0",
   "lesson_id": "t16-memory",
   "result": "passed",
   "anonymous": true,

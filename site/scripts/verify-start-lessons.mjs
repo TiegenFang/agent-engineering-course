@@ -112,7 +112,54 @@ const run = async () => {
     assert.match(bodyText, /anthropics\/skills/);
     await cases.close();
 
-    console.log("Start lessons browser verification passed: quiz, offline BYO mode, case library");
+    // W2：改写练习两轮自评后标记完成
+    const w2 = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await w2.goto(`${baseUrl}/start-2-dialogue-basics/`);
+    await w2.waitForSelector("[data-dialogue-rewrite]");
+    const rewriteCount = await w2.locator("[data-dialogue-rewrite] textarea").count();
+    assert.equal(rewriteCount, 2, "W2 应有 2 轮改写输入");
+    for (let i = 0; i < rewriteCount; i += 1) {
+      await w2.locator("[data-dialogue-rewrite] textarea").nth(i).fill("目标：整理摘要。上下文：三台温度传感器 CSV。约束：不推测故障。验收：数字与原始记录一致。");
+      await w2.locator("[data-dialogue-reveal]").nth(i).click();
+    }
+    const checkCount = await w2.locator("[data-dialogue-check]").count();
+    for (let i = 0; i < checkCount; i += 1) {
+      await w2.locator("[data-dialogue-check]").nth(i).check();
+    }
+    await w2.waitForFunction(() =>
+      document.querySelector("[data-dialogue-result]")?.textContent?.includes("标记为完成"),
+    );
+    await w2.close();
+
+    // W4：全部勾选自评后出现起步章完成区
+    const w4 = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await w4.goto(`${baseUrl}/start-4-web-to-terminal/`);
+    await w4.waitForSelector("[data-terminal-bridge]");
+    const bridgeChecks = await w4.locator("[data-bridge-check]").count();
+    assert.ok(bridgeChecks >= 4, "W4 自评清单至少 4 项");
+    for (let i = 0; i < bridgeChecks; i += 1) {
+      await w4.locator("[data-bridge-check]").nth(i).check();
+    }
+    await w4.waitForFunction(() => {
+      const done = document.querySelector("[data-bridge-done]");
+      return !!done && done.textContent !== "" && !!(done.offsetParent || done.getClientRects().length);
+    });
+    await w4.close();
+
+    // 首页：进度向导渲染且零网络
+    const home = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    const homeRequests = [];
+    home.on("request", (request) => {
+      const url = request.url();
+      if (!url.startsWith(baseUrl)) homeRequests.push(url);
+    });
+    await home.goto(`${baseUrl}/`);
+    await home.waitForSelector("[data-progress-wizard]");
+    assert.ok(await home.locator("[data-progress-wizard]").isVisible());
+    assert.equal(homeRequests.length, 0, "首页加载不得发出外部网络请求");
+    await home.close();
+
+    console.log("Start lessons browser verification passed: quiz, offline BYO mode, case library, W2 rewrite, W4 bridge, progress wizard");
   } finally {
     await browser.close();
     await stopPreview();

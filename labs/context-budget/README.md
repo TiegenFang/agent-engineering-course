@@ -25,7 +25,7 @@ python -m course_check check t14-context-budget --root .. --json
 {
   "contract": "agent-engineering-course/evidence",
   "contract_version": "1",
-  "course_version": "1.0.0",
+  "course_version": "2.0.0",
   "lesson_id": "t14-context-budget",
   "result": "passed",
   "anonymous": true,

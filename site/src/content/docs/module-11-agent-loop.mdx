@@ -111,7 +111,7 @@ python -m course_check check t26-offline-agent-loop --root . --evidence-file $t2
 - **权限与副作用**：只在你明确指定的一次性临时目录写 evidence；代码不连接远程、不调用工具服务、不触碰真实设备。
 - **隐私边界**：只使用合成 `telemetry-17`；不要把真实路径、凭据、个人信息或研究数据写入参数、日志或截图。
 - **预期失败与恢复**：无效参数、工具失败和预算停止都是刻意注入的可恢复证据；先分类错误，再调整重试/预算并重跑。
-- **版本与验证边界**：Python runner 与 evidence fixture v1、课程版本 `1.0.0` 在 2026-08-13 核验；源码/测试/checker/静态构建已验证，真实模型、OpenAI/Anthropic API、SDK、Codex、Claude Code、跨平台现场和生产部署未验证。
+- **版本与验证边界**：Python runner 与 evidence fixture v1、课程版本 `2.0.0` 在 2026-08-13 核验；源码/测试/checker/静态构建已验证，真实模型、OpenAI/Anthropic API、SDK、Codex、Claude Code、跨平台现场和生产部署未验证。
 - **来源与许可**：课程原创讲解和实验设计采用 CC BY 4.0；runner、fixture、测试与 checker 采用 MIT。Python `json` 标准库、OpenAI Responses/function calling 和 Anthropic tool-use 文档只用于事实校准与迁移阅读，不复制第三方代码。
 
 <EvidenceLoop lessonId="t26-offline-agent-loop" />

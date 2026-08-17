@@ -101,7 +101,7 @@ function buildOfflineEvidence() {
   return {
     contract: 'agent-engineering-course/evidence',
     contract_version: '1',
-    course_version: '1.0.0',
+    course_version: '2.0.0',
     lesson_id: LESSON_ID,
     result: 'partial',
     anonymous: true,
@@ -153,7 +153,7 @@ async function closeClient(client) {
 async function connectAttempt({ fault, outputRoot }) {
   const serverPath = resolve(dirname(fileURLToPath(import.meta.url)), 'server.mjs');
   const client = new Client(
-    { name: 'agent-course-t20-client', version: '1.0.0' },
+    { name: 'agent-course-t20-client', version: '2.0.0' },
     { versionNegotiation: { mode: { pin: PROTOCOL_VERSION } } },
   );
   const transport = new StdioClientTransport({
@@ -265,7 +265,7 @@ async function runLive(options, outputRoot) {
   return {
     contract: 'agent-engineering-course/evidence',
     contract_version: '1',
-    course_version: '1.0.0',
+    course_version: '2.0.0',
     lesson_id: LESSON_ID,
     result: classifyChecks(checks),
     anonymous: true,

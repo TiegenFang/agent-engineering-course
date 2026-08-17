@@ -153,7 +153,7 @@ T09 的 Codex 任务提供权限、审批和交付证据的迁移框架；T10 �
 - **账号与成本**：离线页面、Node 测试、Python checker 和 Playwright 验证不需要模型账号、API key 或付费额度；真实迁移挑战若使用 Codex/Claude Code，账号、模型、权限和费用由工具单独承担，需人工确认。
 - **权限与副作用**：fixture 只在浏览器内计算；checker 只读用户显式指定的 evidence 文件；下载和导入由用户主动操作。实验不写真实 Memory、不运行外部工具、不发送网络请求。
 - **隐私边界**：不要把真实研究记录、企业文本、个人信息、路径、token、API key 或聊天全文粘贴到实验。匿名 JSON 只保留稳定检查 ID、状态和合成阶段枚举；产品若需处理真实数据，应另做最小化、访问控制、审计、保留和删除评估。
-- **版本与验证边界**：fixture 与 checker 版本为 `t16-memory / memory-ledger-v1 / agent-engineering-course/evidence v1`，课程版本为 `1.0.0`。匿名导出固定记录 `model_calls=0` 和 `network_calls=0`；本课未验证真实 Codex、Claude Code、OpenAI/Anthropic API、供应商侧删除、跨平台浏览器或真实外部 Memory store。
+- **版本与验证边界**：fixture 与 checker 版本为 `t16-memory / memory-ledger-v1 / agent-engineering-course/evidence v1`，课程版本为 `2.0.0`。匿名导出固定记录 `model_calls=0` 和 `network_calls=0`；本课未验证真实 Codex、Claude Code、OpenAI/Anthropic API、供应商侧删除、跨平台浏览器或真实外部 Memory store。
 - **官方事实**：OpenAI Memory、Conversation state 与 Compaction 文档，以及 Anthropic Claude Code Memory、Memory tool 和 Context windows 文档用于核验产品/接口事实；本课的三类划分、生命周期合同、污染夹具和恢复顺序是课程原创判断。
 - **许可**：正文和图解为 CC BY 4.0；组件、确定性引擎、测试、实验说明和 checker 为 MIT；官方文档仅作引用，不复制其文字、代码或品牌资产。
 

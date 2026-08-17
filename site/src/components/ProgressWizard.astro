@@ -1,0 +1,366 @@
+---
+// 「我的进度」证据导入向导（V2-7）：面向零基础学员解释 checker → 匿名 evidence JSON → 浏览器本地导入。
+// 纯客户端、零网络：不发起任何请求；真正的导入动作仍由本页 EvidenceLoop 的导入入口完成，本组件只做普通话解释与引导。
+import courseVersion from "../../../course-version.json";
+
+const expectedCourseVersion = courseVersion.course_version;
+
+// 命令与 README「导出本地证据」及各模块页面保持一致（Windows PowerShell 格式）。
+const lessons = [
+  {
+    id: "t01-foundation",
+    label: "t01-foundation · 起步检查（第一次跑推荐选这个）",
+    command: "python -m course_check check t01-foundation --root .. --output ..\\evidence.json",
+    note: "不需要准备任何输入文件。跑完后课程工作区根目录会出现 evidence.json，它就是等下要导入网页的匿名证据文件。",
+    importFile: "evidence.json",
+  },
+  {
+    id: "t05-environment",
+    label: "t05-environment · 模块 0 环境诊断",
+    command:
+      "python -m course_check check t05-environment --root .. --environment-file ..\\environment-diagnostic.json --output ..\\environment-evidence.json --json",
+    note: "要先按模块 0 页面的说明运行 diagnose-environment.ps1 生成 environment-diagnostic.json。注意：能导入网页的是 environment-evidence.json（--output 生成的那个），不是 environment-diagnostic.json。",
+    importFile: "environment-evidence.json",
+  },
+  {
+    id: "t03-agent-instruction",
+    label: "t03-agent-instruction · 模块 2 Agent 指令工程",
+    command:
+      "python -m course_check check t03-agent-instruction --root .. --evidence-file ..\\t03-agent-instruction-evidence.json --output ..\\t03-agent-instruction-checked.json",
+    note: "要先完成模块 2 练习并生成 t03-agent-instruction-evidence.json。导入网页时选择的是 t03-agent-instruction-checked.json（--output 生成的那个）。",
+    importFile: "t03-agent-instruction-checked.json",
+  },
+] as const;
+---
+
+<section class="progress-wizard" data-progress-wizard aria-labelledby="progress-wizard-title">
+  <div class="progress-wizard__heading">
+    <div>
+      <p class="progress-wizard__eyebrow">本地学习记录 · 零基础向导</p>
+      <h2 id="progress-wizard-title">我的进度：从跑一条命令到导入证据</h2>
+    </div>
+    <span class="progress-wizard__version">课程版本 {expectedCourseVersion}</span>
+  </div>
+
+  <p>
+    这是一份一步一步的普通话说明，解释「课节让我跑命令、生成 JSON、再导入网页」到底在干什么。
+    向导本身零联网：不替你保存任何东西，也不把数据发给任何服务器；真正的导入动作在第 2 步指到的「导入可核验成果」区域完成。
+  </p>
+
+  <noscript>
+    <section class="progress-wizard__noscript" aria-labelledby="progress-wizard-noscript-title">
+      <h3 id="progress-wizard-noscript-title">不开 JavaScript 时，这个向导还能用吗？</h3>
+      <p>
+        四个步骤的说明文字仍然可以完整阅读，三条命令会全部展开显示。只有「按课节筛选命令」和「复制」按钮需要 JavaScript；
+        导入文件同样需要 JavaScript，请到本页上方的「导入可核验成果」区域操作。
+      </p>
+    </section>
+  </noscript>
+
+  <ol class="progress-wizard__steps">
+    <li class="progress-wizard__step" data-wizard-step="0">
+      <h3>第 0 步 · 这是什么？</h3>
+      <p>
+        课节要求你在自己电脑上跑一条检查命令（第 1 步会给出具体命令）。命令跑完，会在课程工作区生成一个<strong>匿名 JSON 文件</strong>：
+        里面只有课程版本、课节名、通过/失败状态和证据摘要，<strong>不含你的代码、文件路径或个人信息</strong>。
+      </p>
+      <p>
+        把这个文件导入网页，唯一的作用是把「这一节我通过了」记在<strong>你自己的浏览器本地</strong>（localStorage）。
+        记录不会上传到任何服务器；换一台电脑或换一个浏览器，记录也不会自动跟过去。
+      </p>
+      <details class="progress-wizard__why">
+        <summary>为什么要这么麻烦？</summary>
+        <p>
+          因为课程承诺不上传你的源码。检查器只在你本机运行，证据文件由你本机生成、由你亲手导入，网页只接收那一份匿名摘要。
+          这样课程站不需要账号系统，你也永远不用把代码交给它。
+        </p>
+      </details>
+    </li>
+
+    <li class="progress-wizard__step" data-wizard-step="1">
+      <h3>第 1 步 · 我该跑哪条命令？</h3>
+      <p>
+        先选择课节（这里列出三个入门项），然后<strong>在课程工作区的 <code>checker</code> 目录里</strong>运行对应命令（Windows PowerShell 格式）：
+      </p>
+
+      <label class="progress-wizard__select">
+        选择课节
+        <select id="progress-wizard-lesson" data-wizard-lesson>
+          {lessons.map((lesson) => <option value={lesson.id}>{lesson.label}</option>)}
+        </select>
+      </label>
+
+      <p class="progress-wizard__status" role="status" aria-live="polite" data-wizard-status>
+        已就绪：当前显示第一条命令；切换课节或点「复制」后，这里会提示结果。
+      </p>
+
+      <div class="progress-wizard__commands" data-wizard-commands>
+        {
+          lessons.map((lesson) => (
+            <div class="progress-wizard__command-panel" data-wizard-panel={lesson.id}>
+              <p class="progress-wizard__note">{lesson.note}</p>
+              <div class="progress-wizard__command-row">
+                <pre><code>{lesson.command}</code></pre>
+                <button type="button" class="progress-wizard__copy" data-wizard-copy>
+                  复制
+                </button>
+              </div>
+              <p class="progress-wizard__hint">
+                运行成功后，把生成的 <code>{lesson.importFile}</code> 留在手边，第 2 步要用它。
+              </p>
+            </div>
+          ))
+        }
+      </div>
+    </li>
+
+    <li class="progress-wizard__step" data-wizard-step="2">
+      <h3>第 2 步 · 导入文件</h3>
+      <p>
+        本页上方（首页底部的「本地学习记录」区域）有一个现成的导入入口，标题是「导入可核验成果」。
+        向导不另造一个导入器，直接用那个入口就行：
+      </p>
+      <a class="progress-wizard__jump" href="#evidence-loop-title">跳到「导入可核验成果」区域</a>
+      <ol class="progress-wizard__how">
+        <li>点击区域里的「选择 checker JSON」控件，在课程工作区根目录选中第 1 步生成的 JSON 文件（如 <code>evidence.json</code>）。</li>
+        <li>点击「导入选定 JSON」按钮。</li>
+        <li>看到「已导入 N 条匿名证据」就说明成功了；同一区域的「已保存的证据」列表会出现这节课。</li>
+      </ol>
+      <p class="progress-wizard__mirror" data-wizard-import-state data-state="unknown">
+        向导会在这里跟着显示导入区的最新提示：等待你完成导入。
+      </p>
+    </li>
+
+    <li class="progress-wizard__step" data-wizard-step="3">
+      <h3>第 3 步 · 没成功？</h3>
+      <p>按下面的常见失败对号入座，每条都有一句普通话解决办法：</p>
+      <dl class="progress-wizard__troubles">
+        <div class="progress-wizard__trouble">
+          <dt>选错了文件（尤其把 environment-diagnostic.json 当成证据）</dt>
+          <dd>
+            能导入的只有 checker 用 <code>--output</code> 生成的文件（evidence.json、environment-evidence.json、t03-agent-instruction-checked.json）；
+            environment-diagnostic.json 只是给 checker 看的输入。重新确认文件名再选一次。
+          </dd>
+        </div>
+        <div class="progress-wizard__trouble">
+          <dt>命令在错误的目录运行（报错找不到 course_check 或文件）</dt>
+          <dd>
+            先把 PowerShell 切到课程工作区的 <code>checker</code> 目录（<code>cd checker</code>），命令里的 <code>--root ..</code> 依赖这个位置；切对目录后重跑一次。
+          </dd>
+        </div>
+        <div class="progress-wizard__trouble">
+          <dt>课程版本不匹配（提示「拒绝导入：证据属于不兼容的课程版本」）</dt>
+          <dd>
+            证据文件里记的课程版本和当前站点版本（{expectedCourseVersion}）不一致。把仓库更新到同一课程版本，重新跑命令生成新证据再导入。
+          </dd>
+        </div>
+        <div class="progress-wizard__trouble">
+          <dt>提示「JSON 不符合证据契约」</dt>
+          <dd>文件不是 checker 原样输出的（比如被手动改过）。重新运行第 1 步的命令，不要手工编辑生成的 JSON。</dd>
+        </div>
+        <div class="progress-wizard__trouble">
+          <dt>状态一直是「尚未导入 checker 证据」</dt>
+          <dd>
+            确认点过「导入选定 JSON」按钮，而不只是选了文件；浏览器未启用 JavaScript 时导入按钮不会执行（见本向导开头的说明）。
+          </dd>
+        </div>
+        <div class="progress-wizard__trouble">
+          <dt>换了浏览器或电脑后记录不见了</dt>
+          <dd>
+            记录只保存在浏览器本地。回到原来的浏览器查看；或在原浏览器点「导出本地记录」拿到 JSON，再到新环境导入。
+          </dd>
+        </div>
+      </dl>
+      <p class="progress-wizard__boundary">
+        向导本身零联网：不发起网络请求、不写入任何服务器；筛选课节、复制命令和同步提示都在这一页的浏览器里完成。
+      </p>
+    </li>
+  </ol>
+</section>
+
+<script>
+  const root = document.querySelector("[data-progress-wizard]");
+  if (root instanceof HTMLElement) {
+    const statusEl = root.querySelector<HTMLElement>("[data-wizard-status]");
+    const select = root.querySelector<HTMLSelectElement>("[data-wizard-lesson]");
+    const panels = Array.from(root.querySelectorAll<HTMLElement>("[data-wizard-panel]"));
+
+    const announce = (message: string) => {
+      if (statusEl) statusEl.textContent = message;
+    };
+
+    // 无 JavaScript 时三条命令全部展开；启用 JavaScript 后只显示选中的课节。
+    const applyLesson = () => {
+      const selected = select?.value ?? "";
+      for (const panel of panels) {
+        panel.hidden = panel.dataset.wizardPanel !== selected;
+      }
+    };
+
+    select?.addEventListener("change", () => {
+      applyLesson();
+      announce(`已切换到 ${select.value} 的命令。`);
+    });
+    applyLesson();
+
+    const copyCommand = async (text: string) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        // 剪贴板 API 不可用时，退回临时文本框 + 旧式复制；仍然零联网。
+        const area = document.createElement("textarea");
+        area.value = text;
+        area.setAttribute("readonly", "");
+        area.setAttribute("aria-hidden", "true");
+        area.style.position = "fixed";
+        area.style.opacity = "0";
+        document.body.append(area);
+        area.select();
+        let copied = false;
+        try {
+          copied = document.execCommand("copy");
+        } catch {
+          copied = false;
+        }
+        area.remove();
+        return copied;
+      }
+    };
+
+    for (const button of Array.from(root.querySelectorAll<HTMLButtonElement>("[data-wizard-copy]"))) {
+      button.addEventListener("click", async () => {
+        const panel = button.closest<HTMLElement>("[data-wizard-panel]");
+        const command = panel?.querySelector("code")?.textContent ?? "";
+        const lessonId = panel?.dataset.wizardPanel ?? "";
+        const copied = await copyCommand(command);
+        announce(
+          copied
+            ? `已复制 ${lessonId} 的命令；粘贴到 checker 目录的 PowerShell 里运行。`
+            : "复制失败：请手动选中命令文本复制（长按或双击命令即可选中）。",
+        );
+      });
+    }
+
+    // 复用 EvidenceLoop 的导入状态：只读取它的提示文本，不重复实现导入逻辑。
+    const importState = root.querySelector<HTMLElement>("[data-wizard-import-state]");
+    const evidenceStatus = document.querySelector<HTMLElement>("[data-evidence-status]");
+    if (importState && evidenceStatus) {
+      const syncImportState = () => {
+        const text = evidenceStatus.textContent?.trim() ?? "";
+        if (!text) return;
+        importState.textContent = `导入区的最新提示：「${text}」`;
+        if (/已导入|已恢复/.test(text)) {
+          importState.dataset.state = "success";
+        } else if (/失败|错误|拒绝/.test(text)) {
+          importState.dataset.state = "error";
+        } else {
+          importState.dataset.state = "unknown";
+        }
+      };
+      new MutationObserver(syncImportState).observe(evidenceStatus, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+      });
+      syncImportState();
+    }
+  }
+</script>
+
+<style>
+  .progress-wizard { border: 1px solid var(--sl-color-gray-5); border-radius: 8px; padding: 1rem 1.25rem 1.25rem; margin: 2rem 0; }
+  .progress-wizard__heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+  .progress-wizard__eyebrow {
+    margin: 0 0 0.4rem;
+    color: var(--sl-color-accent);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .progress-wizard__heading h2 { margin: 0.35rem 0 0; }
+  .progress-wizard__version { color: var(--sl-color-gray-2); font-size: 0.8rem; white-space: nowrap; }
+  .progress-wizard__noscript { border: 1px dashed var(--sl-color-gray-4); border-radius: 6px; padding: 0.75rem 1rem; margin: 1rem 0; }
+  .progress-wizard__noscript h3 { margin: 0 0 0.4rem; }
+  .progress-wizard__noscript p { margin: 0; color: var(--sl-color-gray-2); }
+
+  .progress-wizard__steps { display: grid; gap: 1.25rem; margin: 1.25rem 0 0; padding: 0 0 0 1.25rem; }
+  .progress-wizard__step { border-top: 1px solid var(--sl-color-gray-5); padding-top: 1rem; min-width: 0; }
+  .progress-wizard__step > h3 { margin: 0 0 0.5rem; }
+  .progress-wizard__step p { margin: 0.45rem 0; }
+
+  .progress-wizard__why { margin: 0.5rem 0 0; }
+  .progress-wizard__why summary { cursor: pointer; font-weight: 700; min-height: 44px; display: inline-flex; align-items: center; }
+  .progress-wizard__why p { margin: 0.5rem 0 0; color: var(--sl-color-gray-2); }
+
+  .progress-wizard__select { display: grid; gap: 0.3rem; font-weight: 700; margin: 0.75rem 0; }
+  .progress-wizard__select select {
+    font: inherit;
+    font-weight: 400;
+    min-height: 44px;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 6px;
+    width: 100%;
+    max-width: 34rem;
+    box-sizing: border-box;
+  }
+  .progress-wizard__status { min-height: 1.5rem; border-inline-start: 0.2rem solid var(--sl-color-gray-4); padding-inline-start: 0.75rem; color: var(--sl-color-gray-2); }
+
+  .progress-wizard__command-panel { margin: 0.5rem 0; }
+  .progress-wizard__command-panel[hidden] { display: none; }
+  .progress-wizard__note { color: var(--sl-color-gray-2); font-size: 0.88rem; }
+  .progress-wizard__command-row { display: flex; align-items: stretch; gap: 0.5rem; margin: 0.5rem 0; }
+  .progress-wizard__command-row pre {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 6px;
+    background: var(--sl-color-gray-6, var(--sl-color-bg));
+    overflow-x: auto;
+    font-size: 0.8rem;
+    line-height: 1.6;
+  }
+  .progress-wizard__command-row code { font-family: "Cascadia Mono", Consolas, monospace; }
+  .progress-wizard__copy { min-height: 44px; padding: 0.5rem 1rem; border: 1px solid var(--sl-color-accent); border-radius: 6px; background: var(--sl-color-accent); color: var(--sl-color-text-invert); font: inherit; cursor: pointer; }
+  .progress-wizard__copy:hover { background: var(--sl-color-accent-high); }
+  .progress-wizard__hint { font-size: 0.85rem; color: var(--sl-color-gray-2); }
+
+  .progress-wizard__jump {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin: 0.4rem 0;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--sl-color-accent);
+    border-radius: 6px;
+    color: var(--sl-color-accent) !important;
+    font-weight: 700;
+    text-decoration: none;
+    max-width: max-content;
+  }
+  .progress-wizard__jump:hover, .progress-wizard__jump:focus-visible { background: color-mix(in srgb, var(--sl-color-accent) 12%, transparent); }
+  .progress-wizard__how { margin: 0.5rem 0; padding: 0 0 0 1.5rem; }
+  .progress-wizard__mirror { border-inline-start: 0.2rem solid var(--sl-color-gray-4); padding-inline-start: 0.75rem; color: var(--sl-color-gray-2); }
+  .progress-wizard__mirror[data-state='success'] { border-color: var(--sl-color-accent); color: inherit; }
+  .progress-wizard__mirror[data-state='error'] { border-color: var(--sl-color-red-high); color: inherit; }
+
+  .progress-wizard__troubles { display: grid; gap: 0.6rem; margin: 0.6rem 0; }
+  .progress-wizard__trouble { border: 1px solid var(--sl-color-gray-5); border-radius: 6px; padding: 0.6rem 0.75rem; }
+  .progress-wizard__trouble dt { font-weight: 700; }
+  .progress-wizard__trouble dd { margin: 0.25rem 0 0; color: var(--sl-color-gray-2); font-size: 0.9rem; }
+  .progress-wizard__boundary { border-inline-start: 0.2rem solid var(--sl-color-accent); padding-inline-start: 0.75rem; font-size: 0.85rem; color: var(--sl-color-gray-2); }
+
+  .progress-wizard button:focus-visible,
+  .progress-wizard select:focus-visible,
+  .progress-wizard a:focus-visible { outline: 0.2rem solid var(--sl-color-accent-high); outline-offset: 0.15rem; }
+
+  @media (max-width: 760px) {
+    .progress-wizard__command-row { display: block; }
+    .progress-wizard__copy { margin-top: 0.5rem; }
+    .progress-wizard__jump { max-width: 100%; }
+  }
+</style>

@@ -1,0 +1,81 @@
+---
+// 网页端起步章（W4）收尾自评：勾选进入终端/进阶线前的准备认知，全勾后标记完成并给出两个去向；零网络、免安装。
+const checklistItems = [
+  { id: "c1", text: "我使用 Windows 11，或愿意按模块 0 的指引准备等效环境" },
+  { id: "c2", text: "我知道终端是「打字输入命令、回车执行」的工具，与点击图标操作并不冲突" },
+  { id: "c3", text: "我明白进阶线的实战发生在真实代码仓库里，不再只停留在浏览器内" },
+  { id: "c4", text: "我准备好安装 PowerShell 7、Python、Git 等基础工具（模块 0 会带我逐项诊断）" },
+  { id: "c5", text: "我愿意每周投入 2–3 小时进入进阶线" },
+  { id: "c6", text: "我知道课程检查器会在我本机运行、产出可核验证据，而不只是网页上打勾" },
+];
+---
+
+<section class="terminal-bridge" data-terminal-bridge data-lesson-id="start-4" aria-labelledby="terminal-bridge-title">
+  <h3 id="terminal-bridge-title">进入终端前自评</h3>
+  <p>勾选全部 {checklistItems.length} 项即完成 W4，网页端起步章（W1–W4）收官（保存在你的浏览器本地）。</p>
+  <fieldset class="bridge-checks">
+    <legend>以下每句话，你都能真心打勾吗？</legend>
+    {checklistItems.map((item) => (
+      <label for={item.id}>
+        <input type="checkbox" id={item.id} data-bridge-check />
+        {item.text}
+      </label>
+    ))}
+  </fieldset>
+  <p class="bridge-status" role="status" aria-live="polite" data-bridge-status>尚未勾选任何一项。</p>
+  <div class="bridge-done" data-bridge-done hidden>
+    <p class="bridge-done-title">网页端起步章完成</p>
+    <p>W1–W4 全部完成。下一步由你选：</p>
+    <div class="bridge-actions">
+      <a href="/module-0-environment/">进入模块 0：环境诊断学习旅程</a>
+      <a href="/">回到课程首页</a>
+    </div>
+  </div>
+  <noscript>
+    <p>自评清单需要 JavaScript。不开启时，可把六条陈述当作自我对照逐条读一遍；前往<a href="/module-0-environment/">模块 0</a> 或<a href="/">课程首页</a>的链接不依赖脚本。</p>
+  </noscript>
+</section>
+
+<script>
+  const section = document.querySelector<HTMLElement>("[data-terminal-bridge]");
+
+  if (section) {
+    const checks = Array.from(section.querySelectorAll<HTMLInputElement>("[data-bridge-check]"));
+    const status = section.querySelector<HTMLElement>("[data-bridge-status]");
+    const done = section.querySelector<HTMLElement>("[data-bridge-done]");
+
+    const update = () => {
+      if (!status || !done) return;
+      const checked = checks.filter((input) => input.checked).length;
+      if (checks.length > 0 && checked === checks.length) {
+        status.textContent = `已勾选 ${checked}/${checks.length}。网页端起步章完成！`;
+        done.removeAttribute("hidden");
+        try {
+          localStorage.setItem("course-start-progress", JSON.stringify({ ...(JSON.parse(localStorage.getItem("course-start-progress") ?? "{}") as Record<string, boolean>), [section.dataset.lessonId ?? "start-4"]: true }));
+        } catch {
+          /* 本地存储不可用时（隐私模式等）只降级为会话内提示 */
+        }
+      } else {
+        status.textContent = checked === 0 ? "尚未勾选任何一项。" : `已勾选 ${checked}/${checks.length}，全部勾选后即完成 W4。`;
+        done.setAttribute("hidden", "");
+      }
+    };
+
+    checks.forEach((check) => check.addEventListener("change", update));
+  }
+</script>
+
+<style>
+  .terminal-bridge { border: 1px solid var(--sl-color-gray-5); border-radius: 8px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
+  .terminal-bridge fieldset { display: grid; gap: 0.35rem; margin: 0.75rem 0; }
+  .terminal-bridge label { display: block; min-height: 44px; padding: 0.5rem; }
+  .bridge-status { min-height: 1.5rem; }
+  .bridge-done { border-top: 1px solid var(--sl-color-gray-5); margin-top: 0.75rem; padding-top: 0.75rem; }
+  .bridge-done-title { font-weight: 700; }
+  .bridge-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem; }
+  .bridge-actions a { display: inline-flex; align-items: center; min-height: 44px; padding: 0.5rem 1.25rem; }
+  @media (prefers-reduced-motion: no-preference) {
+    .bridge-done:not([hidden]) { animation: bridge-fade-in 200ms ease-out; }
+    @keyframes bridge-fade-in { from { opacity: 0; } to { opacity: 1; } }
+  }
+</style>

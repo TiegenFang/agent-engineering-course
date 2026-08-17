@@ -32,7 +32,7 @@ test("all four recorded fixture paths derive anonymous completed evidence", () =
     session = recordOpenAIResponsesCase(session);
   }
   const evidence = buildOpenAIResponsesEvidence(session, {
-    courseVersion: "1.0.0",
+    courseVersion: "2.0.0",
     checkedOn: "2026-08-13",
   });
 
@@ -50,7 +50,7 @@ test("a browser learner cannot export partial or reordered evidence", () => {
   let session = createOpenAIResponsesSession();
   session = recordOpenAIResponsesCase(session);
   assert.throws(
-    () => buildOpenAIResponsesEvidence(session, { courseVersion: "1.0.0" }),
+    () => buildOpenAIResponsesEvidence(session, { courseVersion: "2.0.0" }),
     (error) => error instanceof OpenAIResponsesFixtureError && error.code === "incomplete-runs",
   );
   assert.throws(

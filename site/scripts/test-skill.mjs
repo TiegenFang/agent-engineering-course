@@ -32,7 +32,7 @@ test("a complete session records trigger positives and negatives", () => {
   session = testSkillTriggerBoundary(session);
 
   const evidence = buildSkillEvidence(session, {
-    courseVersion: "1.0.0",
+    courseVersion: "2.0.0",
     checkedOn: "2026-08-13",
   });
   assert.equal(evidence.lesson_id, "t17-skill");
@@ -59,7 +59,7 @@ test("partial session remains valid evidence and identifies missing work", () =>
   let session = createSkillSession();
   session = runSkillScenario(session, "missing-source");
   session = recordSkillObservation(session);
-  const evidence = buildSkillEvidence(session, { courseVersion: "1.0.0", checkedOn: "2026-08-13" });
+  const evidence = buildSkillEvidence(session, { courseVersion: "2.0.0", checkedOn: "2026-08-13" });
 
   assert.equal(evidence.result, "partial");
   assert.equal(evidence.evidence.find((check) => check.id === "trigger-boundary-tested")?.result, "failed");
