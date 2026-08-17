@@ -9,13 +9,18 @@ const read = (relativePath) => readFileSync(join(siteRoot, relativePath), "utf8"
 
 test("TerminalBridge 组件保持零网络与仅本地进度契约", () => {
   const component = read("src/components/TerminalBridge.astro");
+  const progressModule = read("src/lib/start-progress.mjs");
 
   // 零网络：组件不得发起任何请求
   assert.doesNotMatch(component, /\bfetch\s*\(/);
-  // localStorage 只允许写课程进度这一个键；不得使用 sessionStorage 或其他键
-  assert.match(component, /localStorage\.setItem\(\s*"course-start-progress"/);
-  assert.doesNotMatch(component, /localStorage\.setItem\(\s*(?!["`]course-start-progress)/);
+  // 进度读写统一经共享进度模块，组件内不得再手写 localStorage
+  assert.match(component, /from "\.\.\/lib\/start-progress\.mjs"/);
+  assert.match(component, /markStartLessonComplete/);
+  assert.doesNotMatch(component, /localStorage/);
   assert.doesNotMatch(component, /sessionStorage/);
+  // 共享模块只使用课程起步进度这一个键，不得挪作他用
+  assert.match(progressModule, /course-start-progress/);
+  assert.doesNotMatch(progressModule, /sessionStorage/);
 });
 
 test("TerminalBridge 组件具备无障碍与触控基线", () => {

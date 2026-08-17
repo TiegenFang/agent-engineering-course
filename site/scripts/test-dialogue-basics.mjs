@@ -25,10 +25,15 @@ test("改写练习组件保持零网络与无障碍契约", () => {
 
 test("localStorage 只用于本地完成进度", () => {
   const component = read("src/components/DialogueRewrite.astro");
+  const progressModule = read("src/lib/start-progress.mjs");
 
-  // 仅允许读写 course-start-progress 进度键，不允许清除或挪作他用
-  assert.match(component, /localStorage\.(getItem|setItem)\("course-start-progress"/);
-  assert.doesNotMatch(component, /localStorage\.(removeItem|clear)\b/);
+  // 进度写入统一经共享进度模块；组件不得直接触碰存储或清除进度
+  assert.match(component, /from "\.\.\/lib\/start-progress\.mjs"/);
+  assert.match(component, /markStartLessonComplete/);
+  assert.doesNotMatch(component, /localStorage|sessionStorage/);
+  // 共享模块只读写 course-start-progress 进度键，不允许清除或挪作他用
+  assert.match(progressModule, /course-start-progress/);
+  assert.doesNotMatch(progressModule, /localStorage\.(removeItem|clear)\b|sessionStorage/);
   // 完成状态按课节 id 隔离写入
   assert.match(component, /start-2/);
 });

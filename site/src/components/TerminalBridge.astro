@@ -37,6 +37,8 @@ const checklistItems = [
 </section>
 
 <script>
+  import { markStartLessonComplete } from "../lib/start-progress.mjs";
+
   const section = document.querySelector<HTMLElement>("[data-terminal-bridge]");
 
   if (section) {
@@ -50,11 +52,8 @@ const checklistItems = [
       if (checks.length > 0 && checked === checks.length) {
         status.textContent = `已勾选 ${checked}/${checks.length}。网页端起步章完成！`;
         done.removeAttribute("hidden");
-        try {
-          localStorage.setItem("course-start-progress", JSON.stringify({ ...(JSON.parse(localStorage.getItem("course-start-progress") ?? "{}") as Record<string, boolean>), [section.dataset.lessonId ?? "start-4"]: true }));
-        } catch {
-          /* 本地存储不可用时（隐私模式等）只降级为会话内提示 */
-        }
+        // 本地存储不可用时（隐私模式等）由共享模块静默降级，页面反馈不受影响
+        markStartLessonComplete(section.dataset.lessonId ?? "start-4");
       } else {
         status.textContent = checked === 0 ? "尚未勾选任何一项。" : `已勾选 ${checked}/${checks.length}，全部勾选后即完成 W4。`;
         done.setAttribute("hidden", "");

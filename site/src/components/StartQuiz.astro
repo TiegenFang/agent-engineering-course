@@ -41,6 +41,8 @@ const quizData = [
 </section>
 
 <script>
+  import { markStartLessonComplete } from "../lib/start-progress.mjs";
+
   const section = document.querySelector<HTMLElement>("[data-start-quiz]");
   type QuizItem = { id: string; question: string; options: string[]; answer: number; explanation: string };
 
@@ -84,11 +86,8 @@ const quizData = [
       });
       if (correct === items.length) {
         result.textContent = `全部正确（${correct}/${items.length}）！本课已在你的浏览器中标记为完成。`;
-        try {
-          localStorage.setItem("course-start-progress", JSON.stringify({ ...(JSON.parse(localStorage.getItem("course-start-progress") ?? "{}") as Record<string, boolean>), [section.dataset.quizId ?? "start-1"]: true }));
-        } catch {
-          /* 本地存储不可用时（隐私模式等）只降级为会话内提示 */
-        }
+        // 本地存储不可用时（隐私模式等）由共享模块静默降级，页面反馈不受影响
+        markStartLessonComplete(section.dataset.quizId ?? "start-1");
       } else {
         result.textContent = `答对 ${correct}/${items.length}。${explanations.join(" ")}`;
       }

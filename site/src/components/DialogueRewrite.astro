@@ -63,6 +63,8 @@ const rounds: Round[] = [
 </section>
 
 <script>
+  import { markStartLessonComplete } from "../lib/start-progress.mjs";
+
   const section = document.querySelector<HTMLElement>("[data-dialogue-rewrite]");
 
   if (section) {
@@ -89,11 +91,8 @@ const rounds: Round[] = [
       const done = checks.filter((checkbox) => checkbox.checked).length;
       if (done === checks.length) {
         result.textContent = `两轮练习（${done}/${checks.length}）都已自评完成！本课已在你的浏览器中标记为完成。`;
-        try {
-          localStorage.setItem("course-start-progress", JSON.stringify({ ...(JSON.parse(localStorage.getItem("course-start-progress") ?? "{}") as Record<string, boolean>), [lessonId]: true }));
-        } catch {
-          /* 本地存储不可用时（隐私模式等）只降级为会话内提示 */
-        }
+        // 本地存储不可用时（隐私模式等）由共享模块静默降级，页面反馈不受影响
+        markStartLessonComplete(lessonId);
       } else {
         result.textContent = `已自评 ${done}/${checks.length} 轮。两轮都勾选自评后，本课将标记为完成。`;
       }
