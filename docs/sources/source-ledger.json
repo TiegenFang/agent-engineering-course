@@ -1,6 +1,6 @@
 {
   "ledger_version": "1",
-  "verified_on": "2026-08-13",
+  "verified_on": "2026-08-17",
   "entries": [
     {
       "id": "starlight-manual-setup",
@@ -1100,6 +1100,96 @@
       "pinned_version": "T31 enterprise-api-runner-v1; verified 2026-08-13",
       "usage": "定义 Issue-to-PR 有界 draft-validation-plan、人工审批、高影响动作拒绝、预算门禁、结构化输出和匿名恢复 evidence；代码与正文为原创",
       "license_or_terms": "project-original; code MIT and content CC-BY-4.0; no copied assets",
+      "copied_assets": false
+    },
+    {
+      "id": "v2-course-hello-agents",
+      "title": "Datawhale hello-agents",
+      "url": "https://datawhalechina.github.io/hello-agents/",
+      "source_role": "teaching-reference",
+      "pinned_version": "observed 2026-08-17; CC BY-NC-SA 4.0",
+      "usage": "起步章结构调研与 W1 延伸阅读链接；不复制正文",
+      "license_or_terms": "CC BY-NC-SA 4.0; link-only",
+      "copied_assets": false
+    },
+    {
+      "id": "v2-course-hf-agents-course",
+      "title": "HuggingFace Agents Course",
+      "url": "https://github.com/huggingface/agents-course",
+      "source_role": "teaching-reference",
+      "pinned_version": "observed 2026-08-17",
+      "usage": "Unit 0 集中铺垫与免费默认机制调研；仅链接",
+      "license_or_terms": "Apache-2.0; link-only",
+      "copied_assets": false
+    },
+    {
+      "id": "v2-course-msft-agents-beginners",
+      "title": "Microsoft AI Agents for Beginners",
+      "url": "https://github.com/microsoft/ai-agents-for-beginners",
+      "source_role": "teaching-reference",
+      "pinned_version": "observed 2026-08-17",
+      "usage": "第一课纯概念起点与图解结构调研；仅链接",
+      "license_or_terms": "MIT; link-only",
+      "copied_assets": false
+    },
+    {
+      "id": "v2-course-ed-donner-agents",
+      "title": "ed-donner/agents",
+      "url": "https://github.com/ed-donner/agents",
+      "source_role": "teaching-reference",
+      "pinned_version": "observed 2026-08-17",
+      "usage": "guides 前置桥接层结构调研；仅链接",
+      "license_or_terms": "MIT; link-only",
+      "copied_assets": false
+    },
+    {
+      "id": "v2-skill-obra-superpowers",
+      "title": "obra/superpowers",
+      "url": "https://github.com/obra/superpowers",
+      "source_role": "teaching-reference",
+      "pinned_version": "observed 2026-08-17",
+      "usage": "案例参考库：TDD/systematic-debugging/verification-before-completion 注释式导读",
+      "license_or_terms": "MIT; link-only",
+      "copied_assets": false
+    },
+    {
+      "id": "v2-skill-mattpocock-skills",
+      "title": "mattpocock/skills",
+      "url": "https://github.com/mattpocock/skills",
+      "source_role": "teaching-reference",
+      "pinned_version": "observed 2026-08-17",
+      "usage": "案例参考库：grilling/to-spec/handoff 注释式导读",
+      "license_or_terms": "MIT; link-only",
+      "copied_assets": false
+    },
+    {
+      "id": "v2-skill-anthropics-skills",
+      "title": "anthropics/skills",
+      "url": "https://github.com/anthropics/skills",
+      "source_role": "teaching-reference",
+      "pinned_version": "observed 2026-08-17; 多数 Apache-2.0，docx/pdf/pptx/xlsx 为专有许可",
+      "usage": "案例参考库：skill-creator/mcp-builder 注释式导读；专有许可条目明确提示不可复用",
+      "license_or_terms": "mixed: Apache-2.0 + proprietary document skills; link-only",
+      "copied_assets": false
+    },
+    {
+      "id": "v2-anthropic-cors-browser-access",
+      "title": "Anthropic API browser CORS support",
+      "url": "https://docs.anthropic.com/en/api/beta-cors-support",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "verified 2026-08-17 via official docs + simonwillison.net/2024/Aug/23/anthropic-dangerous-direct-browser-access/",
+      "usage": "核验 BYO-key 实验页浏览器直连所需的 anthropic-dangerous-direct-browser-access 头与 messages 端点",
+      "license_or_terms": "reference-only; Anthropic documentation terms apply",
+      "copied_assets": false
+    },
+    {
+      "id": "v2-openai-chat-completions",
+      "title": "OpenAI API: Chat completions",
+      "url": "https://platform.openai.com/docs/api-reference/chat",
+      "source_role": "official-api-fact-source",
+      "pinned_version": "verified 2026-08-17; model names are version-sensitive",
+      "usage": "核验 BYO-key 实验页 OpenAI 端点与浏览器调用",
+      "license_or_terms": "reference-only; OpenAI documentation terms apply",
       "copied_assets": false
     }
   ]

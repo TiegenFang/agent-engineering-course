@@ -23,6 +23,13 @@ export default defineConfig({
           ],
         },
         {
+          label: "网页端起步（无需安装）",
+          items: [
+            { label: "W1 · 什么是 Agent", link: "/start-1-what-is-agent/" },
+            { label: "W3 · API key 与第一次真实调用", link: "/start-3-api-key-chat/" },
+          ],
+        },
+        {
           label: "前置与核心起步（模块 0–3）",
           items: [
             { label: "环境诊断学习旅程", link: "/module-0-environment/" },
@@ -72,6 +79,7 @@ export default defineConfig({
           items: [
             { label: "试学指南与观察表", link: "/trial-guide/" },
             { label: "下一步学习地图", link: "/next-steps/" },
+            { label: "案例参考库", link: "/case-library/" },
           ],
         },
       ],

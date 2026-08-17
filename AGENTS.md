@@ -5,6 +5,7 @@
 ## Current state
 
 - v1.0.0 已发布（2026-08-16，GitHub Pages 正式站与 tag `v1.0.0`）：自动化门槛全绿；T34 真人跨平台与真实工具验收、T12 试学审计按维护者决定延后，issue 保持开启，课节内继续如实标注未验证边界；工程决定与验证证据记录在 [worklog.md](./docs/worklog.md)。
+- 2026-08-17 起按维护者决定启动 v2 零基础重定位：受众词条、网页端起步章、BYO-key 浏览器直连实验（ADR-0008）与案例参考库；规格与 ticket 见 [v2 总规格](./docs/specs/agent-engineering-course-v2.md)，实现按 ticket 推进、不顺手扩scope。
 - v1 总规格是 GitHub [Issue #1](https://github.com/TiegenFang/agent-engineering-course/issues/1)，状态为 `ready-for-agent`。
 - 实施顺序固定为 Foundation、Alpha 纵向切片、Core Beta、v1；推进时仍按依赖前沿逐个 ticket 解锁，不在实现中顺手扩展范围。
 - 工作区已连接 Git remote（origin/main）；GitHub 操作按 [issue tracker](./docs/agents/issue-tracker.md) 约定显式使用 `--repo TiegenFang/agent-engineering-course`。

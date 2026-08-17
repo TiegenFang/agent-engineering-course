@@ -1,0 +1,58 @@
+---
+title: 案例参考库
+description: 社区与官方优秀 Skill 的注释式导读：做什么、为什么设计好、对应课程哪一章
+---
+
+# 案例参考库
+
+这些是真实世界里被大量使用的 Agent Skill 案例。每个条目告诉你**它做什么、为什么设计得好、对应本课程哪一章的概念**。所有条目只做导读与外链，不复制内容；许可证与核验日期逐条标注（调研核实日：2026-08-17）。
+
+## obra/superpowers（MIT）
+
+一套「给 Coding Agent 的软件开发方法论」技能库。三个最适合入门的案例：
+
+| 案例 | 做什么 | 对应课程章节 |
+| --- | --- | --- |
+| [test-driven-development](https://github.com/obra/superpowers) | 强制 Agent 走 red→green 循环：先写失败测试，再写实现 | 课节的「操作前预测」与模块 12 验证 |
+| [systematic-debugging](https://github.com/obra/superpowers) | 把「瞎试」变成有步骤的系统化调试 | 每课的「故障注入与恢复」 |
+| [verification-before-completion](https://github.com/obra/superpowers) | 宣布完成前必须先验证——短小但纪律性极强 | 内容契约的「可核验成果」 |
+
+看点：这些 skill 的价值不在代码量，而在**把工程纪律写成 Agent 可执行的流程**。
+
+## mattpocock/skills（MIT）
+
+作者把自己的 agent 配置目录直接开源（本课程的工程流程也大量借鉴了这一流派）：
+
+| 案例 | 做什么 | 对应课程章节 |
+| --- | --- | --- |
+| [grilling](https://github.com/mattpocock/skills) | 像面试官一样持续追问，把模糊想法打磨成可执行计划 | 模块 2 指令工程的目标澄清 |
+| [to-spec](https://github.com/mattpocock/skills) | 把对话中的共识固化成规格文档 | 模块 2 的输出契约 |
+| [handoff](https://github.com/mattpocock/skills) | 把当前会话压缩成交接文档给下一个 agent | 模块 5 的上下文压缩与交接 |
+
+看点：**用追问代替假设、用文档固化共识**——这正是「Agent 指令工程」与「万能提示词」的区别。
+
+## anthropics/skills（官方）
+
+Anthropic 官方技能示例库，多数 Apache-2.0（注意：docx/pdf/pptx/xlsx 四个文档技能是专有许可，不可直接复用）：
+
+| 案例 | 做什么 | 对应课程章节 |
+| --- | --- | --- |
+| [skill-creator](https://github.com/anthropics/skills) | 官方教你「怎么写一个好 skill」，含触发准确度优化 | 模块 7 自定义 Skill 的权威参照 |
+| [mcp-builder](https://github.com/anthropics/skills) | 官方 MCP 服务器构建指南（需要一点工程背景） | 模块 9 MCP 的进阶延伸 |
+
+看点：**官方对「好 skill」的定义**——SKILL.md 的写法、触发词设计、渐进披露，都是模块 7 作业的评分参照。
+
+## 延伸课程（入门之后）
+
+| 课程 | 语言/许可 | 位置 |
+| --- | --- | --- |
+| Datawhale hello-agents | 中文 / CC BY-NC-SA 4.0 | [datawhalechina.github.io/hello-agents](https://datawhalechina.github.io/hello-agents/) |
+| HuggingFace Agents Course | 英文 / Apache-2.0 | [github.com/huggingface/agents-course](https://github.com/huggingface/agents-course) |
+| Microsoft AI Agents for Beginners | 英文 / MIT | [github.com/microsoft/ai-agents-for-beginners](https://github.com/microsoft/ai-agents-for-beginners) |
+| ed-donner/agents | 英文 / MIT | [github.com/ed-donner/agents](https://github.com/ed-donner/agents) |
+
+## 使用边界
+
+- 本页所有链接指向外部仓库，内容与本项目相互独立；引用不代表背书。
+- 各仓库许可证不同（尤其 anthropics/skills 的专有许可条目），复用前自行核对。
+- star 数等易变事实有意不标注；以你访问当天的仓库页面为准。

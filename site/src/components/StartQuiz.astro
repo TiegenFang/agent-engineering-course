@@ -1,0 +1,105 @@
+---
+// 网页端起步章的浏览器内知识检查：即时反馈 + 本地完成状态，零网络、免安装。
+const quizData = [
+  {
+    id: "q1",
+    question: "「模型」和「Agent」最关键的区别是什么？",
+    options: [
+      "模型就是 Agent，两个词可以互换",
+      "模型负责生成文字，Agent 还能围绕目标调用工具、观察结果、决定下一步",
+      "Agent 是模型的另一个商标名称",
+    ],
+    answer: 1,
+    explanation: "模型一次只做「收到输入 → 生成输出」；Agent 在外面套了一个循环：调用工具、把结果喂回去、决定继续还是停止。",
+  },
+  {
+    id: "q2",
+    question: "API key 最像日常生活中的哪样东西？",
+    options: ["一张身份证，证明你是谁", "一把带计费的钥匙：证明身份，且每次开门都按用量扣费", "一张会员卡，免费无限使用"],
+    answer: 1,
+    explanation: "API key 证明「调用是你发起的」，费用按实际用量结算；它应该像钥匙一样保管，泄露就要换锁（撤销重发）。",
+  },
+  {
+    id: "q3",
+    question: "在课程的 BYO-key 实验页里输入密钥后，密钥会被发送到哪里？",
+    options: ["课程的服务器，由课程代为调用", "只存在你的浏览器内存，请求直连模型服务商官方端点", "自动发布到你的 GitHub 仓库"],
+    answer: 1,
+    explanation: "这正是「自带密钥 + 浏览器直连」的设计：课程站是静态页面，没有服务器可收密钥；你可以在开发者工具里核实请求去向。",
+  },
+];
+---
+
+<section class="start-quiz" data-start-quiz data-quiz-id="start-1" data-quiz-data={JSON.stringify(quizData)} aria-labelledby="start-quiz-title">
+  <h3 id="start-quiz-title">知识检查</h3>
+  <p>答对全部 3 题即可标记本课完成（保存在你的浏览器本地）。</p>
+  <div data-quiz-questions></div>
+  <button type="button" data-quiz-submit>检查答案</button>
+  <p class="quiz-result" role="status" aria-live="polite" data-quiz-result>尚未作答。</p>
+  <noscript>
+    <p>知识检查需要 JavaScript。不开启时，可把三道题当作自测题在纸上回答，再对照课文确认。</p>
+  </noscript>
+</section>
+
+<script>
+  const section = document.querySelector<HTMLElement>("[data-start-quiz]");
+  type QuizItem = { id: string; question: string; options: string[]; answer: number; explanation: string };
+
+  if (section) {
+    const items = JSON.parse(section.dataset.quizData ?? "[]") as QuizItem[];
+    const container = section.querySelector<HTMLElement>("[data-quiz-questions]");
+    const submit = section.querySelector<HTMLButtonElement>("[data-quiz-submit]");
+    const result = section.querySelector<HTMLElement>("[data-quiz-result]");
+
+    items.forEach((item, index) => {      const fieldset = document.createElement("fieldset");
+      const legend = document.createElement("legend");
+      legend.textContent = `${index + 1}. ${item.question}`;
+      fieldset.appendChild(legend);
+      item.options.forEach((option, optionIndex) => {
+        const label = document.createElement("label");
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = item.id;
+        input.value = String(optionIndex);
+        input.addEventListener("change", () => {
+          result?.setAttribute("data-answered", "1");
+        });
+        label.appendChild(input);
+        label.appendChild(document.createTextNode(` ${option}`));
+        fieldset.appendChild(label);
+      });
+      container?.appendChild(fieldset);
+    });
+
+    submit?.addEventListener("click", () => {
+      if (!result) return;
+      let correct = 0;
+      const explanations: string[] = [];
+      items.forEach((item, itemIndex) => {
+        const selected = section.querySelector<HTMLInputElement>(`input[name="${item.id}"]:checked`);
+        if (selected && Number(selected.value) === item.answer) {
+          correct += 1;
+        } else {
+          explanations.push(`第 ${itemIndex + 1} 题没对：${item.explanation}`);
+        }
+      });
+      if (correct === items.length) {
+        result.textContent = `全部正确（${correct}/${items.length}）！本课已在你的浏览器中标记为完成。`;
+        try {
+          localStorage.setItem("course-start-progress", JSON.stringify({ ...(JSON.parse(localStorage.getItem("course-start-progress") ?? "{}") as Record<string, boolean>), [section.dataset.quizId ?? "start-1"]: true }));
+        } catch {
+          /* 本地存储不可用时（隐私模式等）只降级为会话内提示 */
+        }
+      } else {
+        result.textContent = `答对 ${correct}/${items.length}。${explanations.join(" ")}`;
+      }
+    });
+  }
+</script>
+
+<style>
+  .start-quiz { border: 1px solid var(--sl-color-gray-5); border-radius: 8px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
+  .start-quiz fieldset { display: grid; gap: 0.35rem; margin: 0.75rem 0; }
+  .start-quiz label { display: block; min-height: 44px; padding: 0.5rem; }
+  .start-quiz button { min-height: 44px; padding: 0.5rem 1.25rem; cursor: pointer; }
+  .quiz-result { min-height: 1.5rem; }
+</style>
