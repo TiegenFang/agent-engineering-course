@@ -39,6 +39,7 @@ const testCommands = [
   ["--test", "scripts/test-dialogue-basics.mjs"],
   ["--test", "scripts/test-w2-instruction-theater.mjs"],
   ["--test", "scripts/test-terminal-bridge.mjs"],
+  ["--test", "scripts/test-w4-fork-map.mjs"],
   ["--test", "scripts/test-progress-wizard.mjs"],
   ["--test", "scripts/test-research-capstone.mjs"],
   ["scripts/assert-module-six.mjs"],

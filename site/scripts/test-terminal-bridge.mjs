@@ -32,8 +32,9 @@ test("TerminalBridge 组件具备无障碍与触控基线", () => {
   assert.match(component, /<noscript>/);
   // 交互目标满足 44px 触摸基线
   assert.match(component, /min-height: 44px/);
-  // 动效只在用户未要求减少动态效果时启用
-  assert.match(component, /prefers-reduced-motion: no-preference/);
+  // V3-6：所有状态切换（含画风衔接）均为静态替换，组件不再携带任何动画
+  assert.doesNotMatch(component, /@keyframes/);
+  assert.doesNotMatch(component, /animation\s*:/);
 });
 
 test("W4 课页挂载 TerminalBridge 并桥接到模块 0", () => {

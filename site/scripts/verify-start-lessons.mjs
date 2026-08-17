@@ -200,19 +200,56 @@ const run = async () => {
     );
     await w2.close();
 
-    // W4：全部勾选自评后出现起步章完成区
+    // W4：分岔地图四键校验——先清空进度，只勾理解类条目断言不落盘；
+    // 再预置 start-1/2/3 后断言脚印点亮、门打开、start-4 落盘、完成区出现
     const w4 = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     await w4.goto(`${baseUrl}/start-4-web-to-terminal/`);
     await w4.waitForSelector("[data-terminal-bridge]");
-    const bridgeChecks = await w4.locator("[data-bridge-check]").count();
-    assert.ok(bridgeChecks >= 4, "W4 自评清单至少 4 项");
-    for (let i = 0; i < bridgeChecks; i += 1) {
-      await w4.locator("[data-bridge-check]").nth(i).check();
+    await w4.evaluate(() => localStorage.removeItem("course-start-progress"));
+    await w4.click("[data-fork-refresh]");
+    const understanding = w4.locator('[data-bridge-check][data-bridge-kind="understanding"]');
+    const willingness = w4.locator('[data-bridge-check][data-bridge-kind="willingness"]');
+    assert.equal(await understanding.count(), 3, "W4 理解类条目应为 3 项");
+    assert.equal(await willingness.count(), 3, "W4 意愿类条目应为 3 项（不计入完成）");
+    for (let i = 0; i < 3; i += 1) {
+      await understanding.nth(i).check();
     }
-    await w4.waitForFunction(() => {
-      const done = document.querySelector("[data-bridge-done]");
-      return !!done && done.textContent !== "" && !!(done.offsetParent || done.getClientRects().length);
-    });
+    await w4.waitForFunction(() =>
+      document.querySelector("[data-bridge-status]")?.textContent?.includes("还差"),
+    );
+    let w4Stored = await w4.evaluate(() => localStorage.getItem("course-start-progress"));
+    assert.equal(w4Stored, null, "缺 W1–W3 完成钥匙时，勾选理解类条目不得落盘 start-4");
+    // 预置 start-1 与 start-3（缺 W2）：明确提示缺哪课并附「先去完成 W2」跳转链接
+    await w4.evaluate(() =>
+      localStorage.setItem("course-start-progress", JSON.stringify({ "start-1": true, "start-3": true })),
+    );
+    await w4.click("[data-fork-refresh]");
+    await w4.waitForFunction(() =>
+      document.querySelector("[data-door-missing]")?.textContent?.includes("W2"),
+    );
+    assert.ok(
+      (await w4.locator('[data-door-missing] a[href*="start-2"]').count()) >= 1,
+      "缺 W2 时应提供「先去完成 W2」跳转链接",
+    );
+    w4Stored = await w4.evaluate(() => localStorage.getItem("course-start-progress"));
+    assert.doesNotMatch(w4Stored ?? "", /"start-4"/, "仍缺 W2 钥匙时不得落盘 start-4");
+    // 三键齐全：脚印全部点亮、终端之门打开、start-4 落盘、完成区可见
+    await w4.evaluate(() =>
+      localStorage.setItem(
+        "course-start-progress",
+        JSON.stringify({ "start-1": true, "start-2": true, "start-3": true }),
+      ),
+    );
+    await w4.click("[data-fork-refresh]");
+    await w4.waitForFunction(() =>
+      document.querySelector("[data-door-state]")?.textContent?.includes("已打开"),
+    );
+    const footprintStates = await w4.locator("[data-footprint-state]").allTextContents();
+    assert.equal(footprintStates.length, 3, "分岔地图应有 W1–W3 三枚脚印");
+    assert.ok(footprintStates.every((text) => text.includes("已点亮")), "三键齐全后脚印应全部点亮");
+    w4Stored = await w4.evaluate(() => localStorage.getItem("course-start-progress"));
+    assert.match(w4Stored ?? "", /"start-4":true/, "四键齐全后应写入 start-4 完成记录");
+    assert.ok(await w4.locator("[data-bridge-done]").isVisible(), "完成后应显示画风衔接完成区");
     await w4.close();
 
     // 首页：进度向导渲染且零网络
@@ -228,7 +265,7 @@ const run = async () => {
     assert.equal(homeRequests.length, 0, "首页加载不得发出外部网络请求");
     await home.close();
 
-    console.log("Start lessons browser verification passed: W1 predictions + loop track + quiz redo gate, W3 request journey (offline sample + completion), case library, W2 rewrite, W4 bridge, progress wizard");
+    console.log("Start lessons browser verification passed: W1 predictions + loop track + quiz redo gate, W3 request journey (offline sample + completion), case library, W2 rewrite, W4 fork map four-key gate, progress wizard");
   } finally {
     await browser.close();
     await stopPreview();

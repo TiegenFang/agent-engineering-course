@@ -1,80 +1,502 @@
 ---
-// 网页端起步章（W4）收尾自评：勾选进入终端/进阶线前的准备认知，全勾后标记完成并给出两个去向；零网络、免安装。
-const checklistItems = [
-  { id: "c1", text: "我使用 Windows 11，或愿意按模块 0 的指引准备等效环境" },
+// 网页端起步章（W4）收尾：分岔地图 + 四键校验 + 改进版自评清单（V3-6）。
+// 分岔地图：左侧「浏览器之路」三枚几何脚印随共享进度点亮；右侧「终端之门」
+// 只有 W1/W2/W3 三把完成钥匙 + 本页理解检查确认（第四键）全部满足才亮起打开；
+// 小循以 done 姿态在门前把「工具箱」（几何道具）递给学员。
+// 清单修订：区分「理解」（计入完成判定）与「意愿」（不计入，仅自评展示）。
+// 画风衔接：W4 完成后完成区切回 Editorial 编辑风（模块 0 的排版语言）——
+// 本票所有状态切换均为静态替换，无任何动画/过渡（与 reduced-motion 无关）。
+// 插画边界遵循 ADR-0009（只解释概念、不模拟产品 UI；小循只做向导），
+// 设计语言遵循 docs/design/v3-illustration-design-spec.md（含 V3-6 增补的 W4 场景元素）。
+// 完成判定（v3 规格 D6 / W4 行）：readStartProgress() 中 start-1/2/3 全为 true
+// 且本页理解类条目全勾 → markStartLessonComplete("start-4")。零网络、免安装。
+import Mascot from "./mascot/Mascot.astro";
+
+const base = import.meta.env.BASE_URL;
+
+type ForkLesson = { id: string; week: string; label: string; href: string };
+
+// 左侧「浏览器之路」的三枚脚印：读取共享进度模块的键，与 W1–W3 落盘一一对应。
+const forkLessons: ForkLesson[] = [
+  { id: "start-1", week: "W1", label: "什么是 Agent", href: `${base}start-1-what-is-agent/` },
+  { id: "start-2", week: "W2", label: "与模型对话的正确姿势", href: `${base}start-2-dialogue-basics/` },
+  { id: "start-3", week: "W3", label: "API key 与第一次真实调用", href: `${base}start-3-api-key-chat/` },
+];
+
+// 理解类条目（计入完成判定）：确认学员分清终端、真实仓库与可核验证据。
+const understandingItems = [
   { id: "c2", text: "我知道终端是「打字输入命令、回车执行」的工具，与点击图标操作并不冲突" },
   { id: "c3", text: "我明白进阶线的实战发生在真实代码仓库里，不再只停留在浏览器内" },
-  { id: "c4", text: "我准备好安装 PowerShell 7、Python、Git 等基础工具（模块 0 会带我逐项诊断）" },
-  { id: "c5", text: "我愿意每周投入 2–3 小时进入进阶线" },
   { id: "c6", text: "我知道课程检查器会在我本机运行、产出可核验证据，而不只是网页上打勾" },
 ];
+
+// 意愿类条目（不计入完成判定）：时间与环境准备的自我对照，展示但不设门槛。
+const willingnessItems = [
+  { id: "c1", text: "我使用 Windows 11，或愿意按模块 0 的指引准备等效环境" },
+  { id: "c4", text: "我准备好安装 PowerShell 7、Python、Git 等基础工具（模块 0 会带我逐项诊断）" },
+  { id: "c5", text: "我愿意每周投入 2–3 小时进入进阶线" },
+];
+
+const forkLessonsMeta = forkLessons.map(({ id, week, label, href }) => ({ id, week, label, href }));
 ---
 
-<section class="terminal-bridge" data-terminal-bridge data-lesson-id="start-4" aria-labelledby="terminal-bridge-title">
-  <h3 id="terminal-bridge-title">进入终端前自评</h3>
-  <p>勾选全部 {checklistItems.length} 项即完成 W4，网页端起步章（W1–W4）收官（保存在你的浏览器本地）。</p>
-  <fieldset class="bridge-checks">
-    <legend>以下每句话，你都能真心打勾吗？</legend>
-    {checklistItems.map((item) => (
-      <label for={item.id}>
-        <input type="checkbox" id={item.id} data-bridge-check />
-        {item.text}
-      </label>
-    ))}
-  </fieldset>
-  <p class="bridge-status" role="status" aria-live="polite" data-bridge-status>尚未勾选任何一项。</p>
-  <div class="bridge-done" data-bridge-done hidden>
-    <p class="bridge-done-title">网页端起步章完成</p>
-    <p>W1–W4 全部完成。下一步由你选：</p>
-    <div class="bridge-actions">
-      <a href="/module-0-environment/">进入模块 0：环境诊断学习旅程</a>
-      <a href="/">回到课程首页</a>
+<section
+  class="terminal-bridge"
+  data-terminal-bridge
+  data-lesson-id="start-4"
+  data-fork-lessons={JSON.stringify(forkLessonsMeta)}
+  aria-labelledby="terminal-bridge-title"
+>
+  <h3 id="terminal-bridge-title">分岔地图：脚印、钥匙与终端之门</h3>
+  <p>
+    左边是你走过的「浏览器之路」：W1–W3
+    哪一课在你的浏览器里留了完成记录，脚印就点亮。右边是「终端之门」：集齐
+    W1、W2、W3 三把完成钥匙，并在本页勾完全部理解检查（第四键），门才会亮起打开。缺哪把钥匙，地图会明确告诉你缺哪一课，并附跳转链接。
+  </p>
+
+  <div class="fork-map" data-fork-map>
+    <div class="map-scene">
+      <svg
+        class="xun map-art"
+        data-map-art
+        viewBox="0 0 660 320"
+        role="img"
+        aria-label="分岔地图插画：左侧虚线路是浏览器之路，路上三枚脚印对应 W1 到 W3 三课；右侧终端之门的门楣上有四个钥匙孔，分别对应 W1、W2、W3 与本页确认"
+      >
+        <g
+          class="xun-strokes"
+          stroke="var(--xun-ink)"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          {/* 浏览器之路：虚线小路，从左下蜿蜒到门前 */}
+          <path class="map-road" d="M 30 292 C 120 270, 150 216, 240 204 C 330 192, 360 234, 448 231 C 490 230, 512 236, 534 240" fill="none" stroke-dasharray="10 9"></path>
+
+          {/* 三枚几何脚印：前掌椭圆 + 脚跟圆；点亮 = accent 填充 + 对勾徽章（另有 HTML 文字态） */}
+          <g class="footprint" data-footprint="start-1" transform="translate(116 250) rotate(-12)">
+            <ellipse cx="0" cy="-2" rx="11.5" ry="16.5"></ellipse>
+            <circle cx="0" cy="19" r="7"></circle>
+            <g class="footprint-check" aria-hidden="true">
+              <circle cx="15" cy="-23" r="9"></circle>
+              <path d="M 10.5 -23 l 3 3 l 6.5 -6.5"></path>
+            </g>
+          </g>
+          <g class="footprint" data-footprint="start-2" transform="translate(242 197) rotate(9)">
+            <ellipse cx="0" cy="-2" rx="11.5" ry="16.5"></ellipse>
+            <circle cx="0" cy="19" r="7"></circle>
+            <g class="footprint-check" aria-hidden="true">
+              <circle cx="15" cy="-23" r="9"></circle>
+              <path d="M 10.5 -23 l 3 3 l 6.5 -6.5"></path>
+            </g>
+          </g>
+          <g class="footprint" data-footprint="start-3" transform="translate(366 224) rotate(-3)">
+            <ellipse cx="0" cy="-2" rx="11.5" ry="16.5"></ellipse>
+            <circle cx="0" cy="19" r="7"></circle>
+            <g class="footprint-check" aria-hidden="true">
+              <circle cx="15" cy="-23" r="9"></circle>
+              <path d="M 10.5 -23 l 3 3 l 6.5 -6.5"></path>
+            </g>
+          </g>
+
+          {/* 终端之门：门楣四钥匙孔（W1/W2/W3/本页确认）+ 门框 + 两态门板（静态切换） */}
+          <g class="door" data-door transform="translate(528 66)">
+            <g class="door-keys">
+              <circle data-key-slot="start-1" cx="16" cy="-18" r="6.5"></circle>
+              <circle data-key-slot="start-2" cx="46" cy="-18" r="6.5"></circle>
+              <circle data-key-slot="start-3" cx="76" cy="-18" r="6.5"></circle>
+              <circle data-key-slot="start-4" cx="106" cy="-18" r="6.5"></circle>
+            </g>
+            <rect class="door-frame" x="0" y="0" width="112" height="216" rx="7" fill="var(--xun-fill)"></rect>
+            <g class="door-glow" aria-hidden="true">
+              <rect x="12" y="12" width="88" height="192" rx="4" fill="var(--xun-yellow)"></rect>
+              <line x1="-8" y1="34" x2="-24" y2="28" stroke="var(--xun-accent)"></line>
+              <line x1="-10" y1="70" x2="-28" y2="70" stroke="var(--xun-accent)"></line>
+              <line x1="-8" y1="106" x2="-24" y2="112" stroke="var(--xun-accent)"></line>
+            </g>
+            <g class="door-leaf door-leaf--closed">
+              <rect x="12" y="12" width="88" height="192" rx="4" fill="var(--xun-paper)"></rect>
+              <circle cx="88" cy="108" r="4.5" fill="var(--xun-accent)"></circle>
+            </g>
+            <g class="door-leaf door-leaf--open">
+              <g transform="rotate(-26 12 204)">
+                <rect x="12" y="12" width="88" height="192" rx="4" fill="var(--xun-paper)"></rect>
+                <circle cx="88" cy="108" r="4.5" fill="var(--xun-accent)"></circle>
+              </g>
+            </g>
+          </g>
+        </g>
+      </svg>
+      <figure class="map-mascot">
+        <div class="map-handoff">
+          <svg
+            class="xun toolbox"
+            viewBox="0 0 120 96"
+            width="88"
+            height="70"
+            role="img"
+            aria-label="小循递出的工具箱（课程原创几何示意道具）"
+          >
+            <g stroke="var(--xun-ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M 38 34 C 38 14, 82 14, 82 34" fill="none"></path>
+              <rect x="10" y="34" width="100" height="52" rx="8" fill="var(--xun-paper)"></rect>
+              <rect x="52" y="26" width="16" height="18" rx="3" fill="var(--xun-accent)"></rect>
+              <circle cx="34" cy="58" r="8" fill="var(--xun-fill)"></circle>
+              <line x1="34" y1="54" x2="34" y2="62"></line>
+              <line x1="30" y1="58" x2="38" y2="58"></line>
+              <rect x="56" y="48" width="38" height="5" rx="2.5" fill="var(--xun-fill)"></rect>
+              <rect x="56" y="61" width="38" height="5" rx="2.5" fill="var(--xun-fill)"></rect>
+            </g>
+          </svg>
+          <Mascot pose="done" size={92} />
+        </div>
+        <figcaption data-mascot-caption>小循在门前举着完成旗，等你集齐四把钥匙。</figcaption>
+      </figure>
+    </div>
+
+    <div class="map-readout">
+      <ul class="footprint-list" aria-label="W1–W3 完成脚印与跳转链接">
+        {
+          forkLessons.map((lesson) => (
+            <li data-footprint-item={lesson.id} data-lit="0">
+              <span class="footprint-state" data-footprint-state>
+                未点亮
+              </span>
+              <a data-footprint-link href={lesson.href}>
+                {lesson.week} · {lesson.label}（去完成）
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <div class="door-readout">
+        <p class="door-state-line">
+          <strong data-door-state>终端之门：未点亮</strong>
+        </p>
+        <p class="door-keys-line" data-door-keys>
+          四把钥匙：W1 未点亮 · W2 未点亮 · W3 未点亮 · 本页确认 未确认
+        </p>
+        <p class="door-missing" data-door-missing>
+          终端之门还差：
+          <a href={forkLessons[0].href}>先去完成 W1</a>、<a href={forkLessons[1].href}>先去完成 W2</a>、<a
+            href={forkLessons[2].href}>先去完成 W3</a
+          >，并回到本页勾选全部理解检查。
+        </p>
+      </div>
+      <div class="map-controls">
+        <button type="button" data-fork-refresh>刷新脚印进度</button>
+      </div>
+      <p class="fork-status" role="status" aria-live="polite" data-fork-status>
+        脚印状态读取需要 JavaScript；下方清单链接始终可用。
+      </p>
+      <noscript>
+        <p>
+          分岔地图的脚印点亮与终端之门需要 JavaScript，当前为文字清单版：按顺序完成
+          <a href={forkLessons[0].href}>W1 · 什么是 Agent</a>、<a href={forkLessons[1].href}>W2 · 与模型对话的正确姿势</a>、<a
+            href={forkLessons[2].href}>W3 · API key 与第一次真实调用</a
+          >，再回到本页把「理解检查」逐条当作自我对照读一遍。前往<a href={`${base}module-0-environment/`}>模块 0</a> 或<a href={`${base}`}>课程首页</a>的链接不依赖脚本。
+        </p>
+      </noscript>
     </div>
   </div>
-  <noscript>
-    <p>自评清单需要 JavaScript。不开启时，可把六条陈述当作自我对照逐条读一遍；前往<a href="/module-0-environment/">模块 0</a> 或<a href="/">课程首页</a>的链接不依赖脚本。</p>
-  </noscript>
+
+  <div class="bridge-checks">
+    <h4>进入终端前自评</h4>
+    <p>
+      清单分两组，性质不同：<strong>理解检查</strong>（3 条）确认你分清了终端、真实仓库与可核验证据，计入
+      W4 完成判定，是四键里的「本页确认」；<strong>意愿自评</strong>（3
+      条）是时间与环境准备的自我对照，不计入完成——没打勾不算「没完成」，只说明你或许想再等等。
+    </p>
+    <fieldset class="bridge-group">
+      <legend>理解检查（计入完成判定）</legend>
+      {
+        understandingItems.map((item) => (
+          <label for={item.id}>
+            <input type="checkbox" id={item.id} data-bridge-check data-bridge-kind="understanding" />
+            {item.text}
+          </label>
+        ))
+      }
+    </fieldset>
+    <fieldset class="bridge-group">
+      <legend>意愿自评（不计入完成判定）</legend>
+      {
+        willingnessItems.map((item) => (
+          <label for={item.id}>
+            <input type="checkbox" id={item.id} data-bridge-check data-bridge-kind="willingness" />
+            {item.text}
+          </label>
+        ))
+      }
+    </fieldset>
+    <p class="bridge-status" role="status" aria-live="polite" data-bridge-status>
+      理解检查 0/3（意愿自评不计入完成）。
+    </p>
+  </div>
+
+  <div class="bridge-done" data-bridge-done hidden>
+    <p class="done-overline">网页端起步章 · 完成记录</p>
+    <h4 class="done-heading">小循把工具箱交给了你</h4>
+    <p>
+      W1–W4 四把钥匙集齐，终端之门打开，浏览器里的起步旅程到此收官。这一页的插画也就此收起：从模块
+      0 开始，课程换回工程师的编辑排版——因为接下来的学习以证据为主角，每一步都要留下可核验的产物，而不是网页上的打勾。
+    </p>
+    <p class="done-storage" data-done-storage>
+      完成状态已保存在你的浏览器本地，可随时清除，不上传任何服务器。
+    </p>
+    <ul class="done-next">
+      <li>
+        <a href={`${base}module-0-environment/`}>进入模块 0：环境诊断学习旅程</a>——准备终端环境的第一站，逐项诊断、修复、复检。
+      </li>
+      <li><a href={`${base}`}>回到课程首页</a>——查看「我的进度」，规划下一段旅程。</li>
+    </ul>
+  </div>
 </section>
 
 <script>
-  import { markStartLessonComplete } from "../lib/start-progress.mjs";
+  import {
+    START_PROGRESS_STORAGE_KEY,
+    markStartLessonComplete,
+    readStartProgress,
+  } from "../lib/start-progress.mjs";
 
   const section = document.querySelector<HTMLElement>("[data-terminal-bridge]");
+  type ForkLessonMeta = { id: string; week: string; label: string; href: string };
 
   if (section) {
+    const lessons: ForkLessonMeta[] = JSON.parse(section.dataset.forkLessons ?? "[]");
     const checks = Array.from(section.querySelectorAll<HTMLInputElement>("[data-bridge-check]"));
-    const status = section.querySelector<HTMLElement>("[data-bridge-status]");
+    const understandingChecks = checks.filter((input) => input.dataset.bridgeKind === "understanding");
+
+    const mapArt = section.querySelector<SVGSVGElement>("[data-map-art]");
+    const footprintPrints = new Map(
+      Array.from(mapArt?.querySelectorAll<SVGGElement>("[data-footprint]") ?? []).map((el) => [
+        el.dataset.footprint ?? "",
+        el,
+      ]),
+    );
+    const keySlot = (id: string) => mapArt?.querySelector<SVGCircleElement>(`[data-key-slot="${id}"]`);
+
+    const footprintRows = lessons.map((lesson) => {
+      const item = section.querySelector<HTMLElement>(`[data-footprint-item="${lesson.id}"]`);
+      return {
+        lesson,
+        item,
+        state: item?.querySelector<HTMLElement>("[data-footprint-state]") ?? null,
+        link: item?.querySelector<HTMLAnchorElement>("[data-footprint-link]") ?? null,
+      };
+    });
+
+    const doorState = section.querySelector<HTMLElement>("[data-door-state]");
+    const doorKeys = section.querySelector<HTMLElement>("[data-door-keys]");
+    const doorMissing = section.querySelector<HTMLElement>("[data-door-missing]");
+    const mascotCaption = section.querySelector<HTMLElement>("[data-mascot-caption]");
+    const forkStatus = section.querySelector<HTMLElement>("[data-fork-status]");
+    const bridgeStatus = section.querySelector<HTMLElement>("[data-bridge-status]");
     const done = section.querySelector<HTMLElement>("[data-bridge-done]");
+    const doneStorage = section.querySelector<HTMLElement>("[data-done-storage]");
+    const refreshButton = section.querySelector<HTMLButtonElement>("[data-fork-refresh]");
+
+    const lessonId = section.dataset.lessonId ?? "start-4";
+    let markedThisSession = false;
+    let persisted = false;
+    let lastAnnounce = "";
+
+    const understandingDone = () =>
+      understandingChecks.length > 0 && understandingChecks.every((input) => input.checked);
+
+    const announce = (text: string) => {
+      if (forkStatus && text !== "" && text !== lastAnnounce) {
+        lastAnnounce = text;
+        forkStatus.textContent = text;
+      }
+    };
+
+    const renderMissing = (missing: ForkLessonMeta[], confirmed: boolean) => {
+      if (!doorMissing) return;
+      doorMissing.replaceChildren();
+      if (missing.length === 0 && confirmed) {
+        doorMissing.textContent = "四把钥匙齐全，终端之门已打开。";
+        return;
+      }
+      doorMissing.append("终端之门还差：");
+      missing.forEach((lesson, index) => {
+        if (index > 0) doorMissing.append("、");
+        const link = document.createElement("a");
+        link.href = lesson.href;
+        link.textContent = `先去完成 ${lesson.week}`;
+        doorMissing.append(link);
+      });
+      if (!confirmed) {
+        doorMissing.append(missing.length > 0 ? "，并" : "");
+        doorMissing.append("在本页勾选全部理解检查");
+      }
+      doorMissing.append("。");
+    };
 
     const update = () => {
-      if (!status || !done) return;
-      const checked = checks.filter((input) => input.checked).length;
-      if (checks.length > 0 && checked === checks.length) {
-        status.textContent = `已勾选 ${checked}/${checks.length}。网页端起步章完成！`;
-        done.removeAttribute("hidden");
-        // 本地存储不可用时（隐私模式等）由共享模块静默降级，页面反馈不受影响
-        markStartLessonComplete(section.dataset.lessonId ?? "start-4");
+      const progress = readStartProgress() as Record<string, boolean>;
+      const storedStart4 = progress[lessonId] === true;
+      const confirmed = storedStart4 || understandingDone();
+      const missing = lessons.filter((lesson) => progress[lesson.id] !== true);
+      const doorLit = missing.length === 0 && confirmed;
+      const understood = understandingChecks.filter((input) => input.checked).length;
+
+      // 三枚脚印：SVG 图形态与 HTML 文字态同源切换（非颜色编码：文字标签始终在场）
+      footprintRows.forEach(({ lesson, item, state, link }) => {
+        const lit = progress[lesson.id] === true;
+        item?.setAttribute("data-lit", lit ? "1" : "0");
+        if (state) state.textContent = lit ? "已点亮" : "未点亮";
+        if (link) {
+          link.textContent = lit
+            ? `${lesson.week} · ${lesson.label}（已完成，可回去复习）`
+            : `${lesson.week} · ${lesson.label}（去完成）`;
+        }
+        footprintPrints.get(lesson.id)?.classList.toggle("is-lit", lit);
+      });
+
+      // 四把钥匙：W1–W3 完成记录 + 本页确认
+      lessons.forEach((lesson) => {
+        keySlot(lesson.id)?.classList.toggle("is-lit", progress[lesson.id] === true);
+      });
+      keySlot(lessonId)?.classList.toggle("is-lit", confirmed);
+      if (doorKeys) {
+        doorKeys.textContent = `四把钥匙：${lessons
+          .map((lesson) => `${lesson.week} ${progress[lesson.id] === true ? "✓ 已点亮" : "未点亮"}`)
+          .join(" · ")} · 本页确认 ${confirmed ? "✓ 已确认" : "未确认"}`;
+      }
+      mapArt?.classList.toggle("is-lit", doorLit);
+      if (doorState) doorState.textContent = doorLit ? "终端之门：已打开" : "终端之门：未点亮";
+      if (mascotCaption) {
+        mascotCaption.textContent = doorLit
+          ? "小循把工具箱交给了你——起步章完成。"
+          : "小循在门前举着完成旗，等你集齐四把钥匙。";
+      }
+      renderMissing(missing, confirmed);
+
+      if (doorLit) {
+        if (!storedStart4 && !markedThisSession) {
+          persisted = markStartLessonComplete(lessonId);
+          markedThisSession = true;
+        }
+        done?.removeAttribute("hidden");
+        const recorded = persisted || (readStartProgress() as Record<string, boolean>)[lessonId] === true;
+        if (bridgeStatus) {
+          bridgeStatus.textContent = recorded
+            ? `理解检查 ${understood}/${understandingChecks.length}。四把钥匙齐全，网页端起步章完成！`
+            : `理解检查 ${understood}/${understandingChecks.length}。四把钥匙齐全！（浏览器存储不可用，完成状态未能保存，但页面反馈不受影响。）`;
+        }
+        if (doneStorage) {
+          doneStorage.textContent = recorded
+            ? "完成状态已保存在你的浏览器本地，可随时清除，不上传任何服务器。"
+            : "浏览器存储不可用：本次完成状态未能保存，刷新后需重新勾选。";
+        }
+        announce("四把钥匙齐全，终端之门已打开——网页端起步章完成。");
       } else {
-        status.textContent = checked === 0 ? "尚未勾选任何一项。" : `已勾选 ${checked}/${checks.length}，全部勾选后即完成 W4。`;
-        done.setAttribute("hidden", "");
+        done?.setAttribute("hidden", "");
+        if (bridgeStatus) {
+          if (missing.length > 0 && understood === understandingChecks.length) {
+            bridgeStatus.textContent = `理解检查已全勾。还差 ${missing
+              .map((lesson) => lesson.week)
+              .join("、")} 的完成钥匙（跳转链接在上方地图）。`;
+          } else if (missing.length > 0) {
+            bridgeStatus.textContent = `理解检查 ${understood}/${understandingChecks.length}（意愿自评不计入完成）。还差 ${missing
+              .map((lesson) => lesson.week)
+              .join("、")} 的完成钥匙（跳转链接在上方地图）。`;
+          } else {
+            bridgeStatus.textContent = `理解检查 ${understood}/${understandingChecks.length}（意愿自评不计入完成）。三把课节钥匙已集齐——勾完全部理解检查，W4 即完成。`;
+          }
+        }
+        const stillMissing = [...missing.map((lesson) => lesson.week), ...(confirmed ? [] : ["本页确认"])];
+        announce(
+          `脚印：${lessons
+            .map((lesson) => `${lesson.week} ${progress[lesson.id] === true ? "已点亮" : "未点亮"}`)
+            .join("、")}。终端之门：未点亮——还差 ${stillMissing.join("、")}。`,
+        );
       }
     };
 
     checks.forEach((check) => check.addEventListener("change", update));
+    refreshButton?.addEventListener("click", () => {
+      lastAnnounce = ""; // 手动刷新：即使文案相同也重新播报一次
+      update();
+    });
+    // 跨标签页完成 W1–W3 时（如另一标签页刚跑完 W1），回到本页自动重读脚印
+    window.addEventListener("storage", (event) => {
+      if (event.key === START_PROGRESS_STORAGE_KEY) {
+        lastAnnounce = "";
+        update();
+      }
+    });
+
+    update();
   }
 </script>
 
 <style>
   .terminal-bridge { border: 1px solid var(--sl-color-gray-5); border-radius: 8px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
-  .terminal-bridge fieldset { display: grid; gap: 0.35rem; margin: 0.75rem 0; }
+  .terminal-bridge p { max-width: 66ch; }
+
+  /* 分岔地图场景：V3-6 所有状态切换均为静态替换（无动画、无过渡） */
+  .map-scene { position: relative; border: 1.5px solid var(--sl-color-gray-5); border-radius: 12px; background: color-mix(in srgb, var(--sl-color-accent-low) 26%, transparent); padding: 0.6rem; margin: 0.75rem 0; }
+  .map-art { display: block; width: 100%; height: auto; }
+
+  /* 插画层色板 token（与 Mascot/Cast 同源；对比度核算见 v3-illustration-design-spec.md） */
+  .xun { --xun-ink: #1c2b26; --xun-accent: #087f68; --xun-accent-deep: #05604f; --xun-fill: #eaf6f1; --xun-paper: #ffffff; --xun-yellow: #ffd76a; }
+  :global([data-theme="dark"]) .xun { --xun-ink: #e9f5ef; --xun-accent: #6dd9bd; --xun-accent-deep: #9ff0d9; --xun-fill: #143a32; --xun-paper: #17181c; --xun-yellow: #ffd76a; }
+
+  .map-art .footprint ellipse, .map-art .footprint > circle { fill: none; }
+  .map-art .footprint { opacity: 0.75; }
+  .map-art .footprint.is-lit { opacity: 1; }
+  .map-art .footprint.is-lit ellipse, .map-art .footprint.is-lit > circle { fill: var(--xun-accent); }
+  .map-art .footprint-check { display: none; }
+  .map-art .footprint.is-lit .footprint-check { display: block; }
+  .map-art .footprint-check circle { fill: var(--xun-paper); }
+  .map-art .footprint-check path { fill: none; stroke: var(--xun-accent-deep); stroke-width: 3; }
+  .map-art .door-keys circle { fill: var(--xun-paper); }
+  .map-art .door-keys circle.is-lit { fill: var(--xun-accent); }
+  .map-art .door-glow, .map-art .door-leaf--open { display: none; }
+  .map-art.is-lit .door-glow, .map-art.is-lit .door-leaf--open { display: block; }
+  .map-art.is-lit .door-leaf--closed { display: none; }
+
+  .map-mascot { position: absolute; right: 2%; bottom: 3%; margin: 0; display: grid; justify-items: center; gap: 0.2rem; }
+  .map-handoff { display: flex; align-items: flex-end; gap: 0.1rem; }
+  .map-mascot figcaption { font-size: 0.8rem; color: var(--sl-color-gray-2); max-width: 20ch; text-align: center; }
+
+  .map-readout { display: grid; gap: 0.6rem; margin: 0.6rem 0 0.9rem; }
+  .footprint-list { list-style: none; display: flex; flex-wrap: wrap; gap: 0.45rem; padding: 0; margin: 0; }
+  .footprint-list li { display: inline-flex; align-items: center; gap: 0.55rem; border: 1px solid var(--sl-color-gray-5); border-radius: 6px; padding: 0.15rem 0.6rem 0.15rem 0.15rem; }
+  .footprint-list li[data-lit="1"] { border-color: var(--sl-color-accent); }
+  .footprint-state { font-size: 0.78rem; font-weight: 700; color: var(--sl-color-gray-2); border: 1px dashed var(--sl-color-gray-5); border-radius: 4px; padding: 0.25rem 0.4rem; white-space: nowrap; }
+  .footprint-list li[data-lit="1"] .footprint-state { color: var(--sl-color-accent); border-style: solid; }
+  .footprint-list a { display: inline-flex; align-items: center; min-height: 44px; padding: 0.25rem 0.5rem; }
+  .door-readout p { margin: 0.25rem 0; }
+  .door-missing a { font-weight: 600; }
+  .map-controls { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+  .terminal-bridge button { min-height: 44px; padding: 0.5rem 1.25rem; cursor: pointer; }
+  .fork-status { min-height: 1.5rem; }
+
+  /* 自评清单：理解类计入判定、意愿类不计入 */
+  .bridge-checks h4 { margin: 1.2rem 0 0.3rem; }
+  .bridge-group { display: grid; gap: 0.35rem; margin: 0.75rem 0; }
+  .bridge-group legend { font-weight: 700; padding: 0 0.3rem; }
   .terminal-bridge label { display: block; min-height: 44px; padding: 0.5rem; }
   .bridge-status { min-height: 1.5rem; }
-  .bridge-done { border-top: 1px solid var(--sl-color-gray-5); margin-top: 0.75rem; padding-top: 0.75rem; }
-  .bridge-done-title { font-weight: 700; }
-  .bridge-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem; }
-  .bridge-actions a { display: inline-flex; align-items: center; min-height: 44px; padding: 0.5rem 1.25rem; }
-  @media (prefers-reduced-motion: no-preference) {
-    .bridge-done:not([hidden]) { animation: bridge-fade-in 200ms ease-out; }
-    @keyframes bridge-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+  /* 完成区：Editorial 编辑风（模块 0 的排版语言）——直角、无插画卡片、正文优先。
+     画风切换为静态样式替换：hidden 属性直接显示/隐藏，无任何动画。 */
+  .bridge-done { border-top: 2px solid var(--sl-color-gray-5); margin-top: 1.25rem; padding-top: 1rem; }
+  .bridge-done[hidden] { display: none; }
+  .done-overline { font-family: var(--sl-font-mono, ui-monospace, monospace); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--sl-color-gray-2); margin: 0 0 0.25rem; }
+  .done-heading { font-size: 1.22rem; margin: 0.2rem 0 0.5rem; }
+  .bridge-done p { margin: 0.35rem 0; }
+  .done-next { margin: 0.55rem 0 0; padding-left: 1.2rem; }
+  .done-next li { margin: 0.3rem 0; }
+
+  .terminal-bridge :is(button, a, input, label):focus-visible { outline: 2px solid var(--sl-color-accent); outline-offset: 2px; }
+
+  @media (max-width: 40rem) {
+    .map-mascot { position: static; margin-top: 0.4rem; }
+    .map-handoff { justify-content: center; }
   }
 </style>
