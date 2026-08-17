@@ -101,7 +101,7 @@ const run = async () => {
     assert.match(stored ?? "", /"start-1":true/, "三项完成条件满足后应写入 start-1 完成记录");
     await w1.close();
 
-    // W3：离线演示模式发送后返回本地预置回复，且页面零网络请求
+    // W3：离线样例模式的请求之旅——推进全部帧后完成标记落盘，且页面零网络请求
     const w3 = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     const externalRequests = [];
     w3.on("request", (request) => {
@@ -112,15 +112,31 @@ const run = async () => {
     await w3.waitForSelector("[data-byo-key-chat]");
     // 真实调用控件默认隐藏
     assert.ok(await w3.locator("[data-byo-live-controls]").isHidden(), "默认离线模式应隐藏密钥输入");
-    await w3.click("[data-byo-send]");
+    // 离线展示已记录样例（标注来源状态），不再是预制玩笑串
+    const bannerText = await w3.locator("[data-byo-source-banner]").innerText();
+    assert.match(bannerText, /已记录样例/);
+    assert.match(bannerText, /待现场采集核验/);
+    const replyText = await w3.locator("[data-byo-reply]").innerText();
+    assert.ok(replyText.includes("模型"), "离线模式应展示样例回复正文");
+    assert.ok(!replyText.includes("离线演示回复"), "预制玩笑串回复必须移除");
+    // 分步推进全部 7 帧（学员点击驱动，非自动播放）
+    const nextButton = w3.locator("[data-journey-next]");
+    for (let i = 0; i < 12; i += 1) {
+      if (await nextButton.isDisabled()) break;
+      await nextButton.click();
+    }
     await w3.waitForFunction(() =>
-      document.querySelector("[data-byo-reply]")?.textContent?.includes("离线演示回复"),
+      document.querySelector("[data-byo-status]")?.textContent?.includes("样例旅程看完"),
     );
-    assert.equal(externalRequests.length, 0, "离线演示模式不得发出任何外部网络请求");
-    // 切换到真实模式显示密钥输入与安全说明
+    // 看完真实样例即标记 start-3 完成（经共享进度模块落盘）
+    const startProgress = await w3.evaluate(() => localStorage.getItem("course-start-progress"));
+    assert.match(startProgress, /"start-3":true/);
+    assert.equal(externalRequests.length, 0, "离线样例模式不得发出任何外部网络请求");
+    // 切换到真实模式显示密钥输入；无密钥路径与账户侧栏在场
     await w3.check('input[name="byo-mode"][value="live"]');
     assert.ok(await w3.locator("[data-byo-live-controls]").isVisible());
     assert.ok(await w3.locator("[data-byo-key]").isVisible());
+    assert.ok(await w3.locator("[data-byo-last-summary]").count() === 1);
     await w3.close();
 
     // 案例参考库渲染三组案例
@@ -180,7 +196,7 @@ const run = async () => {
     assert.equal(homeRequests.length, 0, "首页加载不得发出外部网络请求");
     await home.close();
 
-    console.log("Start lessons browser verification passed: W1 predictions + loop track + quiz redo gate, offline BYO mode, case library, W2 rewrite, W4 bridge, progress wizard");
+    console.log("Start lessons browser verification passed: W1 predictions + loop track + quiz redo gate, W3 request journey (offline sample + completion), case library, W2 rewrite, W4 bridge, progress wizard");
   } finally {
     await browser.close();
     await stopPreview();

@@ -1,0 +1,151 @@
+{
+  "_meta": {
+    "purpose": "W3「请求之旅」离线样例：按两家官方文档的请求/响应形状构造，供无密钥学员逐帧查看一次调用的线上旅程。",
+    "status": "constructed-from-official-docs-shape; live-capture-pending",
+    "status_zh": "依据官方文档形状构造，待现场采集核验",
+    "constructed_on": "2026-08-17",
+    "constructed_from": [
+      {
+        "id": "v2-openai-chat-completions",
+        "title": "OpenAI API: Chat completions",
+        "url": "https://platform.openai.com/docs/api-reference/chat",
+        "verified_on": "2026-08-17"
+      },
+      {
+        "id": "anthropic-messages-api-t28",
+        "title": "Anthropic API: Create a Message",
+        "url": "https://platform.claude.com/docs/en/api/messages/create",
+        "verified_on": "2026-08-13"
+      }
+    ],
+    "notes": [
+      "字段名与结构逐段对照官方文档；数值（id、token 数、耗时、时间戳、回复正文）为课程构造的真实感取值，不是某次真实调用的记录。",
+      "在维护者完成现场采集并替换本文件之前，页面必须以「已记录样例（构造，非此刻发出）」口径展示，不得声称数值来自现场实调。",
+      "样例不含任何密钥、账号或个人信息；authorization/x-api-key 等敏感头只以占位说明出现。",
+      "2026-08-17 构造当天对两个文档 URL 的在线复核尝试失败（403 / 连接超时），形状依据沿用仓库来源账本既有核验记录。"
+    ]
+  },
+  "samples": {
+    "openai": {
+      "providerId": "openai",
+      "providerLabel": "OpenAI",
+      "endpoint": "https://api.openai.com/v1/chat/completions",
+      "method": "POST",
+      "model": "gpt-4o-mini",
+      "request": {
+        "body": {
+          "model": "gpt-4o-mini",
+          "max_tokens": 500,
+          "messages": [
+            {
+              "role": "system",
+              "content": "你是中文课程《Agent 工程入门》的教学助手。用不超过 120 字的简体中文回答学员问题。"
+            },
+            {
+              "role": "user",
+              "content": "用一句话解释：模型和 Agent 有什么区别？"
+            }
+          ]
+        },
+        "headers_note": [
+          "content-type: application/json",
+          "authorization: Bearer <你的密钥>（样例不含密钥）"
+        ]
+      },
+      "response": {
+        "id": "chatcmpl-sample-4f9a2b",
+        "object": "chat.completion",
+        "created": 1755379200,
+        "model": "gpt-4o-mini-2024-07-18",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "模型负责从输入生成文字，一次调用就结束；Agent 则把模型包进一个循环：围绕目标调用工具、观察结果、决定下一步，直到任务完成。"
+            },
+            "logprobs": null,
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 52,
+          "completion_tokens": 64,
+          "total_tokens": 116
+        },
+        "system_fingerprint": "fp_sample_44709d"
+      },
+      "usage": {
+        "inputTokens": 52,
+        "outputTokens": 64
+      },
+      "elapsedMs": 1240,
+      "annotations": [
+        { "pointer": "id / object", "note": "服务商为这次调用生成的唯一编号与对象类型（chat.completion）；排查问题时报编号最有效。" },
+        { "pointer": "model", "note": "实际使用的模型版本；可能与请求名不同（常带日期后缀）。" },
+        { "pointer": "choices[0].message.content", "note": "模型回复正文——实验页展示的就是这一段。" },
+        { "pointer": "choices[0].finish_reason", "note": "stop 表示模型自己认为说完了，不是被 max_tokens 截断。" },
+        { "pointer": "usage.prompt_tokens", "note": "你发来的内容折算的输入 token 数；系统指令同样计入。" },
+        { "pointer": "usage.completion_tokens", "note": "模型生成内容的输出 token 数；计费看输入与输出两部分。" },
+        { "pointer": "usage.total_tokens", "note": "输入 + 输出的合计，方便快速核对。" },
+        { "pointer": "system_fingerprint", "note": "服务商标识后端配置的指纹，属内部追踪信息，实验中不需要处理。" }
+      ]
+    },
+    "anthropic": {
+      "providerId": "anthropic",
+      "providerLabel": "Anthropic",
+      "endpoint": "https://api.anthropic.com/v1/messages",
+      "method": "POST",
+      "model": "claude-3-5-haiku-latest",
+      "request": {
+        "body": {
+          "model": "claude-3-5-haiku-latest",
+          "max_tokens": 500,
+          "system": "你是中文课程《Agent 工程入门》的教学助手。用不超过 120 字的简体中文回答学员问题。",
+          "messages": [
+            {
+              "role": "user",
+              "content": "用一句话解释：模型和 Agent 有什么区别？"
+            }
+          ]
+        },
+        "headers_note": [
+          "content-type: application/json",
+          "x-api-key: <你的密钥>（样例不含密钥）",
+          "anthropic-version: 2023-06-01",
+          "anthropic-dangerous-direct-browser-access: true（浏览器直连许可头）"
+        ]
+      },
+      "response": {
+        "id": "msg_sample_01X7Qk2b",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-3-5-haiku-20241022",
+        "content": [
+          {
+            "type": "text",
+            "text": "模型负责从输入生成文字，一次调用就结束；Agent 则把模型包进一个循环：围绕目标调用工具、观察结果、决定下一步，直到任务完成。"
+          }
+        ],
+        "stop_reason": "end_turn",
+        "stop_sequence": null,
+        "usage": {
+          "input_tokens": 58,
+          "output_tokens": 61
+        }
+      },
+      "usage": {
+        "inputTokens": 58,
+        "outputTokens": 61
+      },
+      "elapsedMs": 980,
+      "annotations": [
+        { "pointer": "id / type / role", "note": "消息唯一编号（msg_ 前缀）、对象类型 message 与回复角色 assistant。" },
+        { "pointer": "model", "note": "实际处理请求的模型版本。" },
+        { "pointer": "content[]", "note": "内容块数组；纯文本回复是一个 { type: \"text\" } 块，正文在 text 字段。" },
+        { "pointer": "stop_reason", "note": "end_turn 表示模型自然说完（对应 OpenAI 的 finish_reason: stop）。" },
+        { "pointer": "usage.input_tokens / output_tokens", "note": "输入与输出 token 各一个字段；Anthropic 不额外给 total，合计由调用方自己算。" }
+      ]
+    }
+  }
+}
