@@ -1,29 +1,116 @@
 ---
-// 自带密钥（BYO-key）对话实验：浏览器直连 OpenAI/Anthropic，密钥只存页面内存。
-// 架构决定见 docs/adr/0008-byo-key-browser-direct-experiments.md。
+// W3 旗舰实验「请求之旅」（V3-3）：一次模型调用的完整旅程，学员分步点击推进。
+// 证据层：离线模式挂载依据官方文档形状构造的已记录样例（非此刻发出）；真实调用成功时
+// 通过共享进度模块落盘匿名调用摘要（不含密钥与消息正文）。
+// 动画层：包裹贴 token 标签穿 HTTPS 隧道到服务商大楼（通用概念建筑，不画任何真实产品
+// 界面，ADR-0009），使用 mascot 插画组件；reduced-motion 为静态分帧，noscript 有文字等价物。
+// 架构决定：docs/adr/0008-byo-key-browser-direct-experiments.md（BYO-key 浏览器直连）、
+// docs/adr/0009-teaching-illustration-layer-boundaries.md（插画边界）。
+import Mascot from "./mascot/Mascot.astro";
+import Cast from "./mascot/Cast.astro";
+import sampleBundle from "../data/w3-request-journey-sample.json";
+
 const initialModels: Record<string, string> = {
   openai: "gpt-4o-mini",
   anthropic: "claude-3-5-haiku-latest",
 };
+
+const openaiSample = sampleBundle.samples.openai;
+const anthropicSample = sampleBundle.samples.anthropic;
+const openaiReply = openaiSample.response.choices?.[0]?.message?.content ?? "";
+const anthropicReply = anthropicSample.response.content?.map((block) => block.text).join("") ?? "";
+
+const clientSamples: Record<string, Record<string, unknown>> = {
+  openai: {
+    providerId: openaiSample.providerId,
+    providerLabel: openaiSample.providerLabel,
+    endpoint: openaiSample.endpoint,
+    model: openaiSample.model,
+    inputTokens: openaiSample.usage.inputTokens,
+    outputTokens: openaiSample.usage.outputTokens,
+    elapsedMs: openaiSample.elapsedMs,
+    reply: openaiReply,
+    userMessage: openaiSample.request.body.messages[1]?.content ?? "",
+    systemPrompt: openaiSample.request.body.messages[0]?.content ?? "",
+  },
+  anthropic: {
+    providerId: anthropicSample.providerId,
+    providerLabel: anthropicSample.providerLabel,
+    endpoint: anthropicSample.endpoint,
+    model: anthropicSample.model,
+    inputTokens: anthropicSample.usage.inputTokens,
+    outputTokens: anthropicSample.usage.outputTokens,
+    elapsedMs: anthropicSample.elapsedMs,
+    reply: anthropicReply,
+    userMessage: anthropicSample.request.body.messages[0]?.content ?? "",
+    systemPrompt: anthropicSample.request.body.system ?? "",
+  },
+};
+
+// 请求之旅的 7 个站点与 3 个错误分支：aria-live 播报与分帧图注同源（同一份数据驱动）。
+// 占位符 {inputTokens}/{outputTokens}/{elapsedMs}/{endpoint}/{model}/{status} 在渲染时填充。
+const journeySteps = [
+  { id: "compose", step: 1, title: "写好消息", text: "你在页面里写下的这句话，会和一段系统指令一起，被打包成一个 JSON 请求。" },
+  { id: "pack", step: 2, title: "打包并贴标签", text: "浏览器把请求打成包裹，贴上「输入 {inputTokens} tokens」的标签，收件地址是 {endpoint}。" },
+  { id: "tunnel", step: 3, title: "穿过加密隧道", text: "包裹进入 HTTPS 加密隧道发往服务商：路上第三方看不到内容，钥匙随包裹出示身份。" },
+  { id: "checkpoint", step: 4, title: "关卡：验钥匙 + 计费", text: "服务商大楼门口先验钥匙（你的 API key 是否有效、是否有权调用 {model}），计费表随之启动；钥匙不对，包裹当场被退回。" },
+  { id: "generate", step: 5, title: "模型生成回复", text: "楼里的模型逐段生成回复，输出 token 逐渐累加——这一步通常占掉整趟旅程的大半时间。" },
+  { id: "return", step: 6, title: "回程包裹", text: "回复被打成回程包裹，贴上「输出 {outputTokens} tokens」的标签，沿原路返回你的浏览器。" },
+  { id: "unpack", step: 7, title: "拆包对表", text: "浏览器拆开包裹展示全部证据：回复正文、输入 {inputTokens} / 输出 {outputTokens} tokens、全程 {elapsedMs} ms。" },
+];
+const journeyErrors = [
+  { id: "err-key", title: "包裹被关卡退回", text: "包裹被关卡退回：钥匙没复制完整或没有权限（状态码 {status}）。检查密钥后可重试——失败也是真实接口的实验数据。" },
+  { id: "err-rate", title: "包裹被关卡退回", text: "包裹被关卡退回：请求太快或账户额度用完（状态码 429）。稍等片刻再试，或到服务商控制台查看额度。" },
+  { id: "err-network", title: "包裹没能进入隧道", text: "包裹没能进入隧道：请求没有到达服务商（断网、广告拦截器或浏览器扩展都可能造成）。离线样例模式永远可用。" },
+];
+
+const fillText = (text: string, values: Record<string, string | number>) =>
+  text.replace(/\{(\w+)\}/g, (_, key: string) => String(values[key] ?? "?"));
+
+// noscript 与首帧图注使用离线样例（OpenAI）的数字，与客户端同一份 journeySteps 数据。
+const noscriptValues = {
+  inputTokens: openaiSample.usage.inputTokens,
+  outputTokens: openaiSample.usage.outputTokens,
+  elapsedMs: openaiSample.elapsedMs,
+  endpoint: openaiSample.endpoint,
+  model: openaiSample.model,
+  status: "401/403/429 等",
+};
 ---
 
-<section class="byo-key-chat" data-byo-key-chat data-initial-models={JSON.stringify(initialModels)} aria-labelledby="byo-key-title">
-  <h3 id="byo-key-title">自带密钥对话实验</h3>
+<section
+  class="byo-key-chat"
+  data-byo-key-chat
+  data-initial-models={JSON.stringify(initialModels)}
+  data-journey-samples={JSON.stringify(clientSamples)}
+  data-journey-steps={JSON.stringify(journeySteps)}
+  data-journey-errors={JSON.stringify(journeyErrors)}
+  data-sample-status-zh={sampleBundle._meta.status_zh}
+  aria-labelledby="byo-key-title"
+>
+  <h3 id="byo-key-title">实验：一次真实调用的请求之旅</h3>
+  <p class="byo-lede">
+    一个贴着 token 标签的包裹，从你的浏览器出发，穿过加密隧道，抵达服务商大楼（门口有「验钥匙 + 计费」关卡），再带着回复包裹返回。
+    <strong>每一步由你点击「下一帧」推进</strong>，不会自动播放。
+  </p>
 
   <fieldset class="byo-mode">
     <legend>实验模式</legend>
-    <label><input type="radio" name="byo-mode" value="offline" checked /> 离线演示（默认，零网络、零费用）</label>
+    <label><input type="radio" name="byo-mode" value="offline" checked /> 离线样例（默认，零网络、零费用）</label>
     <label><input type="radio" name="byo-mode" value="live" /> 真实调用（输入自己的 API 密钥，费用自理）</label>
   </fieldset>
 
-  <div class="byo-live-controls" data-byo-live-controls hidden>
+  <div class="byo-shared-controls">
     <label>
-      服务商
+      服务商（离线样例与真实调用共用）
       <select data-byo-provider>
         <option value="openai">OpenAI</option>
         <option value="anthropic">Anthropic</option>
       </select>
     </label>
+  </div>
+
+  <div class="byo-live-controls" data-byo-live-controls hidden>
     <label>
       API 密钥（只存本页内存，关闭页面即消失）
       <input type="password" data-byo-key autocomplete="off" placeholder="sk-...（不会上传到课程服务器）" />
@@ -32,29 +119,294 @@ const initialModels: Record<string, string> = {
       模型名（易变，以官方模型页为准；核验日期 2026-08-17）
       <input type="text" data-byo-model value="gpt-4o-mini" />
     </label>
+    <label class="byo-message-label">
+      你的消息
+      <textarea data-byo-message rows="3">用一句话解释：模型和 Agent 有什么区别？</textarea>
+    </label>
+    <button type="button" data-byo-send>发送（真实调用）</button>
+    <p class="byo-last-summary" data-byo-last-summary hidden></p>
   </div>
 
-  <label class="byo-message-label">
-    你的消息
-    <textarea data-byo-message rows="3">用一句话解释：模型和 Agent 有什么区别？</textarea>
-  </label>
+  <p class="byo-source-banner" data-byo-source-banner>
+    离线样例：<strong>已记录样例，非此刻发出</strong>——依据 OpenAI / Anthropic 官方文档响应形状构造（2026-08-17），待现场采集核验；本模式不发出任何网络请求。
+  </p>
 
-  <button type="button" data-byo-send>发送</button>
-  <p class="byo-status" role="status" aria-live="polite" data-byo-status>当前为离线演示模式：发送后立即返回本地预置回复，不发出任何网络请求。</p>
+  <div class="j-stage" data-j-stage>
+    {/* 第 1 帧 · 写好消息 */}
+    <figure class="j-frame" data-j-frame="compose">
+      <div class="j-scene">
+        <svg viewBox="0 0 220 150" width="220" height="150" aria-hidden="true" focusable="false">
+          <g stroke="var(--xun-ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="12" y="18" width="150" height="94" rx="10" fill="var(--xun-paper)"></rect>
+            <circle cx="34" cy="44" r="10" fill="var(--xun-accent)"></circle>
+            <line x1="54" y1="40" x2="140" y2="40"></line>
+            <line x1="54" y1="56" x2="126" y2="56"></line>
+            <line x1="26" y1="78" x2="148" y2="78"></line>
+            <line x1="26" y1="94" x2="112" y2="94"></line>
+            <rect x="12" y="120" width="196" height="22" rx="6" fill="var(--xun-fill)"></rect>
+            <line x1="24" y1="131" x2="60" y2="131" stroke="var(--xun-accent-deep)"></line>
+            <line x1="70" y1="131" x2="196" y2="131" stroke-dasharray="6 6" stroke-width="2"></line>
+          </g>
+        </svg>
+        <div class="j-chips">
+          <span class="j-chip">你的消息</span>
+          <span class="j-chip j-chip--sys">系统指令（页面自动附加）</span>
+        </div>
+        <Mascot pose="calm" size={104} />
+      </div>
+      <figcaption data-j-caption>{journeySteps[0]?.text ?? ""}</figcaption>
+    </figure>
 
-  <div class="byo-output" data-byo-output hidden>
-    <h4>结果</h4>
+    {/* 第 2 帧 · 打包并贴标签 */}
+    <figure class="j-frame" data-j-frame="pack" hidden>
+      <div class="j-scene">
+        <div class="j-cast-wrap" data-j-cast="input">
+          <Cast role="package" label={`${openaiSample.usage.inputTokens} tokens`} size={200} />
+        </div>
+        <div class="j-chips">
+          <span class="j-chip">输入 <strong data-j-field="inputTokens">{openaiSample.usage.inputTokens}</strong> tokens</span>
+          <span class="j-chip">收件地址（端点）：<code data-j-field="endpoint">{openaiSample.endpoint}</code></span>
+        </div>
+        <Mascot pose="effort" size={104} />
+      </div>
+      <figcaption data-j-caption></figcaption>
+    </figure>
+
+    {/* 第 3 帧 · 穿过加密隧道 */}
+    <figure class="j-frame" data-j-frame="tunnel" hidden>
+      <div class="j-scene">
+        <svg viewBox="0 0 320 150" width="320" height="150" aria-hidden="true" focusable="false">
+          <g stroke="var(--xun-ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M 22 134 L 22 84 A 138 58 0 0 1 298 84 L 298 134" fill="none"></path>
+            <line x1="22" y1="134" x2="298" y2="134"></line>
+            <line x1="160" y1="36" x2="160" y2="126" stroke-dasharray="12 10" stroke-width="2"></line>
+            <path d="M 152 116 L 160 128 L 168 116" fill="none"></path>
+            <rect x="10" y="134" width="300" height="10" rx="4" fill="var(--xun-fill)"></rect>
+            <rect x="118" y="12" width="84" height="20" rx="6" fill="var(--xun-paper)"></rect>
+            <line x1="130" y1="22" x2="190" y2="22" stroke="var(--xun-accent-deep)"></line>
+          </g>
+        </svg>
+        <div class="j-chips">
+          <span class="j-chip">HTTPS 加密隧道</span>
+          <span class="j-chip">钥匙（API key）随包裹出示</span>
+        </div>
+        <Mascot pose="calm" size={96} />
+      </div>
+      <figcaption data-j-caption></figcaption>
+    </figure>
+
+    {/* 第 4 帧 · 关卡：验钥匙 + 计费（通用概念建筑，非任何服务商界面） */}
+    <figure class="j-frame" data-j-frame="checkpoint" hidden>
+      <div class="j-scene">
+        <svg viewBox="0 0 220 150" width="220" height="150" aria-hidden="true" focusable="false">
+          <g stroke="var(--xun-ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="110,8 200,44 20,44" fill="var(--xun-accent)"></polygon>
+            <rect x="30" y="44" width="160" height="98" fill="var(--xun-fill)"></rect>
+            <rect x="92" y="96" width="36" height="46" fill="var(--xun-paper)"></rect>
+            <line x1="46" y1="66" x2="78" y2="66"></line>
+            <line x1="142" y1="66" x2="174" y2="66"></line>
+            <line x1="46" y1="82" x2="78" y2="82"></line>
+            <line x1="142" y1="82" x2="174" y2="82"></line>
+            <line x1="6" y1="52" x2="6" y2="142"></line>
+            <line x1="6" y1="52" x2="30" y2="52"></line>
+          </g>
+        </svg>
+        <Cast role="key" size={160} />
+        <div class="j-chips">
+          <span class="j-chip j-chip--gate">关卡：验钥匙 · 计费</span>
+          <span class="j-chip">服务商 <strong data-j-field="providerLabel">OpenAI</strong></span>
+          <span class="j-chip">模型 <code data-j-field="model">{openaiSample.model}</code></span>
+        </div>
+        <Mascot pose="effort" size={96} />
+      </div>
+      <figcaption data-j-caption></figcaption>
+    </figure>
+
+    {/* 第 5 帧 · 模型生成回复 */}
+    <figure class="j-frame" data-j-frame="generate" hidden>
+      <div class="j-scene">
+        <svg viewBox="0 0 220 150" width="220" height="150" aria-hidden="true" focusable="false">
+          <g stroke="var(--xun-ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="110,8 200,44 20,44" fill="var(--xun-accent)"></polygon>
+            <rect x="30" y="44" width="160" height="98" fill="var(--xun-fill)"></rect>
+            <rect x="48" y="62" width="46" height="12" rx="6" fill="var(--xun-paper)"></rect>
+            <rect x="48" y="84" width="90" height="12" rx="6" fill="var(--xun-paper)"></rect>
+            <rect x="48" y="106" width="124" height="12" rx="6" fill="var(--xun-yellow)"></rect>
+            <circle cx="176" cy="66" r="5" fill="var(--xun-accent)"></circle>
+            <circle cx="190" cy="66" r="5" fill="none" stroke-width="2"></circle>
+            <circle cx="204" cy="66" r="5" fill="none" stroke-width="2"></circle>
+          </g>
+        </svg>
+        <div class="j-chips">
+          <span class="j-chip">生成中：输出 token 累加</span>
+          <span class="j-chip">输入 <strong data-j-field="inputTokens">{openaiSample.usage.inputTokens}</strong> tokens 已计入</span>
+        </div>
+        <Mascot pose="effort" size={104} />
+      </div>
+      <figcaption data-j-caption></figcaption>
+    </figure>
+
+    {/* 第 6 帧 · 回程包裹 */}
+    <figure class="j-frame" data-j-frame="return" hidden>
+      <div class="j-scene">
+        <div class="j-cast-wrap" data-j-cast="output">
+          <Cast role="package" label={`${openaiSample.usage.outputTokens} tokens`} size={200} />
+        </div>
+        <svg viewBox="0 0 120 60" width="120" height="60" aria-hidden="true" focusable="false">
+          <g stroke="var(--xun-ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="104" y1="30" x2="24" y2="30"></line>
+            <path d="M 38 16 L 22 30 L 38 44" fill="none"></path>
+            <line x1="104" y1="18" x2="88" y2="18" stroke-width="2" stroke-dasharray="8 6"></line>
+            <line x1="104" y1="42" x2="88" y2="42" stroke-width="2" stroke-dasharray="8 6"></line>
+          </g>
+        </svg>
+        <div class="j-chips">
+          <span class="j-chip">输出 <strong data-j-field="outputTokens">{openaiSample.usage.outputTokens}</strong> tokens</span>
+        </div>
+        <Mascot pose="calm" size={96} />
+      </div>
+      <figcaption data-j-caption></figcaption>
+    </figure>
+
+    {/* 第 7 帧 · 拆包对表（完成） */}
+    <figure class="j-frame" data-j-frame="unpack" hidden>
+      <div class="j-scene">
+        <svg viewBox="0 0 220 150" width="220" height="150" aria-hidden="true" focusable="false">
+          <g stroke="var(--xun-ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="56" y="64" width="108" height="70" fill="var(--xun-paper)"></rect>
+            <path d="M 56 64 L 30 34 L 82 46 Z" fill="var(--xun-fill)"></path>
+            <path d="M 164 64 L 190 34 L 138 46 Z" fill="var(--xun-fill)"></path>
+            <line x1="110" y1="64" x2="110" y2="134"></line>
+            <line x1="56" y1="99" x2="164" y2="99"></line>
+            <rect x="14" y="104" width="64" height="26" rx="5" fill="var(--xun-yellow)"></rect>
+            <line x1="24" y1="117" x2="68" y2="117" stroke-width="2"></line>
+          </g>
+        </svg>
+        <div class="j-chips">
+          <span class="j-chip">回复正文</span>
+          <span class="j-chip">输入 <strong data-j-field="inputTokens">{openaiSample.usage.inputTokens}</strong> / 输出 <strong data-j-field="outputTokens">{openaiSample.usage.outputTokens}</strong> tokens</span>
+          <span class="j-chip">全程 <strong data-j-field="elapsedMs">{openaiSample.elapsedMs}</strong> ms</span>
+        </div>
+        <Mascot pose="done" size={112} />
+      </div>
+      <figcaption data-j-caption></figcaption>
+    </figure>
+
+    {/* 错误分支：钥匙被关卡退回（401/403 及其他非 2xx） */}
+    <figure class="j-frame j-frame--error" data-j-frame="err-key" hidden>
+      <div class="j-scene">
+        <div class="j-cast-wrap">
+          <Cast role="package" label="退回" size={200} />
+        </div>
+        <Cast role="key" size={140} />
+        <div class="j-chips">
+          <span class="j-chip j-chip--warn">退回 · 状态码 <strong data-j-field="status">401/403</strong></span>
+        </div>
+        <Mascot pose="puzzled" size={96} />
+      </div>
+      <figcaption data-j-caption></figcaption>
+    </figure>
+
+    {/* 错误分支：请求太快或额度用完（429） */}
+    <figure class="j-frame j-frame--error" data-j-frame="err-rate" hidden>
+      <div class="j-scene">
+        <div class="j-cast-wrap">
+          <Cast role="package" label="退回" size={200} />
+        </div>
+        <div class="j-chips">
+          <span class="j-chip j-chip--warn">退回 · 状态码 429</span>
+          <span class="j-chip">稍等片刻再试</span>
+        </div>
+        <Mascot pose="puzzled" size={96} />
+      </div>
+      <figcaption data-j-caption></figcaption>
+    </figure>
+
+    {/* 错误分支：网络层失败（包裹没能进入隧道） */}
+    <figure class="j-frame j-frame--error" data-j-frame="err-network" hidden>
+      <div class="j-scene">
+        <div class="j-cast-wrap">
+          <Cast role="package" label="未发出" size={200} />
+        </div>
+        <svg viewBox="0 0 160 60" width="160" height="60" aria-hidden="true" focusable="false">
+          <g stroke="var(--xun-ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="10" y1="30" x2="56" y2="30"></line>
+            <line x1="104" y1="30" x2="150" y2="30"></line>
+            <path d="M 66 18 L 94 42" fill="none" stroke="var(--xun-warn)"></path>
+            <path d="M 94 18 L 66 42" fill="none" stroke="var(--xun-warn)"></path>
+          </g>
+        </svg>
+        <div class="j-chips">
+          <span class="j-chip j-chip--warn">请求没有到达服务商</span>
+        </div>
+        <Mascot pose="puzzled" size={96} />
+      </div>
+      <figcaption data-j-caption></figcaption>
+    </figure>
+  </div>
+
+  <div class="j-controls">
+    <button type="button" data-journey-next>下一帧 →</button>
+    <button type="button" data-journey-replay hidden>回到第 1 帧</button>
+    <p class="j-step" data-journey-step>第 1/7 帧 · 写好消息</p>
+  </div>
+
+  <p class="byo-status" role="status" aria-live="polite" data-byo-status>
+    离线样例模式：下面是一次已记录调用的完整旅程；点击「下一帧」逐步推进，看完（推进到最后一帧）本课即标记完成。
+  </p>
+
+  <div class="byo-output" data-byo-output>
+    <h4>数据与证据</h4>
     <dl>
       <dt>请求端点</dt>
-      <dd data-byo-endpoint>—</dd>
+      <dd data-byo-endpoint>POST {openaiSample.endpoint}</dd>
       <dt>模型回复</dt>
-      <dd data-byo-reply>—</dd>
+      <dd data-byo-reply>{openaiReply}</dd>
       <dt>用量</dt>
-      <dd data-byo-usage>—</dd>
+      <dd data-byo-usage>输入 {openaiSample.usage.inputTokens} / 输出 {openaiSample.usage.outputTokens} token</dd>
       <dt>耗时</dt>
-      <dd data-byo-elapsed>—</dd>
+      <dd data-byo-elapsed>{openaiSample.elapsedMs} ms</dd>
+      <dt>数据来源</dt>
+      <dd data-byo-source>已记录样例——依据官方文档响应形状构造（2026-08-17），待现场采集核验；非此刻发出。</dd>
     </dl>
+
+    <details class="byo-json" data-byo-json="openai">
+      <summary>查看 OpenAI 样例响应 JSON 与逐段注释（已记录样例，非此刻发出）</summary>
+      <pre><code>{JSON.stringify(openaiSample.response, null, 2)}</code></pre>
+      <ul>
+        {openaiSample.annotations.map((item) => (
+          <li><code>{item.pointer}</code> — {item.note}</li>
+        ))}
+      </ul>
+    </details>
+    <details class="byo-json" data-byo-json="anthropic" hidden>
+      <summary>查看 Anthropic 样例响应 JSON 与逐段注释（已记录样例，非此刻发出）</summary>
+      <pre><code>{JSON.stringify(anthropicSample.response, null, 2)}</code></pre>
+      <ul>
+        {anthropicSample.annotations.map((item) => (
+          <li><code>{item.pointer}</code> — {item.note}</li>
+        ))}
+      </ul>
+    </details>
   </div>
+
+  <aside class="byo-nokey" aria-labelledby="byo-nokey-title">
+    <h4 id="byo-nokey-title">暂时没有密钥？完全可以</h4>
+    <ul>
+      <li>把上面的样例旅程推进到最后一帧，本课就算完成——不需要任何账户或密钥。</li>
+      <li>安全感提示：密钥随时可以在服务商控制台<strong>撤销</strong>，弄错了删掉重发一把就行，不会弄坏任何东西。</li>
+      <li>以后想真实调用时回到这一页即可；真实调用按你的账户计费，价格以官方页面为准。</li>
+    </ul>
+  </aside>
+
+  <details class="byo-account">
+    <summary>想试试真实调用？获取一把自己的密钥（可选，费用自理）</summary>
+    <ol>
+      <li>OpenAI：打开官方平台页 <a href="https://platform.openai.com" rel="noopener noreferrer" target="_blank">platform.openai.com</a> → 注册 → 创建 API key（调用前需按官方说明充值小额余额）。</li>
+      <li>Anthropic：打开官方控制台 <a href="https://console.anthropic.com" rel="noopener noreferrer" target="_blank">console.anthropic.com</a> → 注册 → 创建 API key。</li>
+      <li>把密钥粘贴到上方「真实调用」模式发送。<strong>真实调用按你的账户计费</strong>；本课程只外链官方页面，不代管、不收集你的密钥。</li>
+    </ol>
+  </details>
 
   <details class="byo-privacy">
     <summary>安全与费用说明（展开阅读）</summary>
@@ -62,29 +414,33 @@ const initialModels: Record<string, string> = {
       <li>密钥只存在于本页内存：不写 localStorage、不发送到课程服务器、课程无法也不收集它；刷新或关闭页面即消失。</li>
       <li>真实调用的目标只有你选择的服务商官方端点（OpenAI <code>api.openai.com</code> / Anthropic <code>api.anthropic.com</code>），可在浏览器开发者工具 Network 面板自行核实。</li>
       <li>密钥在本机开发者工具中可见：公共电脑勿用；实验完可在服务商控制台随时撤销密钥。</li>
+      <li>真实调用成功时会保存一份<strong>匿名调用摘要</strong>（服务商、模型、token 用量、耗时、时间戳）在你的浏览器本地——绝不含密钥与消息正文。</li>
       <li>真实调用按你的账户计费；一次演示对话通常消耗极少量 token，但价格以官方页面为准，课程不代管任何费用。</li>
     </ul>
   </details>
 
   <noscript>
-    <p>本实验需要 JavaScript。不开启 JavaScript 时，请阅读上方文字说明了解 API key 与调用的概念。</p>
+    <p>请求之旅的分步动画需要 JavaScript。不开启时，下面是等价的分步文字说明（数字来自 OpenAI 已记录样例，Anthropic 样例见上方 JSON 注释区）：</p>
+    <ol>
+      {journeySteps.map((step) => (
+        <li><strong>第 {step.step} 帧 · {step.title}</strong>：{fillText(step.text, noscriptValues)}</li>
+      ))}
+    </ol>
+    <p>错误分支（真实调用模式下可能遇到）：钥匙没复制完整或没有权限时包裹被关卡退回（401/403）；请求太快或账户额度用完时稍后再试（429）；断网、广告拦截器或浏览器扩展会让包裹进不了隧道。</p>
   </noscript>
 </section>
 
 <script>
-  const section = document.querySelector<HTMLElement>("[data-byo-key-chat]");
-  const initialModels = JSON.parse(section?.dataset.initialModels ?? "{}") as Record<string, string>;
+  import { markStartLessonComplete, readStartCallSummary, recordStartCallSummary } from "../lib/start-progress.mjs";
 
-  const offlineReply = (message: string) =>
-    [
-      "【离线演示回复】这里没有真实模型——这条回复是页面本地预置的。",
-      "",
-      `你刚才发出的消息是：「${message}」。`,
-      "如果切换到真实调用模式，这句话会连同一段系统指令一起，通过 HTTPS 发给你所选服务商的官方接口，服务商扣费后返回模型生成的回答。",
-      "真实模式下你会看到：请求端点、模型回复、token 用量和耗时——这些就是模块 11 里手写 Agent loop 时你要亲手处理的东西。",
-    ].join("\n");
+  const section = document.querySelector<HTMLElement>("[data-byo-key-chat]");
 
   if (section) {
+    const initialModels = JSON.parse(section.dataset.initialModels ?? "{}") as Record<string, string>;
+    const samples = JSON.parse(section.dataset.journeySamples ?? "{}") as Record<string, Record<string, string | number>>;
+    const steps = JSON.parse(section.dataset.journeySteps ?? "[]") as Array<{ id: string; step: number; title: string; text: string }>;
+    const errorFrames = JSON.parse(section.dataset.journeyErrors ?? "[]") as Array<{ id: string; title: string; text: string }>;
+
     const modeInputs = Array.from(section.querySelectorAll<HTMLInputElement>('input[name="byo-mode"]'));
     const liveControls = section.querySelector<HTMLElement>("[data-byo-live-controls]");
     const providerSelect = section.querySelector<HTMLSelectElement>("[data-byo-provider]");
@@ -93,55 +449,273 @@ const initialModels: Record<string, string> = {
     const messageInput = section.querySelector<HTMLTextAreaElement>("[data-byo-message]");
     const sendButton = section.querySelector<HTMLButtonElement>("[data-byo-send]");
     const statusEl = section.querySelector<HTMLElement>("[data-byo-status]");
+    const bannerEl = section.querySelector<HTMLElement>("[data-byo-source-banner]");
     const outputEl = section.querySelector<HTMLElement>("[data-byo-output]");
     const endpointEl = section.querySelector<HTMLElement>("[data-byo-endpoint]");
     const replyEl = section.querySelector<HTMLElement>("[data-byo-reply]");
     const usageEl = section.querySelector<HTMLElement>("[data-byo-usage]");
     const elapsedEl = section.querySelector<HTMLElement>("[data-byo-elapsed]");
+    const sourceEl = section.querySelector<HTMLElement>("[data-byo-source]");
+    const nextButton = section.querySelector<HTMLButtonElement>("[data-journey-next]");
+    const replayButton = section.querySelector<HTMLButtonElement>("[data-journey-replay]");
+    const stepEl = section.querySelector<HTMLElement>("[data-journey-step]");
+    const lastSummaryEl = section.querySelector<HTMLElement>("[data-byo-last-summary]");
+
+    type Ctx = {
+      source: "sample" | "live";
+      provider: string;
+      providerLabel: string;
+      model: string;
+      endpoint: string;
+      inputTokens: number;
+      outputTokens: number;
+      elapsedMs: number;
+    };
+
+    const sampleCtx = (provider: string): Ctx => {
+      const sample = samples[provider] ?? samples.openai;
+      return {
+        source: "sample",
+        provider,
+        providerLabel: String(sample.providerLabel),
+        model: String(sample.model),
+        endpoint: String(sample.endpoint),
+        inputTokens: Number(sample.inputTokens),
+        outputTokens: Number(sample.outputTokens),
+        elapsedMs: Number(sample.elapsedMs),
+      };
+    };
+
+    let ctx: Ctx = sampleCtx("openai");
+    let frameIndex = 0;
+    let inErrorBranch = false;
+    let offlineDoneAnnounced = false;
+
+    const fill = (text: string, extra: Record<string, string | number> = {}) =>
+      text.replace(/\{(\w+)\}/g, (_, key: string) =>
+        String(extra[key] ?? (ctx as unknown as Record<string, string | number>)[key] ?? "?"),
+      );
+
+    // 与 aria-live 播报同源：图注与状态区使用同一次 narration 渲染结果。
+    const narrate = (id: string, extra: Record<string, string | number> = {}) => {
+      const step = steps.find((item) => item.id === id);
+      if (step) return fill(step.text, extra);
+      const errorFrame = errorFrames.find((item) => item.id === id);
+      return errorFrame ? fill(errorFrame.text, extra) : "";
+    };
+
+    const updateFieldChips = () => {
+      for (const field of ["inputTokens", "outputTokens", "elapsedMs", "endpoint", "model", "providerLabel"]) {
+        const value = String((ctx as unknown as Record<string, string | number>)[field] ?? "");
+        section.querySelectorAll<HTMLElement>(`[data-j-field="${field}"]`).forEach((el) => {
+          el.textContent = value;
+        });
+      }
+      section.querySelectorAll<HTMLElement>("[data-j-cast]").forEach((wrap) => {
+        const kind = wrap.dataset.jCast;
+        const label =
+          kind === "output"
+            ? `${ctx.outputTokens} tokens`
+            : kind === "input"
+              ? `${ctx.inputTokens} tokens`
+              : null;
+        if (label) {
+          const labelEl = wrap.querySelector<SVGTextElement>(".xun-label");
+          if (labelEl) labelEl.textContent = label;
+        }
+      });
+    };
+
+    const showFrame = (id: string, extra: Record<string, string | number> = {}) => {
+      section.querySelectorAll<HTMLElement>("[data-j-frame]").forEach((el) => {
+        el.hidden = el.dataset.jFrame !== id;
+      });
+      const step = steps.find((item) => item.id === id);
+      const narration = narrate(id, extra);
+      const frame = section.querySelector<HTMLElement>(`[data-j-frame="${id}"]`);
+      const caption = frame?.querySelector<HTMLElement>("[data-j-caption]");
+      if (caption) caption.textContent = narration;
+      if (statusEl) {
+        statusEl.textContent = step
+          ? `第 ${step.step}/${steps.length} 帧 · ${step.title}：${narration}`
+          : `旅程中断 · ${narration}`;
+      }
+      if (stepEl) {
+        stepEl.textContent = step
+          ? `第 ${step.step}/${steps.length} 帧 · ${step.title}`
+          : "旅程中断（错误分支）";
+      }
+      updateFieldChips();
+    };
+
+    const resetJourney = () => {
+      frameIndex = 0;
+      inErrorBranch = false;
+      if (nextButton) nextButton.disabled = false;
+      if (replayButton) replayButton.hidden = true;
+      showFrame(steps[0]?.id ?? "compose");
+    };
+
+    const finishOfflineJourney = () => {
+      if (statusEl) {
+        statusEl.textContent =
+          "样例旅程看完：本课已在你的浏览器中标记为完成。你可以切换服务商重看另一份样例，或切到真实调用模式，让动画回放你自己的数字。";
+      }
+      if (!offlineDoneAnnounced) {
+        markStartLessonComplete("start-3");
+        offlineDoneAnnounced = true;
+      }
+    };
+
+    if (nextButton) {
+      nextButton.addEventListener("click", () => {
+        if (nextButton.textContent !== "下一帧 →") nextButton.textContent = "下一帧 →";
+        if (inErrorBranch) {
+          resetJourney();
+          return;
+        }
+        if (frameIndex < steps.length - 1) {
+          frameIndex += 1;
+          showFrame(steps[frameIndex]?.id ?? "compose");
+          if (frameIndex === steps.length - 1) {
+            nextButton.disabled = true;
+            if (replayButton) replayButton.hidden = false;
+            if (ctx.source === "sample") finishOfflineJourney();
+            else if (statusEl) {
+              statusEl.textContent =
+                "回放完成：以上数字全部来自你刚才那次真实调用。匿名摘要已保存在本浏览器（不含密钥与消息正文）。";
+            }
+          }
+        }
+      });
+    }
+    replayButton?.addEventListener("click", () => {
+      if (nextButton && nextButton.textContent !== "下一帧 →") nextButton.textContent = "下一帧 →";
+      resetJourney();
+    });
+
+    const showOutput = (values: { endpoint: string; reply: string; usage: string; elapsed: string; source: string }) => {
+      if (!endpointEl || !replyEl || !usageEl || !elapsedEl || !sourceEl || !outputEl) return;
+      endpointEl.textContent = values.endpoint;
+      replyEl.textContent = values.reply;
+      usageEl.textContent = values.usage;
+      elapsedEl.textContent = values.elapsed;
+      sourceEl.textContent = values.source;
+      outputEl.hidden = false;
+    };
+
+    const showSampleEvidence = (provider: string) => {
+      const sample = samples[provider] ?? samples.openai;
+      showOutput({
+        endpoint: `POST ${String(sample.endpoint)}`,
+        reply: String(sample.reply),
+        usage: `输入 ${sample.inputTokens} / 输出 ${sample.outputTokens} token`,
+        elapsed: `${sample.elapsedMs} ms`,
+        source:
+          "已记录样例——依据官方文档响应形状构造（2026-08-17），待现场采集核验；非此刻发出。",
+      });
+      section.querySelectorAll<HTMLDetailsElement>("[data-byo-json]").forEach((el) => {
+        el.hidden = el.dataset.byoJson !== provider;
+      });
+    };
 
     const isLive = () => modeInputs.some((input) => input.checked && input.value === "live");
 
+    const applyMode = () => {
+      if (!liveControls || !bannerEl || !statusEl) return;
+      liveControls.hidden = !isLive();
+      if (isLive()) {
+        bannerEl.textContent =
+          "真实调用模式：密钥只在你的浏览器内存中，请求直连服务商官方端点；成功后下面的动画会回放你刚才那次调用的真实数字。";
+        statusEl.textContent =
+          "真实调用模式：填入密钥后点击「发送」。没有密钥也可以随时切回离线样例模式完成本课。";
+      } else {
+        bannerEl.innerHTML =
+          "离线样例：<strong>已记录样例，非此刻发出</strong>——依据 OpenAI / Anthropic 官方文档响应形状构造（2026-08-17），待现场采集核验；本模式不发出任何网络请求。";
+        statusEl.textContent =
+          "离线样例模式：下面是一次已记录调用的完整旅程；点击「下一帧」逐步推进，看完（推进到最后一帧）本课即标记完成。";
+        ctx = sampleCtx(providerSelect?.value ?? "openai");
+        resetJourney();
+        showSampleEvidence(ctx.provider);
+      }
+    };
+
     for (const input of modeInputs) {
-      input.addEventListener("change", () => {
-        if (!liveControls || !statusEl) return;
-        liveControls.hidden = !isLive();
-        statusEl.textContent = isLive()
-          ? "真实调用模式：密钥只在你的浏览器内存中，请求直连服务商官方端点。"
-          : "当前为离线演示模式：发送后立即返回本地预置回复，不发出任何网络请求。";
-      });
+      input.addEventListener("change", applyMode);
     }
+
     providerSelect?.addEventListener("change", () => {
+      const provider = providerSelect.value;
       if (modelInput && providerSelect.selectedOptions[0]) {
-        modelInput.value = initialModels[providerSelect.value] ?? modelInput.value;
+        modelInput.value = initialModels[provider] ?? modelInput.value;
+      }
+      section.querySelectorAll<HTMLDetailsElement>("[data-byo-json]").forEach((el) => {
+        el.hidden = el.dataset.byoJson !== provider;
+      });
+      if (!isLive()) {
+        ctx = sampleCtx(provider);
+        resetJourney();
+        showSampleEvidence(provider);
       }
     });
 
+    const showErrorFrame = (frameId: string, extra: Record<string, string | number>, narrationOverride?: string) => {
+      inErrorBranch = true;
+      const errorFrame = errorFrames.find((item) => item.id === frameId);
+      const narration = narrationOverride ?? narrate(frameId, extra);
+      section.querySelectorAll<HTMLElement>("[data-j-frame]").forEach((el) => {
+        el.hidden = el.dataset.jFrame !== frameId;
+      });
+      const frame = section.querySelector<HTMLElement>(`[data-j-frame="${frameId}"]`);
+      const caption = frame?.querySelector<HTMLElement>("[data-j-caption]");
+      if (caption) caption.textContent = narration;
+      if (statusEl) statusEl.textContent = `旅程中断 · ${errorFrame?.title ?? ""}：${narration}`;
+      if (stepEl) stepEl.textContent = "旅程中断（错误分支）";
+      if (nextButton) {
+        nextButton.disabled = false;
+        nextButton.textContent = "回到第 1 帧";
+      }
+      updateFieldChips();
+      for (const [field, value] of Object.entries(extra)) {
+        section.querySelectorAll<HTMLElement>(`[data-j-field="${field}"]`).forEach((el) => {
+          el.textContent = String(value);
+        });
+      }
+    };
+
+    const restoreNextLabel = () => {
+      if (nextButton && nextButton.textContent !== "下一帧 →") nextButton.textContent = "下一帧 →";
+    };
+
+    const renderLastSummary = () => {
+      if (!lastSummaryEl) return;
+      const previous = readStartCallSummary();
+      if (previous) {
+        lastSummaryEl.hidden = false;
+        lastSummaryEl.textContent = `上次真实调用摘要（保存在本浏览器）：${previous.provider} · ${previous.model} · 输入 ${previous.inputTokens} / 输出 ${previous.outputTokens} token · ${previous.elapsedMs} ms——不含密钥与消息正文。`;
+      }
+    };
+    renderLastSummary();
+
     sendButton?.addEventListener("click", async () => {
-      if (!messageInput || !statusEl || !outputEl || !replyEl || !endpointEl || !usageEl || !elapsedEl) return;
+      if (!messageInput || !statusEl) return;
       const message = messageInput.value.trim();
       if (!message) {
         statusEl.textContent = "请先输入消息。";
-        return;
-      }
-      if (!isLive()) {
-        endpointEl.textContent = "（离线演示：无网络请求）";
-        replyEl.textContent = offlineReply(message);
-        usageEl.textContent = "0 token（演示）";
-        elapsedEl.textContent = "0 ms（演示）";
-        outputEl.hidden = false;
-        statusEl.textContent = "离线演示完成。切换到真实调用模式可发起真正的模型请求。";
         return;
       }
       const provider = providerSelect?.value ?? "openai";
       const key = keyInput?.value.trim() ?? "";
       const model = modelInput?.value.trim() || initialModels[provider] || "";
       if (!key) {
-        statusEl.textContent = "真实调用需要你的 API 密钥；没有密钥也可以停留在离线演示模式完成本课。";
+        statusEl.textContent =
+          "真实调用需要你的 API 密钥；暂时没有密钥也可以切回离线样例模式完成本课（密钥随时可在服务商控制台撤销、重发）。";
         return;
       }
       const systemPrompt = "你是中文课程《Agent 工程入门》的教学助手。用不超过 120 字的简体中文回答学员问题。";
       sendButton.disabled = true;
-      statusEl.textContent = "请求已发出，等待服务商响应……";
+      restoreNextLabel();
+      statusEl.textContent = "请求已发出，等待服务商响应……包裹正在穿过隧道。";
       const startedAt = performance.now();
       try {
         let endpoint = "";
@@ -167,64 +741,172 @@ const initialModels: Record<string, string> = {
           });
         }
         const elapsed = Math.round(performance.now() - startedAt);
-        endpointEl.textContent = endpoint;
-        elapsedEl.textContent = `${elapsed} ms`;
         if (!response.ok) {
           const hint =
             response.status === 401 || response.status === 403
-              ? "密钥无效或无权限：检查是否复制完整、是否给该模型授权。"
+              ? "密钥没复制完整或没权限：检查是否完整复制、账户是否能用所选模型；换一把密钥或换个模型再试。"
               : response.status === 429
-                ? "速率限制或额度不足：稍后再试或查看账户额度。"
-                : `服务商返回 ${response.status}：查看响应了解原因。`;
-          replyEl.textContent = hint;
-          usageEl.textContent = "—";
-          statusEl.textContent = "调用失败（这本身也是有价值的实验数据：真实接口会拒绝坏的输入）。";
+                ? "请求太快或账户额度用完：稍等片刻再试，或到服务商控制台查看额度与限流。"
+                : `服务商返回状态码 ${response.status}：这也是真实接口的反馈，查看官方错误码文档了解原因。`;
+          showOutput({
+            endpoint: `POST ${endpoint}`,
+            reply: hint,
+            usage: "—",
+            elapsed: `${elapsed} ms`,
+            source: "你的真实调用（失败）——失败本身也是有价值的实验数据：真实接口会拒绝坏的输入。",
+          });
+          const errorFrameId =
+            response.status === 429 ? "err-rate" : response.status === 401 || response.status === 403 ? "err-key" : "err-key";
+          const narration =
+            response.status === 429 || response.status === 401 || response.status === 403
+              ? undefined
+              : `包裹被关卡退回：服务商返回状态码 ${response.status}——查看上方结果说明；这也是真实接口的常见反馈。`;
+          // 失败后回到第 1 帧时回放的是离线样例（真实数字只在成功后回放）。
+          ctx = sampleCtx(provider);
+          if (bannerEl) {
+            bannerEl.textContent =
+              "这次调用没有成功——错误分支同样是真实接口的行为。点击「回到第 1 帧」重看样例旅程，或检查密钥后再次发送。";
+          }
+          showErrorFrame(errorFrameId, { status: String(response.status) }, narration);
         } else {
           const data = (await response.json()) as Record<string, any>;
           const reply =
             provider === "anthropic"
               ? (data.content?.map((block: any) => block.text ?? "").join("") ?? "")
               : (data.choices?.[0]?.message?.content ?? "");
-          const usage =
-            provider === "anthropic"
-              ? `输入 ${data.usage?.input_tokens ?? "?"} / 输出 ${data.usage?.output_tokens ?? "?"} token`
-              : `输入 ${data.usage?.prompt_tokens ?? "?"} / 输出 ${data.usage?.completion_tokens ?? "?"} token`;
-          replyEl.textContent = String(reply || "（空回复）");
-          usageEl.textContent = usage;
-          statusEl.textContent = "真实调用成功：以上是服务商返回的原始数据摘要。";
+          const inputTokens =
+            provider === "anthropic" ? Number(data.usage?.input_tokens ?? 0) : Number(data.usage?.prompt_tokens ?? 0);
+          const outputTokens =
+            provider === "anthropic" ? Number(data.usage?.output_tokens ?? 0) : Number(data.usage?.completion_tokens ?? 0);
+          showOutput({
+            endpoint: `POST ${endpoint}`,
+            reply: String(reply || "（空回复）"),
+            usage: `输入 ${inputTokens} / 输出 ${outputTokens} token`,
+            elapsed: `${elapsed} ms`,
+            source: "你刚才的真实调用——以上数字由服务商返回，非样例。",
+          });
+          // 匿名调用摘要：只保留六个白名单字段，绝不包含密钥与消息正文。
+          const summarySaved = recordStartCallSummary({
+            provider,
+            model,
+            inputTokens,
+            outputTokens,
+            elapsedMs: elapsed,
+            at: Date.now(),
+          });
+          markStartLessonComplete("start-3");
+          ctx = {
+            source: "live",
+            provider,
+            providerLabel: providerSelect?.selectedOptions[0]?.textContent?.trim() ?? provider,
+            model,
+            endpoint,
+            inputTokens,
+            outputTokens,
+            elapsedMs: elapsed,
+          };
+          resetJourney();
+          restoreNextLabel();
+          if (bannerEl) {
+            bannerEl.textContent =
+              "回放模式：以下动画的数字来自你刚才那次真实调用（provider、模型、token、耗时）；失败也没关系——错误分支同样是真实接口的行为。";
+          }
+          statusEl.textContent = `真实调用成功：匿名摘要${summarySaved ? "已" : "未能"}保存在你的浏览器（不含密钥与消息正文）。点击「下一帧」回放这次调用的旅程。`;
+          if (lastSummaryEl) {
+            lastSummaryEl.hidden = false;
+            lastSummaryEl.textContent = `本次调用摘要（保存在本浏览器）：${provider} · ${model} · 输入 ${inputTokens} / 输出 ${outputTokens} token · ${elapsed} ms——不含密钥与消息正文。`;
+          }
         }
-        outputEl.hidden = false;
       } catch (error) {
-        endpointEl.textContent = provider === "anthropic" ? "https://api.anthropic.com/v1/messages" : "https://api.openai.com/v1/chat/completions";
-        replyEl.textContent = `网络层失败：${error instanceof Error ? error.message : String(error)}（断网、广告拦截器或浏览器扩展都可能造成。）`;
-        usageEl.textContent = "—";
-        elapsedEl.textContent = "—";
-        outputEl.hidden = false;
-        statusEl.textContent = "请求没有到达服务商。离线演示模式永远可用。";
+        showOutput({
+          endpoint: `POST ${provider === "anthropic" ? "https://api.anthropic.com/v1/messages" : "https://api.openai.com/v1/chat/completions"}`,
+          reply: `网络层失败：${error instanceof Error ? error.message : String(error)}（断网、广告拦截器或浏览器扩展都可能造成。）`,
+          usage: "—",
+          elapsed: "—",
+          source: "你的真实调用（网络层失败）——请求没有到达服务商；离线样例模式永远可用。",
+        });
+        ctx = sampleCtx(provider);
+        if (bannerEl) {
+          bannerEl.textContent =
+            "这次请求没有到达服务商——错误分支同样是真实接口的行为。点击「回到第 1 帧」重看样例旅程，或检查网络后再次发送。";
+        }
+        showErrorFrame("err-network", {});
       } finally {
         sendButton.disabled = false;
       }
     });
+
+    // 初始渲染：离线样例（OpenAI）
+    showSampleEvidence("openai");
   }
 </script>
 
 <style>
   .byo-key-chat { border: 1px solid var(--sl-color-gray-5); border-radius: 8px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
+  .byo-lede { margin: 0.5rem 0 0.75rem; }
   .byo-mode { display: grid; gap: 0.35rem; margin-bottom: 0.75rem; }
-  .byo-live-controls { display: grid; gap: 0.5rem; margin-bottom: 0.75rem; }
-  .byo-live-controls[hidden] { display: none; }
-  .byo-live-controls label, .byo-message-label { display: grid; gap: 0.25rem; font-weight: 600; }
-  .byo-live-controls input, .byo-live-controls select, .byo-message-label textarea {
+  .byo-shared-controls, .byo-live-controls { display: grid; gap: 0.5rem; margin-bottom: 0.75rem; }
+  .byo-shared-controls label, .byo-live-controls label, .byo-message-label { display: grid; gap: 0.25rem; font-weight: 600; }
+  .byo-shared-controls select, .byo-live-controls input, .byo-live-controls select, .byo-message-label textarea {
     font-weight: 400; padding: 0.5rem; border: 1px solid var(--sl-color-gray-5); border-radius: 6px; min-height: 44px;
   }
-  .byo-key-chat button { min-height: 44px; padding: 0.5rem 1.25rem; margin: 0.5rem 0; cursor: pointer; }
-  .byo-status { min-height: 1.5rem; }
+  .byo-live-controls[hidden] { display: none; }
+  .byo-key-chat button { min-height: 44px; padding: 0.5rem 1.25rem; margin: 0.5rem 0.25rem 0.5rem 0; cursor: pointer; }
+  .byo-key-chat button:disabled { cursor: default; }
+
+  .byo-source-banner {
+    border: 1.5px solid var(--xun-ink, var(--sl-color-accent)); border-radius: 8px;
+    padding: 0.5rem 0.75rem; margin: 0.5rem 0 0.75rem; font-size: 0.95rem;
+  }
+
+  /* 请求之旅舞台：插画层配色（与 mascot 组件同源；对比度核算见 v3-illustration-design-spec.md） */
+  .j-stage {
+    --xun-ink: #1c2b26; --xun-accent: #087f68; --xun-accent-deep: #05604f;
+    --xun-fill: #eaf6f1; --xun-paper: #ffffff; --xun-yellow: #ffd76a; --xun-warn: #b0492a;
+    border: 1.5px solid var(--xun-ink); border-radius: 10px;
+    padding: 0.75rem; margin: 0.5rem 0;
+    background: var(--xun-paper);
+  }
+  :global([data-theme="dark"]) .j-stage {
+    --xun-ink: #e9f5ef; --xun-accent: #6dd9bd; --xun-accent-deep: #9ff0d9;
+    --xun-fill: #143a32; --xun-paper: #17181c; --xun-yellow: #ffd76a; --xun-warn: #e09a72;
+  }
+  .j-frame { margin: 0; }
+  .j-scene { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.75rem 1rem; min-height: 190px; }
+  .j-frame figcaption {
+    margin-top: 0.5rem; border-top: 1px dashed var(--xun-ink); padding-top: 0.5rem; text-align: center; min-height: 1.7rem;
+  }
+  .j-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; max-width: 16rem; }
+  .j-chip {
+    font-family: var(--sl-font-mono, ui-monospace, monospace); font-size: 0.875rem;
+    border: 1.5px solid var(--xun-ink); border-radius: 6px; padding: 0.2rem 0.45rem;
+    background: var(--xun-paper); color: inherit;
+  }
+  .j-chip--sys, .j-chip--gate { background: var(--xun-fill); }
+  .j-chip--warn { border-color: var(--xun-warn); border-width: 2.5px; }
+  .j-chip code { font-size: 0.8125rem; overflow-wrap: anywhere; }
+
+  .j-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem; margin: 0.35rem 0; }
+  .j-step { margin: 0 0 0 auto; font-size: 0.9rem; }
+
+  .byo-status { min-height: 1.5rem; margin: 0.5rem 0; }
   .byo-output dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1rem; margin: 0.5rem 0; }
   .byo-output dt { font-weight: 600; }
-  .byo-output dd { margin: 0; white-space: pre-wrap; }
-  .byo-privacy { margin-top: 0.75rem; }
-  @media (prefers-reduced-motion: no-preference) {
-    .byo-output:not([hidden]) { animation: byo-fade-in 200ms ease-out; }
+  .byo-output dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .byo-json { margin: 0.5rem 0; }
+  .byo-json pre {
+    overflow-x: auto; padding: 0.75rem; border: 1px solid var(--sl-color-gray-5); border-radius: 6px;
+    font-size: 0.85rem;
   }
-  @keyframes byo-fade-in { from { opacity: 0; } to { opacity: 1; } }
+  .byo-nokey { border: 1px solid var(--sl-color-gray-5); border-radius: 8px; padding: 0.6rem 1rem; margin: 0.75rem 0; }
+  .byo-nokey h4 { margin: 0.25rem 0 0.5rem; }
+  .byo-nokey ul { margin: 0; padding-left: 1.2rem; }
+  .byo-account, .byo-privacy { margin-top: 0.75rem; }
+  .byo-last-summary { font-size: 0.9rem; }
+
+  /* 帧间过渡仅在允许动态效果时启用；reduced-motion 下为静态分帧切换 */
+  @media (prefers-reduced-motion: no-preference) {
+    .j-frame:not([hidden]) { animation: j-frame-in 240ms ease-out; }
+  }
+  @keyframes j-frame-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 </style>
