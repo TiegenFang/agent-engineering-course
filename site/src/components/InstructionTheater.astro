@@ -1,0 +1,348 @@
+---
+// 教学插画层 · W2「指令小剧场」：同一条周报指令的模糊版与结构化版双分镜对照。
+// 小循只做向导、不陈述产品事实；三份「矛盾结果」与四格抽屉均为课程原创几何示意，
+// 不模拟任何产品 UI（ADR-0009）。点击推进、不自动播放；reduced-motion 下为静态分帧。
+import Mascot from "./mascot/Mascot.astro";
+
+// 与 DialogueRewrite 第 1 轮相同的模糊原文：小剧场与练习共用一句指令，方便学员对照。
+const vagueInstruction = "帮我把这份传感器数据周报的结论部分改得更清楚些。";
+
+// 结构化对照版：第 1 轮参考改写的压缩示意，四要素各占一行。
+const structuredLines = [
+  { element: "目标", text: "改写周报「结论」一节：先说结果、再说证据，读者 10 秒抓住重点" },
+  { element: "上下文", text: "读者是车间主管；数据来自课程合成的设备遥测平台" },
+  { element: "约束", text: "原始数据零改动，只动「结论」一节，不超过 5 句" },
+  { element: "验收标准", text: "第一句给出设备、问题、建议动作；其余每句能对回周报数据" },
+];
+
+// 三份互相矛盾的结果示意（原创）：都「照做了」，但方向全靠猜。
+const contradictoryResults = [
+  { title: "结果一 · 扩写版", text: "把结论扩成三段，补了形容词和一段比喻——更「丰富」了。" },
+  { title: "结果二 · 压缩版", text: "把结论压成一句「本周设备总体正常」——更「简短」了。" },
+  { title: "结果三 · 顺手版", text: "把两个「看着不顺眼」的读数改成整数，表格更「整齐」了。" },
+];
+
+const drawerElements = ["目标", "上下文", "约束", "验收标准"];
+
+interface TheaterFrame {
+  id: string;
+  /** 可见图注，同时作为 aria-live 播报文案（同源，避免两套文案漂移） */
+  caption: string;
+}
+
+const acts: { id: "vague" | "structured"; title: string; frames: TheaterFrame[] }[] = [
+  {
+    id: "vague",
+    title: "第一幕 · 收到模糊指令",
+    frames: [
+      {
+        id: "receive",
+        caption:
+          "第 1 幕：小循收到指令。「更清楚些」没说清交付物长什么样——是更短、更详细，还是换个语气？",
+      },
+      {
+        id: "spin",
+        caption: "第 2 幕：目标、读者、范围都没交代，小循只能原地打转：每个模糊的词都是一条岔路。",
+      },
+      {
+        id: "results",
+        caption: "第 3 幕：三份结果都算「照做了」，但没有一份一定是你想要的——缺的不是能力，是方向。",
+      },
+    ],
+  },
+  {
+    id: "structured",
+    title: "第二幕 · 收到结构化指令",
+    frames: [
+      {
+        id: "receive",
+        caption: "第 1 幕：同一句话补上四要素，每个词都有了落点——小循头顶的灯亮了。",
+      },
+      {
+        id: "drawers",
+        caption:
+          "第 2 幕：四个抽屉依次亮起，小循按格子取料：目标对「做什么」，上下文对「背景」，约束对「边界」，验收对「怎么查」。",
+      },
+      {
+        id: "result",
+        caption: "第 3 幕：验收标准写在指令里，小循交付前就能自己先对一遍——一次到位。",
+      },
+    ],
+  },
+];
+---
+
+<section class="theater" data-instruction-theater aria-labelledby="theater-title">
+  <h3 id="theater-title">指令小剧场：同一句话的两种下场</h3>
+  <p>
+    左右两幕是同一条指令的两种写法，由你点击「下一幕」推进，随时可「重放」。动画是小循的肢体示意，
+    不是任何真实产品的界面。看完两幕，回答最下面的问题再继续。
+  </p>
+  <div class="theater-acts">
+    {
+      acts.map((act) => (
+        <div class="theater-act" data-act={act.id}>
+          <h4>{act.title}</h4>
+          <div class="stage">
+            {act.id === "vague" ? (
+              <>
+                <div
+                  class="scene scene--v1"
+                  data-frame="0"
+                  data-announce={act.frames[0].caption}
+                >
+                  <div class="brief">
+                    <span class="brief-label">指令原文</span>
+                    <p>「{vagueInstruction}」</p>
+                  </div>
+                  <div class="scene-body">
+                    <Mascot pose="puzzled" size={92} />
+                    <p class="mascot-line">「更清楚些……是更短、更详细，还是换个语气？」</p>
+                  </div>
+                </div>
+                <div
+                  class="scene scene--v2"
+                  data-frame="1"
+                  data-announce={act.frames[1].caption}
+                  hidden
+                >
+                  <div class="brief">
+                    <span class="brief-label">指令原文</span>
+                    <p>「{vagueInstruction}」</p>
+                  </div>
+                  <div class="scene-body scene-body--spin">
+                    <span class="float-q" aria-hidden="true">?</span>
+                    <div class="mascot-spin">
+                      <Mascot pose="puzzled" size={92} />
+                    </div>
+                    <span class="float-q float-q--late" aria-hidden="true">?</span>
+                    <p class="mascot-line">「每个词都有三种理解，组合起来是猜不完的路……」</p>
+                  </div>
+                </div>
+                <div
+                  class="scene scene--v3"
+                  data-frame="2"
+                  data-announce={act.frames[2].caption}
+                  hidden
+                >
+                  <div class="scene-body">
+                    <Mascot pose="puzzled" size={78} />
+                    <div class="result-row">
+                      {contradictoryResults.map((result) => (
+                        <div class="result-card" data-result-card>
+                          <span class="result-title">{result.title}</span>
+                          <p>{result.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div
+                  class="scene scene--s1"
+                  data-frame="0"
+                  data-announce={act.frames[0].caption}
+                >
+                  <div class="brief brief--structured">
+                    <span class="brief-label">结构化指令（示意）</span>
+                    <ul>
+                      {structuredLines.map((line) => (
+                        <li>
+                          <span class="element-tag">{line.element}</span>
+                          {line.text}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div class="scene-body">
+                    <Mascot pose="insight" size={92} />
+                    <p class="mascot-line">「要什么、给谁看、不许做什么、怎么算好——都在。」</p>
+                  </div>
+                </div>
+                <div
+                  class="scene scene--s2"
+                  data-frame="1"
+                  data-announce={act.frames[1].caption}
+                  hidden
+                >
+                  <div class="drawer-grid" role="img" aria-label="四个抽屉依次亮起取料：目标、上下文、约束、验收标准">
+                    {drawerElements.map((element) => (
+                      <div class="drawer">
+                        <span class="drawer-lamp" aria-hidden="true"></span>
+                        <span class="drawer-name">{element}</span>
+                        <span class="drawer-state">已取料</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div class="scene-body">
+                    <Mascot pose="insight" size={84} />
+                    <p class="mascot-line">「不用猜方向，按格子取料就行。」</p>
+                  </div>
+                </div>
+                <div
+                  class="scene scene--s3"
+                  data-frame="2"
+                  data-announce={act.frames[2].caption}
+                  hidden
+                >
+                  <div class="drawer-grid" aria-hidden="true">
+                    {drawerElements.map((element) => (
+                      <div class="drawer">
+                        <span class="drawer-lamp" aria-hidden="true"></span>
+                        <span class="drawer-name">{element}</span>
+                        <span class="drawer-state">已取料</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div class="scene-body">
+                    <Mascot pose="done" size={84} />
+                    <div class="result-card result-card--final" data-result-card>
+                      <span class="result-title">交付结果（示意）</span>
+                      <p>
+                        「结论第一句：T-02 空压机温度连续 3 天超阈值，建议本周检修；其余每句都标注了数据出处。」
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          <div class="theater-controls">
+            <button type="button" data-theater-next>下一幕</button>
+            <button type="button" data-theater-replay>重放</button>
+          </div>
+          <p class="theater-announce" role="status" aria-live="polite" data-theater-announce>
+            {act.frames[0].caption}
+          </p>
+        </div>
+      ))
+    }
+  </div>
+  <p class="theater-question">
+    <strong>观察问题：</strong>回看第一幕的三份结果——「扩写版」「压缩版」「顺手版」分别踩空了哪条要素？
+    想清楚这个问题，再进入下面的配对热身。
+  </p>
+  <noscript>
+    <p>
+      小剧场需要 JavaScript 才能播放。静态文字版——第一幕（模糊指令「{vagueInstruction}」）：小循收到的指令没有说清交付物，
+      只能原地打转，最后交出三份互相矛盾的结果：{contradictoryResults.map((result) => result.text).join("")}
+      第二幕（结构化指令）：目标、上下文、约束、验收标准四要素补齐后，小循按四个格子依次取料，
+      交付一份对齐验收标准的结论，第一句直接给出设备、问题与建议动作。
+    </p>
+  </noscript>
+</section>
+
+<script>
+  // 每幕一个独立的三帧状态机：点击推进、可重放；图注与 aria-live 播报同源（同一元素、同一文案）。
+  document.querySelectorAll<HTMLElement>("[data-instruction-theater]").forEach((theater) => {
+    theater.querySelectorAll<HTMLElement>("[data-act]").forEach((act) => {
+      const scenes = Array.from(act.querySelectorAll<HTMLElement>("[data-frame]"));
+      const nextButton = act.querySelector<HTMLButtonElement>("[data-theater-next]");
+      const replayButton = act.querySelector<HTMLButtonElement>("[data-theater-replay]");
+      const announce = act.querySelector<HTMLElement>("[data-theater-announce]");
+      let current = 0;
+
+      const show = (index: number) => {
+        current = Math.min(Math.max(index, 0), scenes.length - 1);
+        scenes.forEach((scene, sceneIndex) => {
+          scene.hidden = sceneIndex !== current;
+        });
+        if (nextButton) nextButton.disabled = current === scenes.length - 1;
+        if (announce) announce.textContent = scenes[current]?.dataset.announce ?? "";
+      };
+
+      nextButton?.addEventListener("click", () => show(current + 1));
+      replayButton?.addEventListener("click", () => show(0));
+      show(0);
+    });
+  });
+</script>
+
+<style>
+  .theater { border: 1px solid var(--sl-color-gray-5); border-radius: 8px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
+  .theater-acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 1.25rem; margin-top: 0.75rem; }
+  .theater-act h4 { margin: 0 0 0.4rem; font-size: 1.02rem; }
+  .theater .stage { display: grid; gap: 0.6rem; border: 1px solid var(--sl-color-gray-5); border-radius: 12px; padding: 0.85rem; min-height: 15.5rem; align-content: start; background: color-mix(in srgb, var(--sl-color-accent-low) 30%, transparent); }
+  .theater .scene { display: grid; gap: 0.6rem; }
+  .theater .scene[hidden] { display: none; }
+  .theater .scene-body { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+  .theater .scene-body--spin { justify-content: center; position: relative; }
+  .theater .mascot-line { margin: 0; font-size: 0.9rem; flex: 1 1 12rem; }
+
+  .theater .brief { border: 1.5px solid var(--sl-color-gray-5); border-radius: 8px; padding: 0.6rem 0.75rem; background: color-mix(in srgb, var(--sl-color-accent-low) 42%, transparent); }
+  .theater .brief p { margin: 0.25rem 0 0; font-size: 0.92rem; }
+  .theater .brief-label { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.05em; opacity: 0.85; }
+  .theater .brief--structured ul { margin: 0.3rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.3rem; }
+  .theater .brief--structured li { font-size: 0.85rem; line-height: 1.55; }
+  .theater .element-tag { display: inline-block; border: 1.5px solid var(--sl-color-accent); border-radius: 4px; padding: 0 0.3rem; margin-right: 0.4rem; font-size: 0.78rem; font-weight: 700; }
+
+  /* 模糊幕第 2 幕：原地打转。reduced-motion 下定格在打转帧（倾斜静态，无循环动效）。 */
+  .theater .mascot-spin { transform: rotate(6deg); }
+  .theater .float-q { font-family: var(--sl-font-mono, ui-monospace, monospace); font-weight: 700; font-size: 1.15rem; color: var(--sl-color-orange, inherit); position: absolute; top: -0.2rem; }
+  .theater .float-q--late { top: auto; bottom: -0.1rem; }
+
+  /* 三份矛盾结果与最终交付：完整边框几何卡片（不做左侧单彩边） */
+  .theater .result-row { display: grid; gap: 0.45rem; flex: 1 1 12rem; }
+  .theater .result-card { border: 1.5px solid var(--sl-color-gray-5); border-radius: 8px; padding: 0.45rem 0.6rem; background: color-mix(in srgb, var(--sl-color-accent-low) 42%, transparent); }
+  .theater .result-card p { margin: 0.15rem 0 0; font-size: 0.82rem; line-height: 1.55; }
+  .theater .result-title { font-size: 0.78rem; font-weight: 700; }
+  .theater .result-row .result-card:nth-child(1) { transform: rotate(-1.5deg); }
+  .theater .result-row .result-card:nth-child(3) { transform: rotate(1.5deg); }
+  .theater .result-card--final { flex: 1 1 12rem; }
+
+  /* 四格抽屉：默认（与第 3 幕、reduced-motion 分帧）为全亮静态；第 2 幕在允许动效时依次亮起 */
+  .theater .drawer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .theater .drawer { display: flex; align-items: center; gap: 0.4rem; border: 1.5px solid var(--sl-color-gray-5); border-radius: 8px; padding: 0.45rem 0.55rem; }
+  .theater .drawer-lamp { width: 0.7rem; height: 0.7rem; border-radius: 50%; border: 1.5px solid var(--sl-color-gray-5); background: var(--sl-color-accent); flex: none; }
+  .theater .drawer-name { font-size: 0.85rem; font-weight: 700; }
+  .theater .drawer-state { font-size: 0.78rem; margin-left: auto; }
+
+  .theater-controls { display: flex; gap: 0.6rem; margin-top: 0.65rem; }
+  .theater-controls button { min-height: 44px; padding: 0.5rem 1.25rem; cursor: pointer; }
+  .theater .theater-announce { margin: 0.55rem 0 0; min-height: 3.2em; font-size: 0.85rem; border-top: 1px dashed var(--sl-color-gray-5); padding-top: 0.5rem; }
+  .theater .theater-question { margin: 1rem 0 0.25rem; }
+  .theater button:focus-visible { outline: 2px solid var(--sl-color-accent); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .theater .scene--v2 .mascot-spin { animation: theater-spin 1.4s ease-in-out infinite; transform-origin: 50% 85%; }
+    .theater .scene--v2 .float-q { animation: theater-bob 1.8s ease-in-out infinite; }
+    .theater .scene--v2 .float-q--late { animation-delay: 0.9s; }
+    .theater .scene--v3 .result-card { animation: theater-card-in 280ms ease-out backwards; }
+    .theater .scene--v3 .result-card:nth-child(2) { animation-delay: 160ms; }
+    .theater .scene--v3 .result-card:nth-child(3) { animation-delay: 320ms; }
+    .theater .scene--s2 .drawer-lamp { animation: theater-lamp-on 320ms ease-out both; }
+    .theater .scene--s2 .drawer-state { animation: theater-fade-in 320ms ease-out both; }
+    .theater .scene--s2 .drawer:nth-child(1) .drawer-lamp, .theater .scene--s2 .drawer:nth-child(1) .drawer-state { animation-delay: 300ms; }
+    .theater .scene--s2 .drawer:nth-child(2) .drawer-lamp, .theater .scene--s2 .drawer:nth-child(2) .drawer-state { animation-delay: 950ms; }
+    .theater .scene--s2 .drawer:nth-child(3) .drawer-lamp, .theater .scene--s2 .drawer:nth-child(3) .drawer-state { animation-delay: 1600ms; }
+    .theater .scene--s2 .drawer:nth-child(4) .drawer-lamp, .theater .scene--s2 .drawer:nth-child(4) .drawer-state { animation-delay: 2250ms; }
+  }
+
+  @keyframes theater-spin {
+    0%, 100% { transform: rotate(-8deg) translateX(-3px); }
+    50% { transform: rotate(8deg) translateX(3px); }
+  }
+  @keyframes theater-bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  @keyframes theater-card-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes theater-lamp-on {
+    from { background: transparent; }
+    to { background: var(--sl-color-accent); }
+  }
+  @keyframes theater-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @media print {
+    .theater-controls { display: none; }
+    .theater .scene[hidden] { display: grid; }
+  }
+</style>

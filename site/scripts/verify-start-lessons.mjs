@@ -149,19 +149,51 @@ const run = async () => {
     assert.match(bodyText, /anthropics\/skills/);
     await cases.close();
 
-    // W2：改写练习两轮自评后标记完成
+    // W2：小剧场在场；热身配对全对解锁两轮，两轮四要素引用完成后标记完成
     const w2 = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     await w2.goto(`${baseUrl}/start-2-dialogue-basics/`);
     await w2.waitForSelector("[data-dialogue-rewrite]");
+    // 指令小剧场双分镜在场且可重放
+    assert.equal(await w2.locator("[data-instruction-theater] [data-act]").count(), 2, "小剧场应有两幕");
+    assert.ok(
+      (await w2.locator("[data-instruction-theater] [data-theater-replay]").count()) >= 2,
+      "两幕都应可重放",
+    );
+    // 热身未完成前两轮改写保持隐藏
+    assert.ok(await w2.locator("[data-rounds]").isHidden(), "热身全对前不应显示两轮改写");
+    for (const element of ["context", "acceptance", "goal", "constraint"]) {
+      await w2.click(`[data-match-card="${element}"]`);
+      await w2.click(`[data-slot-place="${element}"]`);
+    }
+    await w2.waitForFunction(() => {
+      const warmup = document.querySelector("[data-warmup]");
+      return !!warmup && warmup.dataset.warmupComplete === "1";
+    });
+    assert.ok(await w2.locator("[data-rounds]").isVisible(), "热身全对后应解锁两轮改写");
+    // 两轮改写：写改写 → 生成句子条目 → 四要素各引用一句 → 显示 4/4
     const rewriteCount = await w2.locator("[data-dialogue-rewrite] textarea").count();
     assert.equal(rewriteCount, 2, "W2 应有 2 轮改写输入");
+    const elementOrder = ["goal", "context", "constraint", "acceptance"];
     for (let i = 0; i < rewriteCount; i += 1) {
-      await w2.locator("[data-dialogue-rewrite] textarea").nth(i).fill("目标：整理摘要。上下文：三台温度传感器 CSV。约束：不推测故障。验收：数字与原始记录一致。");
-      await w2.locator("[data-dialogue-reveal]").nth(i).click();
-    }
-    const checkCount = await w2.locator("[data-dialogue-check]").count();
-    for (let i = 0; i < checkCount; i += 1) {
-      await w2.locator("[data-dialogue-check]").nth(i).check();
+      const round = w2.locator("[data-dialogue-rewrite] fieldset.round").nth(i);
+      await round.locator("textarea").fill(
+        "目标：整理成一页摘要表。上下文：三台温度传感器过去 7 天的导出 CSV。约束：不改任何原始读数。验收：最高与最低读数和原始记录一致。",
+      );
+      await round.locator("[data-quote-split]").click();
+      const sentenceCount = await round.locator("[data-sentence]").count();
+      assert.ok(sentenceCount >= 4, "句子条目应至少覆盖四要素");
+      for (const [index, element] of elementOrder.entries()) {
+        await round.locator("[data-sentence]").nth(index).click();
+        await round.locator(`[data-element-assign="${element}"]`).click();
+      }
+      await w2.waitForFunction(
+        (roundIndex) =>
+          document
+            .querySelectorAll("[data-round-progress]")
+            [roundIndex]?.textContent?.includes("4/4"),
+        i,
+      );
+      await round.locator("[data-dialogue-reveal]").click();
     }
     await w2.waitForFunction(() =>
       document.querySelector("[data-dialogue-result]")?.textContent?.includes("标记为完成"),
