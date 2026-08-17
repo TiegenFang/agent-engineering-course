@@ -9,7 +9,7 @@ const workspaceRoot = resolve(siteRoot, "..");
 const read = (relativePath) => readFileSync(join(siteRoot, relativePath), "utf8");
 
 test("进度向导保持零网络并覆盖无 JavaScript 与触控场景", () => {
-  const wizard = read("src/components/ProgressWizard.astro");
+  const wizard = read("src/components/ProgressWizard.astro").replace(/\r/g, "");
 
   assert.match(wizard, /aria-live="polite"/);
   assert.match(wizard, /<noscript>/);
@@ -20,7 +20,7 @@ test("进度向导保持零网络并覆盖无 JavaScript 与触控场景", () =>
 });
 
 test("进度向导用普通话解释匿名证据与浏览器本地记录", () => {
-  const wizard = read("src/components/ProgressWizard.astro");
+  const wizard = read("src/components/ProgressWizard.astro").replace(/\r/g, "");
 
   assert.match(wizard, /匿名 JSON 文件/);
   assert.match(wizard, /浏览器本地/);
@@ -29,8 +29,8 @@ test("进度向导用普通话解释匿名证据与浏览器本地记录", () =>
 });
 
 test("进度向导提供与 README 一致的入门课节命令", () => {
-  const wizard = read("src/components/ProgressWizard.astro");
-  const readme = readFileSync(join(workspaceRoot, "README.md"), "utf8");
+  const wizard = read("src/components/ProgressWizard.astro").replace(/\r/g, "");
+  const readme = readFileSync(join(workspaceRoot, "README.md"), "utf8").replace(/\r/g, "");
 
   assert.match(wizard, /course_check/);
   assert.match(wizard, /t01-foundation/);
@@ -47,7 +47,7 @@ test("进度向导提供与 README 一致的入门课节命令", () => {
 });
 
 test("进度向导引导到现有导入入口而不是重复实现导入逻辑", () => {
-  const wizard = read("src/components/ProgressWizard.astro");
+  const wizard = read("src/components/ProgressWizard.astro").replace(/\r/g, "");
 
   assert.match(wizard, /#evidence-loop-title/);
   assert.match(wizard, /data-evidence-status/);
