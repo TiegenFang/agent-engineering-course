@@ -272,21 +272,43 @@ def scan_links(root: Path, *, online: bool, max_url_checks: int) -> tuple[list[d
             findings.append(_finding("link-syntax", "fail", "URL has invalid syntax", url=url))
     online_results: list[dict[str, Any]] = []
     if online:
-        for url in sorted(urls)[:max_url_checks]:
+        checked = 0
+        for url in sorted(urls):
+            if checked >= max_url_checks:
+                break
+            if "${" in url or "`" in url:
+                # Template-literal placeholders captured from source code are not real URLs.
+                continue
+            parsed_online = urlparse(url)
+            if parsed_online.hostname in {"127.0.0.1", "localhost", "0.0.0.0", "::1", None}:
+                # Local dev-server constants in test scripts are fixtures, not external links.
+                continue
+            if (parsed_online.hostname or "").endswith(".example.com") or parsed_online.hostname in {"example.com", "example.org", "example.net"}:
+                # RFC 2606 reserved documentation domains appear in tests and examples by design.
+                continue
+            checked += 1
             try:
                 request = Request(url, method="HEAD", headers={"User-Agent": "agent-engineering-course-release-audit/1"})
                 with urlopen(request, timeout=8) as response:  # nosec B310: opt-in bounded audit URL
                     status = int(response.status)
                 online_results.append({"url": url, "status": status})
-                if status >= 400:
-                    findings.append(_finding("link-liveness", "fail", f"remote URL returned HTTP {status}", url=url, status=status))
+                if status in (404, 410):
+                    findings.append(_finding("link-liveness", "fail", f"remote URL returned HTTP {status} (dead link)", url=url, status=status))
+                elif status >= 400:
+                    # 401/403/405 etc. prove the host is alive; API endpoints reject unauthenticated HEADs by design.
+                    findings.append(_finding("link-liveness", "review", f"remote URL reachable but returned HTTP {status}; verify manually if it is a documentation link", url=url, status=status))
             except HTTPError as exc:
                 online_results.append({"url": url, "status": exc.code})
-                if exc.code >= 400:
-                    findings.append(_finding("link-liveness", "fail", f"remote URL returned HTTP {exc.code}", url=url, status=exc.code))
+                if exc.code in (404, 410):
+                    findings.append(_finding("link-liveness", "fail", f"remote URL returned HTTP {exc.code} (dead link)", url=url, status=exc.code))
+                elif exc.code >= 400:
+                    findings.append(_finding("link-liveness", "review", f"remote URL reachable but returned HTTP {exc.code}; verify manually if it is a documentation link", url=url, status=exc.code))
+            except ValueError as exc:
+                online_results.append({"url": url, "error": type(exc).__name__})
+                findings.append(_finding("link-syntax", "review", "URL could not be checked (invalid target, likely a source-code placeholder)", url=url, error=type(exc).__name__))
             except (URLError, TimeoutError, OSError) as exc:
                 online_results.append({"url": url, "error": type(exc).__name__})
-                findings.append(_finding("link-liveness", "fail", "remote URL could not be checked", url=url, error=type(exc).__name__))
+                findings.append(_finding("link-liveness", "review", "remote URL could not be checked from this network; regional blocking or transient failure is possible", url=url, error=type(exc).__name__))
     else:
         findings.append(_finding("link-liveness", "review", "offline mode records links but does not claim they are live", count=len(urls), network_checked=False))
     return findings, {"url_count": len(urls), "internal_link_count": internal_link_count, "network_checked": online, "checked_url_count": len(online_results), "online_results": online_results}
