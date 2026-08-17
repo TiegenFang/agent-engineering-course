@@ -1,5 +1,51 @@
 ---
-// 网页端起步章 W2 的浏览器内改写练习：模糊指令 → 四要素改写 → 自评，完成状态存本地，零网络、免安装。
+// 网页端起步章 W2 的浏览器内三层交互：四要素配对热身（拖拽 + 键盘等价）→ 两轮改写 → 引用式自证。
+// 引用式自证按句切分只是呈现手段，学员自己判断句子承载哪个要素，全程不做任何文本内容判定；
+// 完成状态经共享进度模块写入本地，零网络、免安装。
+type ElementKey = "goal" | "context" | "constraint" | "acceptance";
+
+const elementKeys: ElementKey[] = ["goal", "context", "constraint", "acceptance"];
+
+const elementMeta: Record<ElementKey, { name: string; why: string }> = {
+  goal: {
+    name: "目标",
+    why: "这句交代交付物长什么样——一页摘要表、先结论后明细，模型不用猜「整理」的方向。",
+  },
+  context: {
+    name: "上下文",
+    why: "这句补的是模型不知道的背景——数据从哪来、每行长什么样，属于上下文。",
+  },
+  constraint: {
+    name: "约束",
+    why: "这句划定了禁区与篇幅——零改动、只汇总、不超一页，属于约束。",
+  },
+  acceptance: {
+    name: "验收标准",
+    why: "这句写的是你怎么检查「做好了」——两个数字一致、日期不缺，属于验收标准。",
+  },
+};
+
+// 热身模糊指令（与两轮练习不同）：四句话各承载一个要素，呈現顺序刻意打乱。
+const warmupVague = "帮我把这批传感器数据整理下。";
+const warmupCards: { element: ElementKey; text: string }[] = [
+  {
+    element: "context",
+    text: "数据来自 3 台温湿度传感器过去 7 天的导出文件，每行是时间戳、设备编号、读数。",
+  },
+  {
+    element: "acceptance",
+    text: "我会核对摘要里的最高、最低读数与原始记录一致，少一天都算没完成。",
+  },
+  {
+    element: "goal",
+    text: "「整理」＝汇总成一页摘要表：先结论、后明细，一眼看出哪台设备要关注。",
+  },
+  {
+    element: "constraint",
+    text: "不改任何原始读数，只做汇总与分组，输出不超过一页。",
+  },
+];
+
 type Round = { id: string; vague: string; reference: string; points: string[] };
 
 const rounds: Round[] = [
@@ -31,50 +77,358 @@ const rounds: Round[] = [
 ---
 
 <section class="dialogue-rewrite" data-dialogue-rewrite data-lesson-id="start-2" aria-labelledby="dialogue-rewrite-title">
-  <h3 id="dialogue-rewrite-title">改写练习</h3>
-  <p>每轮先自己改写，再点「对照参考」，最后勾选自评。参考不是唯一答案：四要素都在、验收标准可检查，你的版本就是合格版本。完成状态保存在你的浏览器本地。</p>
-  {rounds.map((round, index) => (
-    <fieldset class="round">
-      <legend>{index + 1}. 模糊指令</legend>
-      <p class="vague">「{round.vague}」</p>
-      <label class="input-label" for={`dialogue-input-${round.id}`}>你的改写（对照四要素：目标、上下文、约束、验收标准）</label>
-      <textarea id={`dialogue-input-${round.id}`} rows="6" placeholder="写下你的改写，四要素各占一句即可，顺序不限。"></textarea>
-      <button type="button" data-dialogue-reveal={round.id}>对照参考</button>
-      <div class="reference" data-dialogue-reference={round.id} role="status" aria-live="polite" hidden>
-        <h4>参考改写</h4>
-        <p>{round.reference}</p>
-        <h4>要点解释</h4>
-        <ul>
-          {round.points.map((point) => (
-            <li>{point}</li>
-          ))}
-        </ul>
-      </div>
-      <label class="self-check">
-        <input type="checkbox" data-dialogue-check />
-        我覆盖了全部四要素（目标、上下文、约束、验收标准）
-      </label>
-    </fieldset>
-  ))}
-  <p class="dialogue-result" role="status" aria-live="polite" data-dialogue-result>尚未自评。两轮都勾选自评后，本课将标记为完成。</p>
+  <h3 id="dialogue-rewrite-title">动手：配对热身与两轮改写</h3>
+  <p class="flow-note">
+    完成判定（随时可见）：<strong>热身配对全对</strong>后进入两轮改写；每轮写完改写、完成
+    <strong>四要素引用式自证</strong>（各 4/4）后，本课标记为完成。全部状态只保存在你的浏览器本地。
+  </p>
+
+  <div class="warmup" data-warmup data-warmup-complete="0">
+    <h4>热身 · 四要素配对</h4>
+    <p>
+      新指令：「{warmupVague}」下面四句话都能补进这条指令，但每句只属于一个要素。把卡片<strong>拖</strong>到对应改写位；
+      用键盘或触屏的等价操作：先在卡片上按 Enter（或点按）<strong>选择</strong>，再到改写位按 Enter（或点按）<strong>放置</strong>。
+      放错会退回并告诉你原因，可以一直重试；放对的卡片也能撤回。
+    </p>
+    <ul class="card-tray" aria-label="待配对的四张要素卡片">
+      {
+        warmupCards.map((card) => (
+          <li>
+            <button
+              type="button"
+              class="match-card"
+              draggable="true"
+              data-match-card={card.element}
+              data-card-text={card.text}
+              data-why={elementMeta[card.element].why}
+              aria-pressed="false"
+            >
+              {card.text}
+              <span class="card-state" data-card-state></span>
+            </button>
+          </li>
+        ))
+      }
+    </ul>
+    <div class="slot-board">
+      {
+        elementKeys.map((element) => (
+          <div class="match-slot" data-match-slot={element} data-element-name={elementMeta[element].name}>
+            <span class="slot-name">{elementMeta[element].name}</span>
+            <button type="button" class="slot-drop" data-slot-place={element}>
+              把承载「{elementMeta[element].name}」的卡片放到这里
+            </button>
+            <div class="slot-filled" data-slot-filled hidden>
+              <p class="slot-card-text" data-slot-card-text></p>
+              <p class="slot-why" data-slot-why>{elementMeta[element].why}</p>
+              <button type="button" class="slot-retract" data-slot-retract={element}>
+                撤回这张卡
+              </button>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+    <p class="warmup-feedback" role="status" aria-live="polite" data-warmup-feedback>
+      已配对 0/4。先选择或拖拽一张卡片开始。
+    </p>
+    <button type="button" class="enter-rounds" data-enter-rounds hidden>进入第 1 轮改写</button>
+  </div>
+
+  <div class="rounds" data-rounds hidden>
+    <h4>正式练习 · 两轮改写与引用式自证</h4>
+    <p>
+      每轮三步：先自己改写 → 点「对照参考」核对 → 做引用式自证。参考不是唯一答案：四要素都在、验收标准可检查，
+      你的版本就是合格版本。
+    </p>
+    {
+      rounds.map((round, index) => (
+        <fieldset class="round" data-round={round.id}>
+          <legend>{index + 1}. 模糊指令</legend>
+          <p class="vague">「{round.vague}」</p>
+          <label class="input-label" for={`dialogue-input-${round.id}`}>
+            你的改写（对照四要素：目标、上下文、约束、验收标准）
+          </label>
+          <textarea
+            id={`dialogue-input-${round.id}`}
+            rows="6"
+            data-rewrite-input
+            placeholder="写下你的改写，四要素各占一句即可，顺序不限。"
+          ></textarea>
+          <button type="button" data-dialogue-reveal={round.id}>对照参考</button>
+          <div class="reference" data-dialogue-reference={round.id} role="status" aria-live="polite" hidden>
+            <h5>参考改写</h5>
+            <p>{round.reference}</p>
+            <h5>要点解释</h5>
+            <ul>
+              {round.points.map((point) => (
+                <li>{point}</li>
+              ))}
+            </ul>
+          </div>
+          <div class="quote-check" data-quote-check>
+            <h5>引用式自证</h5>
+            <p class="quote-hint">
+              点下方按钮，把你的改写按句切分成可点选的条目（按 。！？； 和换行切分——切分只是呈现手段，
+              <strong>不判分</strong>）。然后为四个要素各指出至少一句你文字中承载它的句子：
+              先点选句子，再在对应要素行按「指给」。选哪句由你自己判断，没有对错。
+            </p>
+            <button type="button" data-quote-split>从我的改写生成句子条目</button>
+            <p class="split-status" role="status" aria-live="polite" data-split-status>尚未生成句子条目。</p>
+            <ol class="sentences" data-sentences hidden></ol>
+            <div class="element-board">
+              {
+                elementKeys.map((element) => (
+                  <div class="element-row" data-element-row={element} data-filled="0">
+                    <span class="element-name">{elementMeta[element].name}</span>
+                    <span class="element-count" data-element-count={element}>未引用</span>
+                    <span class="element-actions">
+                      <button type="button" class="element-assign" data-element-assign={element} disabled>
+                        把选中句子指给「{elementMeta[element].name}」
+                      </button>
+                      <button type="button" class="element-clear" data-element-clear={element} hidden>
+                        清除「{elementMeta[element].name}」的引用
+                      </button>
+                    </span>
+                  </div>
+                ))
+              }
+            </div>
+            <p class="round-progress" data-round-progress>本轮要素引用 0/4</p>
+          </div>
+        </fieldset>
+      ))
+    }
+  </div>
+
+  <p class="dialogue-result" role="status" aria-live="polite" data-dialogue-result>
+    热身配对 0/4；第 1 轮要素引用 0/4；第 2 轮要素引用 0/4。全部完成后本课将标记为完成。
+  </p>
+
   <noscript>
-    <p>改写练习需要 JavaScript。不开启时，可以把两条模糊指令当作纸上练习：自己按四要素改写，再回顾正文中的两个对照示例检查。</p>
+    <div class="paper-fallback">
+      <p>
+        配对与引用式自证需要 JavaScript。不开启时，可以按「纸上模式」完成本课：先把热身四句各归入一个要素（答案见下），
+        再把两条模糊指令按四要素在纸上改写，最后逐句对照参考自查「每个要素落在我写的哪一句」。
+      </p>
+      <h4>纸上模式 · 热身配对答案（指令：「{warmupVague}」）</h4>
+      <ul>
+        {
+          warmupCards.map((card) => (
+            <li>
+              <strong>{elementMeta[card.element].name}：</strong>
+              {card.text}
+            </li>
+          ))
+        }
+      </ul>
+      <h4>纸上模式 · 两轮对照参考</h4>
+      {
+        rounds.map((round, index) => (
+          <div>
+            <p>
+              <strong>{index + 1}. 模糊指令：</strong>「{round.vague}」
+            </p>
+            <p>
+              <strong>参考改写：</strong>
+              {round.reference}
+            </p>
+          </div>
+        ))
+      }
+    </div>
   </noscript>
 </section>
 
 <script>
   import { markStartLessonComplete } from "../lib/start-progress.mjs";
 
+  type ElementKey = "goal" | "context" | "constraint" | "acceptance";
+
+  const ELEMENT_KEYS: ElementKey[] = ["goal", "context", "constraint", "acceptance"];
+  const ELEMENT_NAMES: Record<ElementKey, string> = {
+    goal: "目标",
+    context: "上下文",
+    constraint: "约束",
+    acceptance: "验收标准",
+  };
+
+  // 句切分：按 。！？； 与换行。切分只是把学员的文字呈现成可点选条目，不参与任何对错判定。
+  const SENTENCE_SPLIT = /(?<=[。！？；])\s*|\n+/;
+
+  interface RoundState {
+    done: () => number;
+  }
+
   const section = document.querySelector<HTMLElement>("[data-dialogue-rewrite]");
 
   if (section) {
     const lessonId = section.dataset.lessonId ?? "start-2";
-    const result = section.querySelector<HTMLElement>("[data-dialogue-result]");
-    const checks = Array.from(section.querySelectorAll<HTMLInputElement>("[data-dialogue-check]"));
+    const warmup = section.querySelector<HTMLElement>("[data-warmup]");
+    const warmupFeedback = section.querySelector<HTMLElement>("[data-warmup-feedback]");
+    const roundsWrap = section.querySelector<HTMLElement>("[data-rounds]");
+    const enterButton = section.querySelector<HTMLButtonElement>("[data-enter-rounds]");
+    const resultEl = section.querySelector<HTMLElement>("[data-dialogue-result]");
 
+    const roundStates: RoundState[] = [];
+    const placedCards = new Map<ElementKey, HTMLButtonElement>();
+    let selectedCard: ElementKey | null = null;
+    let draggedCard: ElementKey | null = null;
+
+    const emptyAssignments = () =>
+      new Map<ElementKey, Set<number>>(
+        ELEMENT_KEYS.map((key) => [key, new Set<number>()] as [ElementKey, Set<number>]),
+      );
+
+    function syncResult() {
+      if (!resultEl) return;
+      const warmupDone = warmup?.dataset.warmupComplete === "1";
+      const counts = roundStates.map((state) => state.done());
+      if (warmupDone && counts.length === 2 && counts.every((count) => count === 4)) {
+        resultEl.textContent =
+          "热身配对全对，两轮改写各完成四要素引用！本课已在你的浏览器中标记为完成。";
+        // 本地存储不可用时（隐私模式等）由共享进度模块静默降级，页面反馈不受影响
+        markStartLessonComplete(lessonId);
+      } else {
+        resultEl.textContent = `热身配对 ${placedCards.size}/4${
+          warmupDone ? "（全对）" : ""
+        }；第 1 轮要素引用 ${counts[0] ?? 0}/4；第 2 轮要素引用 ${counts[1] ?? 0}/4。全部完成后本课将标记为完成。`;
+      }
+    }
+
+    // ---------- 第一层：四要素配对热身（拖拽 + 键盘等价：选择 → 放置；可撤回） ----------
+    const cardButtons = new Map<ElementKey, HTMLButtonElement>();
+    section.querySelectorAll<HTMLButtonElement>("[data-match-card]").forEach((button) => {
+      cardButtons.set(button.dataset.matchCard as ElementKey, button);
+    });
+
+    function announceWarmup(message: string) {
+      if (warmupFeedback) warmupFeedback.textContent = `已配对 ${placedCards.size}/4。${message}`;
+    }
+
+    function setCardSelected(key: ElementKey | null) {
+      if (selectedCard) {
+        const previous = cardButtons.get(selectedCard);
+        previous?.setAttribute("aria-pressed", "false");
+        const previousState = previous?.querySelector<HTMLElement>("[data-card-state]");
+        if (previousState) previousState.textContent = "";
+      }
+      selectedCard = key;
+      if (key) {
+        const button = cardButtons.get(key);
+        button?.setAttribute("aria-pressed", "true");
+        const state = button?.querySelector<HTMLElement>("[data-card-state]");
+        if (state) state.textContent = "（已选中：到对应改写位按「放置」，或直接拖拽过去）";
+      }
+    }
+
+    function placeCard(slotKey: ElementKey, cardKey: ElementKey) {
+      const card = cardButtons.get(cardKey);
+      if (!card) return;
+      if (cardKey === slotKey) {
+        placedCards.set(slotKey, card);
+        card.setAttribute("hidden", "");
+        setCardSelected(null);
+        const placeButton = section.querySelector<HTMLButtonElement>(`[data-slot-place="${slotKey}"]`);
+        placeButton?.setAttribute("hidden", "");
+        const filled = section.querySelector<HTMLElement>(`[data-match-slot="${slotKey}"] [data-slot-filled]`);
+        filled?.removeAttribute("hidden");
+        const cardText = filled?.querySelector<HTMLElement>("[data-slot-card-text]");
+        if (cardText) cardText.textContent = `已配对 ✓：${card.dataset.cardText ?? ""}`;
+        const wasFinal = placedCards.size === 4;
+        announceWarmup(
+          wasFinal
+            ? `对！${card.dataset.why ?? ""} 热身配对全对，两轮改写已解锁。`
+            : `对！${card.dataset.why ?? ""}`,
+        );
+        syncGate();
+      } else {
+        setCardSelected(null);
+        announceWarmup(
+          `不对，卡片已退回。${card.dataset.why ?? ""} 换一个改写位再试。`,
+        );
+      }
+    }
+
+    function syncGate() {
+      const complete = placedCards.size === 4;
+      if (warmup) warmup.dataset.warmupComplete = complete ? "1" : "0";
+      if (roundsWrap) roundsWrap.hidden = !complete;
+      if (enterButton) enterButton.hidden = !complete;
+      syncResult();
+    }
+
+    cardButtons.forEach((button, key) => {
+      button.addEventListener("click", () => {
+        if (placedCards.get(key) === button) return;
+        const next: ElementKey | null = selectedCard === key ? null : key;
+        setCardSelected(next);
+        announceWarmup(
+          next
+            ? "已选中卡片。到对应改写位按「放置」，或直接拖拽过去。"
+            : "已取消选择。重新点按卡片可再次选中。",
+        );
+      });
+      button.addEventListener("dragstart", (event) => {
+        draggedCard = key;
+        event.dataTransfer?.setData("text/plain", key);
+      });
+      button.addEventListener("dragend", () => {
+        draggedCard = null;
+      });
+    });
+
+    section.querySelectorAll<HTMLButtonElement>("[data-slot-place]").forEach((button) => {
+      const slotKey = button.dataset.slotPlace as ElementKey;
+      button.addEventListener("click", () => {
+        if (!selectedCard) {
+          announceWarmup("请先选择一张要素卡（点按卡片，或聚焦后按 Enter），再按这里的「放置」。");
+          return;
+        }
+        placeCard(slotKey, selectedCard);
+      });
+      // 指针拖拽增强：与键盘「选择 → 放置」路径完全等价
+      button.addEventListener("dragover", (event) => event.preventDefault());
+      button.addEventListener("drop", (event) => {
+        event.preventDefault();
+        const key =
+          draggedCard ?? ((event.dataTransfer?.getData("text/plain") as ElementKey | undefined) ?? null);
+        if (key) placeCard(slotKey, key);
+        draggedCard = null;
+      });
+    });
+
+    section.querySelectorAll<HTMLButtonElement>("[data-slot-retract]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const slotKey = button.dataset.slotRetract as ElementKey;
+        const card = placedCards.get(slotKey);
+        if (!card) return;
+        placedCards.delete(slotKey);
+        card.removeAttribute("hidden");
+        section
+          .querySelector<HTMLElement>(`[data-match-slot="${slotKey}"] [data-slot-filled]`)
+          ?.setAttribute("hidden", "");
+        section.querySelector<HTMLButtonElement>(`[data-slot-place="${slotKey}"]`)?.removeAttribute("hidden");
+        announceWarmup(
+          `已撤回「${ELEMENT_NAMES[slotKey]}」改写位的卡片。热身回到 ${placedCards.size}/4，重新配对即可。`,
+        );
+        syncGate();
+      });
+    });
+
+    enterButton?.addEventListener("click", () => {
+      if (!roundsWrap || roundsWrap.hidden) return;
+      const firstInput = roundsWrap.querySelector<HTMLTextAreaElement>("[data-rewrite-input]");
+      firstInput?.scrollIntoView({ block: "center" });
+      firstInput?.focus();
+    });
+
+    // ---------- 对照参考（保留原有揭示行为） ----------
     section.querySelectorAll<HTMLButtonElement>("[data-dialogue-reveal]").forEach((button) => {
       button.addEventListener("click", () => {
-        const reference = section.querySelector<HTMLElement>(`[data-dialogue-reference="${button.dataset.dialogueReveal}"]`);
+        const reference = section.querySelector<HTMLElement>(
+          `[data-dialogue-reference="${button.dataset.dialogueReveal}"]`,
+        );
         if (!reference) return;
         if (reference.hasAttribute("hidden")) {
           reference.removeAttribute("hidden");
@@ -86,36 +440,234 @@ const rounds: Round[] = [
       });
     });
 
-    const syncProgress = () => {
-      if (!result || checks.length === 0) return;
-      const done = checks.filter((checkbox) => checkbox.checked).length;
-      if (done === checks.length) {
-        result.textContent = `两轮练习（${done}/${checks.length}）都已自评完成！本课已在你的浏览器中标记为完成。`;
-        // 本地存储不可用时（隐私模式等）由共享模块静默降级，页面反馈不受影响
-        markStartLessonComplete(lessonId);
-      } else {
-        result.textContent = `已自评 ${done}/${checks.length} 轮。两轮都勾选自评后，本课将标记为完成。`;
-      }
-    };
+    // ---------- 第三层：引用式自证（按句呈现、学员自己指认，无文本判定） ----------
+    section.querySelectorAll<HTMLFieldSetElement>("[data-round]").forEach((fieldset) => {
+      const textarea = fieldset.querySelector<HTMLTextAreaElement>("[data-rewrite-input]");
+      const sentenceList = fieldset.querySelector<HTMLElement>("[data-sentences]");
+      const splitStatus = fieldset.querySelector<HTMLElement>("[data-split-status]");
+      const progressEl = fieldset.querySelector<HTMLElement>("[data-round-progress]");
 
-    checks.forEach((checkbox) => checkbox.addEventListener("change", syncProgress));
+      const assignButtons = new Map<ElementKey, HTMLButtonElement>();
+      fieldset.querySelectorAll<HTMLButtonElement>("[data-element-assign]").forEach((button) => {
+        assignButtons.set(button.dataset.elementAssign as ElementKey, button);
+      });
+      const clearButtons = new Map<ElementKey, HTMLButtonElement>();
+      fieldset.querySelectorAll<HTMLButtonElement>("[data-element-clear]").forEach((button) => {
+        clearButtons.set(button.dataset.elementClear as ElementKey, button);
+      });
+      const countEls = new Map<ElementKey, HTMLElement>();
+      fieldset.querySelectorAll<HTMLElement>("[data-element-count]").forEach((element) => {
+        if (element.dataset.elementCount) countEls.set(element.dataset.elementCount as ElementKey, element);
+      });
+      const rowEls = new Map<ElementKey, HTMLElement>();
+      fieldset.querySelectorAll<HTMLElement>("[data-element-row]").forEach((element) => {
+        if (element.dataset.elementRow) rowEls.set(element.dataset.elementRow as ElementKey, element);
+      });
+
+      let sentences: string[] = [];
+      let splitText = "";
+      let selectedSentence: number | null = null;
+      let assignments = emptyAssignments();
+
+      const doneCount = () =>
+        ELEMENT_KEYS.filter((key) => (assignments.get(key)?.size ?? 0) > 0).length;
+
+      function setSelected(index: number | null) {
+        selectedSentence = index;
+        sentenceList?.querySelectorAll<HTMLButtonElement>("[data-sentence]").forEach((button) => {
+          button.setAttribute("aria-pressed", String(Number(button.dataset.sentence) === index));
+        });
+        assignButtons.forEach((button) => {
+          button.disabled = index === null;
+        });
+      }
+
+      function updateUi() {
+        ELEMENT_KEYS.forEach((key) => {
+          const set = assignments.get(key) ?? new Set<number>();
+          const count = countEls.get(key);
+          if (count) {
+            count.textContent =
+              set.size === 0
+                ? "未引用"
+                : `已引用 ${set.size} 句（第 ${[...set].map((i) => i + 1).sort((a, b) => a - b).join("、")} 句）✓`;
+          }
+          const row = rowEls.get(key);
+          if (row) row.dataset.filled = set.size > 0 ? "1" : "0";
+          const clearButton = clearButtons.get(key);
+          if (clearButton) clearButton.hidden = set.size === 0;
+        });
+        if (progressEl) {
+          progressEl.textContent =
+            doneCount() === 4 ? "本轮要素引用 4/4 ✓——本轮完成" : `本轮要素引用 ${doneCount()}/4`;
+        }
+        sentences.forEach((_, index) => {
+          const button = sentenceList?.querySelector<HTMLButtonElement>(`[data-sentence="${index}"]`);
+          if (!button) return;
+          const tags = ELEMENT_KEYS.filter((key) => assignments.get(key)?.has(index))
+            .map((key) => `〔${ELEMENT_NAMES[key]}〕`)
+            .join("");
+          button.textContent = `第 ${index + 1} 句：${sentences[index]}${tags}`;
+        });
+        syncResult();
+      }
+
+      function renderSentences() {
+        if (!sentenceList) return;
+        sentenceList.textContent = "";
+        sentences.forEach((text, index) => {
+          const item = document.createElement("li");
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "sentence";
+          button.dataset.sentence = String(index);
+          button.setAttribute("aria-pressed", "false");
+          button.textContent = `第 ${index + 1} 句：${text}`;
+          button.addEventListener("click", () => {
+            const next = selectedSentence === index ? null : index;
+            setSelected(next);
+            if (splitStatus) {
+              splitStatus.textContent = next
+                ? `已选中第 ${next + 1} 句。到四要素行按「指给」完成引用（同一句可指给多个要素，再点一次可取消选中）。`
+                : "已取消选中句子。";
+            }
+          });
+          item.appendChild(button);
+          sentenceList.appendChild(item);
+        });
+        sentenceList.hidden = sentences.length === 0;
+      }
+
+      function resetQuoteState(reason: string) {
+        sentences = [];
+        splitText = "";
+        setSelected(null);
+        assignments = emptyAssignments();
+        if (sentenceList) {
+          sentenceList.textContent = "";
+          sentenceList.hidden = true;
+        }
+        if (splitStatus) splitStatus.textContent = reason;
+        updateUi();
+      }
+
+      const splitButton = fieldset.querySelector<HTMLButtonElement>("[data-quote-split]");
+      splitButton?.addEventListener("click", () => {
+        const text = (textarea?.value ?? "").trim();
+        if (!text) {
+          if (splitStatus) splitStatus.textContent = "还没有可切分的文字：先在上方写下你的改写。";
+          return;
+        }
+        if (text === splitText && sentences.length > 0) {
+          if (splitStatus) {
+            splitStatus.textContent = `句子条目已是当前改写的最新版本（共 ${sentences.length} 句）。`;
+          }
+          return;
+        }
+        splitText = text;
+        sentences = text
+          .split(SENTENCE_SPLIT)
+          .map((piece) => piece.trim())
+          .filter((piece) => piece.length > 0);
+        assignments = emptyAssignments();
+        setSelected(null);
+        renderSentences();
+        if (splitStatus) {
+          splitStatus.textContent = `已按句切分出 ${sentences.length} 句条目（切分只是呈现，不判分）。点选句子，再在四要素行按「指给」。`;
+        }
+        updateUi();
+      });
+
+      textarea?.addEventListener("input", () => {
+        if (sentences.length === 0) return;
+        if (textarea.value !== splitText) {
+          resetQuoteState("改写已修改：句子条目与四要素引用已重置，请重新生成并完成引用。");
+        }
+      });
+
+      assignButtons.forEach((button, key) => {
+        button.addEventListener("click", () => {
+          if (selectedSentence === null) return;
+          const sentenceIndex = selectedSentence;
+          assignments.get(key)?.add(sentenceIndex);
+          setSelected(null);
+          if (splitStatus) {
+            splitStatus.textContent = `第 ${sentenceIndex + 1} 句已指给「${ELEMENT_NAMES[key]}」（${assignments.get(key)?.size ?? 0} 句）。本轮要素引用 ${doneCount()}/4。`;
+          }
+          updateUi();
+        });
+      });
+
+      clearButtons.forEach((button, key) => {
+        button.addEventListener("click", () => {
+          assignments.get(key)?.clear();
+          if (splitStatus) {
+            splitStatus.textContent = `已清除「${ELEMENT_NAMES[key]}」的全部引用。本轮要素引用 ${doneCount()}/4。`;
+          }
+          updateUi();
+        });
+      });
+
+      roundStates.push({ done: doneCount });
+    });
+
+    syncResult();
   }
 </script>
 
 <style>
   .dialogue-rewrite { border: 1px solid var(--sl-color-gray-5); border-radius: 8px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
-  .dialogue-rewrite fieldset { display: grid; gap: 0.5rem; margin: 0.75rem 0; }
+  .dialogue-rewrite [hidden] { display: none !important; }
+  .dialogue-rewrite h4 { margin: 1.1rem 0 0.4rem; font-size: 1.02rem; }
+  .dialogue-rewrite h5 { margin: 0.7rem 0 0.3rem; font-size: 0.95rem; }
+  .dialogue-rewrite p { max-width: 60rem; }
+  .dialogue-rewrite button { min-height: 44px; padding: 0.5rem 1rem; cursor: pointer; font: inherit; }
+  .dialogue-rewrite button[disabled] { cursor: not-allowed; opacity: 0.65; }
+  .dialogue-rewrite :is(button, textarea):focus-visible { outline: 2px solid var(--sl-color-accent); outline-offset: 2px; }
+  .dialogue-rewrite .flow-note { border-inline-start: 0.2rem solid var(--sl-color-accent); padding-inline-start: 0.75rem; }
+
+  /* 热身 · 四要素配对 */
+  .dialogue-rewrite .card-tray { display: grid; gap: 0.5rem; padding: 0; list-style: none; margin: 0.6rem 0; }
+  .dialogue-rewrite .match-card { display: block; width: 100%; text-align: start; border: 1.5px solid var(--sl-color-gray-5); border-radius: 8px; background: color-mix(in srgb, var(--sl-color-accent-low) 42%, transparent); padding: 0.6rem 0.75rem; cursor: grab; }
+  .dialogue-rewrite .match-card[aria-pressed="true"] { border-color: var(--sl-color-accent); box-shadow: inset 0 0 0 1.5px var(--sl-color-accent); }
+  .dialogue-rewrite .card-state:empty { display: none; }
+  .dialogue-rewrite .card-state { display: block; margin-top: 0.25rem; font-size: 0.82rem; font-weight: 600; }
+  .dialogue-rewrite .slot-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.75rem; margin: 0.75rem 0; }
+  .dialogue-rewrite .match-slot { border: 1.5px solid var(--sl-color-gray-5); border-radius: 8px; padding: 0.6rem; }
+  .dialogue-rewrite .slot-name { display: block; font-weight: 700; margin-bottom: 0.4rem; }
+  .dialogue-rewrite .slot-drop { display: block; width: 100%; min-height: 72px; border: 2px dashed var(--sl-color-gray-4, var(--sl-color-gray-5)); border-radius: 6px; background: transparent; padding: 0.5rem; }
+  .dialogue-rewrite .slot-filled p { margin: 0.25rem 0; font-size: 0.88rem; }
+  .dialogue-rewrite .slot-card-text { font-weight: 600; }
+  .dialogue-rewrite .slot-why { color: var(--sl-color-gray-2); }
+  .dialogue-rewrite .warmup-feedback { min-height: 1.5rem; }
+
+  /* 两轮改写与引用式自证 */
+  .dialogue-rewrite fieldset { display: grid; gap: 0.5rem; margin: 0.75rem 0; border: 1px solid var(--sl-color-gray-5); border-radius: 8px; padding: 0.8rem 1rem; }
   .dialogue-rewrite .vague { border-left: 3px solid var(--sl-color-gray-5); padding-left: 0.75rem; margin: 0.25rem 0; }
   .dialogue-rewrite .input-label { display: block; font-weight: 600; }
   .dialogue-rewrite textarea { min-height: 96px; padding: 0.5rem; font: inherit; }
-  .dialogue-rewrite button { min-height: 44px; padding: 0.5rem 1.25rem; cursor: pointer; }
-  .dialogue-rewrite .self-check { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; padding: 0.5rem; }
   .dialogue-rewrite .reference { border-top: 1px dashed var(--sl-color-gray-5); padding-top: 0.5rem; }
-  .dialogue-rewrite .reference[hidden] { display: none; }
-  .dialogue-result { min-height: 1.5rem; }
+  .dialogue-rewrite .quote-check { border: 1px dashed var(--sl-color-gray-5); border-radius: 8px; padding: 0.6rem 0.75rem; margin-top: 0.4rem; }
+  .dialogue-rewrite .quote-hint { font-size: 0.9rem; color: var(--sl-color-gray-2); }
+  .dialogue-rewrite .split-status { min-height: 1.5rem; font-size: 0.88rem; }
+  .dialogue-rewrite .sentences { display: grid; gap: 0.4rem; padding: 0; list-style: none; margin: 0.5rem 0; }
+  .dialogue-rewrite .sentence { display: block; width: 100%; text-align: start; border: 1.5px solid var(--sl-color-gray-5); border-radius: 8px; background: transparent; padding: 0.5rem 0.65rem; }
+  .dialogue-rewrite .sentence[aria-pressed="true"] { border-color: var(--sl-color-accent); box-shadow: inset 0 0 0 1.5px var(--sl-color-accent); }
+  .dialogue-rewrite .element-board { display: grid; gap: 0.5rem; margin: 0.5rem 0; }
+  .dialogue-rewrite .element-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; border: 1px solid var(--sl-color-gray-5); border-radius: 8px; padding: 0.5rem 0.6rem; }
+  .dialogue-rewrite .element-row[data-filled="1"] { border-color: var(--sl-color-accent); }
+  .dialogue-rewrite .element-name { font-weight: 700; }
+  .dialogue-rewrite .element-count { font-size: 0.85rem; color: var(--sl-color-gray-2); }
+  .dialogue-rewrite .element-row[data-filled="1"] .element-count { color: inherit; }
+  .dialogue-rewrite .element-actions { margin-left: auto; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .dialogue-rewrite .element-actions button { padding: 0.35rem 0.75rem; }
+  .dialogue-rewrite .round-progress { font-weight: 700; min-height: 1.5rem; }
+  .dialogue-rewrite .dialogue-result { min-height: 1.5rem; border-top: 1px dashed var(--sl-color-gray-5); padding-top: 0.6rem; margin-top: 0.9rem; }
+  .dialogue-rewrite .paper-fallback { border: 1px dashed var(--sl-color-gray-4, var(--sl-color-gray-5)); border-radius: 6px; padding: 0.75rem 1rem; margin-top: 0.75rem; }
 
   @media (prefers-reduced-motion: no-preference) {
     .dialogue-rewrite .reference:not([hidden]) { animation: dialogue-reveal 160ms ease-out; }
+    .dialogue-rewrite .sentence { animation: dialogue-reveal 160ms ease-out backwards; }
   }
 
   @keyframes dialogue-reveal {
