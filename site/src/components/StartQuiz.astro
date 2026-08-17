@@ -1,6 +1,13 @@
 ---
-// 网页端起步章的浏览器内知识检查：即时反馈 + 本地完成状态，零网络、免安装。
-const quizData = [
+// 网页端起步章 W1 的浏览器内知识检查（V3-4 升级）：支持重做、逐题错题回顾与
+// 「回跑道第 N 站重看」跳转链接。零网络、免安装。
+// 与 AgentLoopTrack 同页联动：本组件只负责判分与回顾，通过 data-start-gate="quiz"
+// 加 gate 事件上报「3 题全对」状态；三项完成条件（预测/跑道/知识检查）的汇总与
+// 完成状态落盘由 AgentLoopTrack 内的完成条件清单统一执行（v3 规格 D6）。
+type QuizReview = { href: string; label: string; station?: number };
+type QuizItem = { id: string; question: string; options: string[]; answer: number; explanation: string; review: QuizReview };
+
+const quizData: QuizItem[] = [
   {
     id: "q1",
     question: "「模型」和「Agent」最关键的区别是什么？",
@@ -10,86 +17,183 @@ const quizData = [
       "Agent 是模型的另一个商标名称",
     ],
     answer: 1,
-    explanation: "模型一次只做「收到输入 → 生成输出」；Agent 在外面套了一个循环：调用工具、把结果喂回去、决定继续还是停止。",
+    explanation:
+      "模型一次只做「收到输入 → 生成输出」；Agent 在外面套了一个循环：调用工具、把结果喂回去、决定继续还是停止。",
+    review: { href: "#loop-station-4", label: "回跑道第 4 站重看（观察与停止决定）", station: 4 },
   },
   {
     id: "q2",
     question: "API key 最像日常生活中的哪样东西？",
     options: ["一张身份证，证明你是谁", "一把带计费的钥匙：证明身份，且每次开门都按用量扣费", "一张会员卡，免费无限使用"],
     answer: 1,
-    explanation: "API key 证明「调用是你发起的」，费用按实际用量结算；它应该像钥匙一样保管，泄露就要换锁（撤销重发）。",
+    explanation:
+      "API key 证明「调用是你发起的」，费用按实际用量结算；它应该像钥匙一样保管，泄露就要换锁（撤销重发）。",
+    // API key 不在循环跑道的四站里（那是 W3 的主角），错题回到本页的预告段落
+    review: { href: "#api-key-preview", label: "回看「一把带计费的钥匙」预告" },
   },
   {
     id: "q3",
     question: "在课程的 BYO-key 实验页里输入密钥后，密钥会被发送到哪里？",
     options: ["课程的服务器，由课程代为调用", "只存在你的浏览器内存，请求直连模型服务商官方端点", "自动发布到你的 GitHub 仓库"],
     answer: 1,
-    explanation: "这正是「自带密钥 + 浏览器直连」的设计：课程站是静态页面，没有服务器可收密钥；你可以在开发者工具里核实请求去向。",
+    explanation:
+      "这正是「自带密钥 + 浏览器直连」的设计：课程站是静态页面，没有服务器可收密钥；你可以在开发者工具里核实请求去向。",
+    review: { href: "#api-key-preview", label: "回看「一把带计费的钥匙」预告" },
   },
 ];
 ---
 
-<section class="start-quiz" data-start-quiz data-quiz-id="start-1" data-quiz-data={JSON.stringify(quizData)} aria-labelledby="start-quiz-title">
+<section
+  class="start-quiz"
+  data-start-quiz
+  data-quiz-id="start-1"
+  data-start-gate="quiz"
+  data-done="0"
+  data-quiz-data={JSON.stringify(quizData)}
+  aria-labelledby="start-quiz-title"
+>
   <h3 id="start-quiz-title">知识检查</h3>
-  <p>答对全部 3 题即可标记本课完成（保存在你的浏览器本地）。</p>
+  <p>
+    答对全部 3 题，并完成上方的预测题与跑道一圈，本课就会标记完成（保存在你的浏览器本地）。答错可随时重做，错题会给出解释与重看链接。
+  </p>
   <div data-quiz-questions></div>
-  <button type="button" data-quiz-submit>检查答案</button>
+  <div class="quiz-actions">
+    <button type="button" data-quiz-submit>检查答案</button>
+    <button type="button" data-quiz-reset hidden>重做一遍</button>
+  </div>
   <p class="quiz-result" role="status" aria-live="polite" data-quiz-result>尚未作答。</p>
+  <div class="quiz-review" data-quiz-review hidden>
+    <h4>逐题回顾</h4>
+    <ul></ul>
+  </div>
   <noscript>
     <p>知识检查需要 JavaScript。不开启时，可把三道题当作自测题在纸上回答，再对照课文确认。</p>
   </noscript>
 </section>
 
 <script>
-  import { markStartLessonComplete } from "../lib/start-progress.mjs";
+  import {
+    isGateSatisfied,
+    missingGateItems,
+    readStartGate,
+    START_GATE_EVENT,
+  } from "../lib/start-lesson-gate.mjs";
 
   const section = document.querySelector<HTMLElement>("[data-start-quiz]");
-  type QuizItem = { id: string; question: string; options: string[]; answer: number; explanation: string };
+  type QuizItem = {
+    id: string;
+    question: string;
+    options: string[];
+    answer: number;
+    explanation: string;
+    review: { href: string; label: string; station?: number };
+  };
 
   if (section) {
     const items = JSON.parse(section.dataset.quizData ?? "[]") as QuizItem[];
     const container = section.querySelector<HTMLElement>("[data-quiz-questions]");
     const submit = section.querySelector<HTMLButtonElement>("[data-quiz-submit]");
+    const reset = section.querySelector<HTMLButtonElement>("[data-quiz-reset]");
     const result = section.querySelector<HTMLElement>("[data-quiz-result]");
+    const review = section.querySelector<HTMLElement>("[data-quiz-review]");
+    const reviewList = review?.querySelector<HTMLUListElement>("ul");
 
-    items.forEach((item, index) => {      const fieldset = document.createElement("fieldset");
-      const legend = document.createElement("legend");
-      legend.textContent = `${index + 1}. ${item.question}`;
-      fieldset.appendChild(legend);
-      item.options.forEach((option, optionIndex) => {
-        const label = document.createElement("label");
-        const input = document.createElement("input");
-        input.type = "radio";
-        input.name = item.id;
-        input.value = String(optionIndex);
-        input.addEventListener("change", () => {
-          result?.setAttribute("data-answered", "1");
+    const broadcast = () => {
+      section.dispatchEvent(new CustomEvent(START_GATE_EVENT, { bubbles: true }));
+    };
+
+    const renderQuestions = () => {
+      if (!container) return;
+      container.replaceChildren();
+      items.forEach((item, index) => {
+        const fieldset = document.createElement("fieldset");
+        const legend = document.createElement("legend");
+        legend.textContent = `${index + 1}. ${item.question}`;
+        fieldset.appendChild(legend);
+        item.options.forEach((option, optionIndex) => {
+          const label = document.createElement("label");
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = item.id;
+          input.value = String(optionIndex);
+          label.appendChild(input);
+          label.appendChild(document.createTextNode(` ${option}`));
+          fieldset.appendChild(label);
         });
-        label.appendChild(input);
-        label.appendChild(document.createTextNode(` ${option}`));
-        fieldset.appendChild(label);
+        container.appendChild(fieldset);
       });
-      container?.appendChild(fieldset);
+    };
+    renderQuestions();
+
+    const renderReview = (outcomes: boolean[]) => {
+      if (!review || !reviewList) return;
+      reviewList.replaceChildren();
+      outcomes.forEach((correct, index) => {
+        const item = items[index];
+        const li = document.createElement("li");
+        const verdict = document.createElement("p");
+        verdict.textContent = `第 ${index + 1} 题 ${correct ? "✓ 正确。" : "✗ 没对。"}`;
+        li.appendChild(verdict);
+        if (!correct) {
+          const explain = document.createElement("p");
+          explain.textContent = item.explanation;
+          li.appendChild(explain);
+          const link = document.createElement("a");
+          link.href = item.review.href;
+          link.textContent = item.review.label;
+          if (typeof item.review.station === "number") {
+            // AgentLoopTrack 监听该属性：点击后跑道直接跳到对应站点
+            link.dataset.gotoStation = String(item.review.station);
+          }
+          li.appendChild(link);
+        }
+        reviewList.appendChild(li);
+      });
+      review.hidden = false;
+    };
+
+    reset?.addEventListener("click", () => {
+      if (!result || !review) return;
+      renderQuestions();
+      review.hidden = true;
+      section.setAttribute("data-done", "0");
+      if (reset) reset.hidden = true;
+      result.textContent = "已重置。重新作答后再点「检查答案」。";
+      broadcast();
     });
 
     submit?.addEventListener("click", () => {
-      if (!result) return;
+      if (!result || !reset) return;
+      const unanswered = items.filter(
+        (item) => !section.querySelector<HTMLInputElement>(`input[name="${item.id}"]:checked`),
+      );
+      if (unanswered.length > 0) {
+        result.textContent = `还有 ${unanswered.length} 题未作答，全部作答后再检查。`;
+        return;
+      }
+      const outcomes: boolean[] = [];
       let correct = 0;
-      const explanations: string[] = [];
-      items.forEach((item, itemIndex) => {
+      items.forEach((item) => {
         const selected = section.querySelector<HTMLInputElement>(`input[name="${item.id}"]:checked`);
-        if (selected && Number(selected.value) === item.answer) {
-          correct += 1;
-        } else {
-          explanations.push(`第 ${itemIndex + 1} 题没对：${item.explanation}`);
-        }
+        const isCorrect = selected !== null && Number(selected.value) === item.answer;
+        outcomes.push(isCorrect);
+        if (isCorrect) correct += 1;
       });
+      renderReview(outcomes);
+      reset.hidden = false;
+
       if (correct === items.length) {
-        result.textContent = `全部正确（${correct}/${items.length}）！本课已在你的浏览器中标记为完成。`;
-        // 本地存储不可用时（隐私模式等）由共享模块静默降级，页面反馈不受影响
-        markStartLessonComplete(section.dataset.quizId ?? "start-1");
+        // 先上报再汇总：AgentLoopTrack 的完成条件清单在事件里同步刷新
+        section.setAttribute("data-done", "1");
+        broadcast();
+        const state = readStartGate(document);
+        result.textContent = isGateSatisfied(state)
+          ? `全部正确（${correct}/${items.length}）！三项完成条件已满足：本课已在你的浏览器中标记为完成。`
+          : `全部正确（${correct}/${items.length}）！知识检查通过。还差：${missingGateItems(state).join("、")}（见上方「本课完成条件」）。`;
       } else {
-        result.textContent = `答对 ${correct}/${items.length}。${explanations.join(" ")}`;
+        section.setAttribute("data-done", "0");
+        broadcast();
+        result.textContent = `答对 ${correct}/${items.length}。逐题解释在下方回顾里，可点「重做一遍」再来。`;
       }
     });
   }
@@ -99,6 +203,12 @@ const quizData = [
   .start-quiz { border: 1px solid var(--sl-color-gray-5); border-radius: 8px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
   .start-quiz fieldset { display: grid; gap: 0.35rem; margin: 0.75rem 0; }
   .start-quiz label { display: block; min-height: 44px; padding: 0.5rem; }
+  .quiz-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
   .start-quiz button { min-height: 44px; padding: 0.5rem 1.25rem; cursor: pointer; }
   .quiz-result { min-height: 1.5rem; }
+  .quiz-review[hidden] { display: none; }
+  .quiz-review ul { list-style: none; padding: 0; display: grid; gap: 0.75rem; }
+  .quiz-review li { border: 1px solid var(--sl-color-gray-5); border-radius: 6px; padding: 0.6rem 0.8rem; }
+  .quiz-review p { margin: 0.2rem 0; }
+  .start-quiz :is(button, a):focus-visible { outline: 2px solid var(--sl-color-accent); outline-offset: 2px; }
 </style>

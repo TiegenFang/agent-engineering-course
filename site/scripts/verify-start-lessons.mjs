@@ -64,12 +64,30 @@ const run = async () => {
   const browser = await chromium.launch();
 
   try {
-    // W1：知识检查全对后给出完成反馈
+    // W1：预测作答 + 跑道跑一圈 + 知识检查全对后，完成判定三项齐活并落盘
     const w1 = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     await w1.goto(`${baseUrl}/start-1-what-is-agent/`);
     await w1.waitForSelector("[data-start-quiz]");
     const questionCount = await w1.locator("[data-quiz-questions] fieldset").count();
     assert.equal(questionCount, 3, "W1 应渲染 3 道知识检查题");
+    // 预测题：两题各选一项后提交（对错不设门槛，但必须作答）
+    const predictCount = await w1.locator("[data-predict-questions] fieldset").count();
+    assert.equal(predictCount, 2, "W1 应有 2 道跑前预测题");
+    for (let i = 0; i < predictCount; i += 1) {
+      await w1.locator("[data-predict-questions] fieldset").nth(i).locator("input").first().check();
+    }
+    await w1.click("[data-predict-submit]");
+    await w1.waitForFunction(() =>
+      document.querySelector("[data-predict-result]")?.textContent?.includes("跑道已解锁"),
+    );
+    // 跑道：点击推进，完整到达全部四站（1→2→3→4）
+    for (let i = 0; i < 4; i += 1) {
+      await w1.click("[data-track-next]");
+    }
+    await w1.waitForFunction(() =>
+      document.querySelector("[data-track-status]")?.textContent?.includes("跑完一圈"),
+    );
+    // 知识检查：3 题全对后，三项完成条件满足
     const answers = ["1", "1", "1"];
     for (const [index, value] of answers.entries()) {
       await w1.locator(`[data-start-quiz] fieldset`).nth(index).locator(`input[value="${value}"]`).check();
@@ -78,6 +96,9 @@ const run = async () => {
     await w1.waitForFunction(() =>
       document.querySelector("[data-quiz-result]")?.textContent?.includes("全部正确"),
     );
+    // 完成判定落盘：三项条件满足后 start-1 写入本地进度
+    const stored = await w1.evaluate(() => localStorage.getItem("course-start-progress"));
+    assert.match(stored ?? "", /"start-1":true/, "三项完成条件满足后应写入 start-1 完成记录");
     await w1.close();
 
     // W3：离线演示模式发送后返回本地预置回复，且页面零网络请求
@@ -159,7 +180,7 @@ const run = async () => {
     assert.equal(homeRequests.length, 0, "首页加载不得发出外部网络请求");
     await home.close();
 
-    console.log("Start lessons browser verification passed: quiz, offline BYO mode, case library, W2 rewrite, W4 bridge, progress wizard");
+    console.log("Start lessons browser verification passed: W1 predictions + loop track + quiz redo gate, offline BYO mode, case library, W2 rewrite, W4 bridge, progress wizard");
   } finally {
     await browser.close();
     await stopPreview();

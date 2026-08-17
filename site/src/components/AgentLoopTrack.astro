@@ -1,0 +1,492 @@
+---
+// 网页端起步章 W1 的「Agent 循环跑道」交互（V3-4）：跑前预测题（先猜后看）+
+// 点击推进的四站环跑道（小循姿态随站点变化）+ 本课完成条件清单。
+// 插画边界遵循 ADR-0009（只解释概念、不模拟产品 UI；小循只做向导），
+// 设计语言遵循 docs/design/v3-illustration-design-spec.md（点击推进、静态等价物、
+// prefers-reduced-motion 分帧、aria-live 播报、44px 触摸基线）。
+// 完成判定（v3 规格 D6）：预测题已作答 + 跑道到达过全部四站 + 知识检查 3 题全对，
+// 三项经 site/src/lib/start-lesson-gate.mjs 汇总，全部满足时经共享进度模块写 start-1。
+// 本组件与 StartQuiz 同页联动：StartQuiz 通过 data-start-gate="quiz" + gate 事件参与判定。
+import { startGateLabels } from "../lib/start-lesson-gate.mjs";
+import Mascot from "./mascot/Mascot.astro";
+import { mascotPoses, type MascotPose } from "./mascot/poses";
+import Cast from "./mascot/Cast.astro";
+
+const poseLabel = (pose: MascotPose) => mascotPoses.find((p) => p.value === pose)?.label ?? pose;
+
+type PredictionItem = {
+  id: string;
+  question: string;
+  options: string[];
+  answer: number;
+  explanation: string;
+};
+
+// 预测题是理解检查点：只要求作答，不要求答对（v3 规格 W1 行）。
+const predictions: PredictionItem[] = [
+  {
+    id: "loop-p1",
+    question: "只把一个模型接上对话窗口，它会自己判断「任务做完了」然后停下来吗？",
+    options: [
+      "会——模型每生成一段话，都会自己检查任务是否完成",
+      "不会——模型只做「收到输入 → 生成输出」，一步就结束；要不要继续，由外面的循环决定",
+    ],
+    answer: 1,
+    explanation:
+      "模型是一台「输入换输出」的引擎：没有目标、不检查完成度。「继续跑还是停下」是 Agent 循环第 4 站替它做的决定——跑到那一站，你会看到小循举旗。",
+  },
+  {
+    id: "loop-p2",
+    question: "Agent 每走一步，靠什么决定下一步做什么？",
+    options: [
+      "靠事先写死的步骤清单，一步都不能变",
+      "靠观察上一步的结果：工具返回了什么，就据此决定继续、调整还是停止",
+      "靠随机猜——反正每一步模型都会重新开始",
+    ],
+    answer: 1,
+    explanation:
+      "循环的第 3、4 站是关键：工具执行的结果会喂回给模型，模型据此想出下一步。写死的清单不看结果，随机猜没有目标——「边看结果边调整」的才是 Agent。",
+  },
+];
+
+type StationItem = {
+  n: number;
+  name: string;
+  pose: MascotPose;
+  caption: string;
+  body: string;
+};
+
+// 四站解释为课程原创普通话文案，与正文概念一一对应：
+// 模型 vs Agent（第 2/3 站）、循环（第 1→4 站）、工具（第 3 站）、停止条件（第 4 站）。
+const stations: StationItem[] = [
+  {
+    n: 1,
+    name: "收到输入",
+    pose: "puzzled",
+    caption: "一段新的输入到了，先弄清这一步要解决什么。",
+    body: "循环的每一圈都从一段输入开始：可能是你最初交代的目标，也可能是上一圈工具带回来的结果。注意，输入只是一段文字——模型不会主动来问你缺什么，所以目标交代得越清楚，后面每一圈就越少跑偏（把话说清楚正是 W2 要练的功夫）。",
+  },
+  {
+    n: 2,
+    name: "生成输出",
+    pose: "insight",
+    caption: "想出下一步了：先这样回答，或者请工具帮个忙。",
+    body: "模型读到输入，生成这一圈的输出。输出只有两种：一段回答文字，或一次「请帮我调用某个工具」的请求。模型只负责「想」——它是引擎，不是整辆车：自己不会查网页、不会改文件，只能把想做的动作写成请求，交给下一站。",
+  },
+  {
+    n: 3,
+    name: "调用工具",
+    pose: "effort",
+    caption: "动手的环节到了——这一步真正干活的是工具。",
+    body: "真正动手的是工具：查网页、读写文件、跑命令、调接口。工具在模型外面，由 Agent 的循环程序负责执行，执行结果再变回文字。这一站正是「模型」和「Agent」的分水岭：会「请求」用工具的是模型；真的把工具跑起来、拿到结果的，才是 Agent。",
+  },
+  {
+    n: 4,
+    name: "观察结果，决定继续或停止",
+    pose: "done",
+    caption: "检查结果：达标就举旗停止，没达标就再跑一圈。",
+    body: "一圈跑完，Agent 要看着结果做决定：目标没达成，就带着结果回到第 1 站再跑一圈；停止条件满足了——任务完成、步数或预算用完、再试也没有新进展——就举旗停下。模型自己不会停：「什么时候算完」这个判断是循环替它做的，也正是预测题第 1 题的答案。",
+  },
+];
+
+// 客户端状态机只需要站点编号与名称；完整解释由服务端渲染（noscript 亦可读）。
+const stationsMeta = stations.map(({ n, name }) => ({ n, name }));
+const predictionsMeta = predictions.map(({ id, answer }) => ({ id, answer }));
+---
+
+<section
+  class="loop-track"
+  data-agent-loop-track
+  data-lesson-id="start-1"
+  data-stations={JSON.stringify(stationsMeta)}
+  data-predictions={JSON.stringify(predictionsMeta)}
+  aria-labelledby="loop-track-title"
+>
+  <h3 id="loop-track-title">先猜后看：预测题与循环跑道</h3>
+  <p>
+    下面分两步：先答 2 道预测题（猜错完全没关系，也不影响完成），再点击推进环形跑道、完整跑一圈 Agent 循环。
+    跑道每停一站，小循都会换一个姿势，并给出这一站的普通话解释。
+  </p>
+
+  <div class="loop-predict" data-start-gate="predict" data-done="0">
+    <h4>跑前预测（2 题）</h4>
+    <p>先凭直觉选——答案会在提交后揭晓。预测不要求答对，但每题都必须作答。</p>
+    <div data-predict-questions>
+      {
+        predictions.map((item, index) => (
+          <fieldset>
+            <legend>{index + 1}. {item.question}</legend>
+            {item.options.map((option, optionIndex) => (
+              <label>
+                <input type="radio" name={item.id} value={String(optionIndex)} />
+                {option}
+              </label>
+            ))}
+            <p class="predict-feedback" data-predict-feedback hidden>
+              <strong data-predict-verdict>——</strong>
+              <span>{item.explanation}</span>
+            </p>
+          </fieldset>
+        ))
+      }
+    </div>
+    <button type="button" data-predict-submit>提交预测，解锁跑道</button>
+    <p class="predict-result" role="status" aria-live="polite" data-predict-result>尚未作答。</p>
+    <noscript>
+      <p>预测题需要 JavaScript。不开启时，可把两题当作自测题先在心里猜一个答案，再按 1→2→3→4 的顺序阅读下方四站解释自行验证。</p>
+    </noscript>
+  </div>
+
+  <div class="loop-track-area" data-start-gate="track" data-done="0">
+    <h4>循环跑道：点击推进</h4>
+    <div class="track-stage">
+      <div class="track-visual">
+        <Cast
+          role="track"
+          size={300}
+          ariaLabel="环跑道插画：闭环轨道上的四个编号站点，行进方向为 1 收到输入 → 2 生成输出 → 3 调用工具 → 4 观察结果并决定继续或停止"
+        />
+        <span class="track-marker" data-track-marker hidden></span>
+      </div>
+      <ol class="track-legend">
+        {
+          stations.map((station) => (
+            <li id={`loop-station-${station.n}`} data-station-legend={station.n}>
+              <span class="legend-name">{station.n} {station.name}</span>
+              <span class="legend-state" data-legend-state>
+                未到
+              </span>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+    <div class="track-controls">
+      <button type="button" data-track-prev disabled>上一站</button>
+      <button type="button" data-track-next disabled>出发：到第 1 站（收到输入）</button>
+    </div>
+    <p class="track-status" role="status" aria-live="polite" data-track-status>
+      跑道等待出发：先提交上方预测题。
+    </p>
+    <div class="station-panels" data-station-panels aria-live="polite">
+      {
+        stations.map((station) => (
+          <article class="station-panel" data-station-panel={station.n}>
+            <figure class="station-mascot">
+              <Mascot pose={station.pose} size={96} />
+              <figcaption>小循（{poseLabel(station.pose)}）</figcaption>
+            </figure>
+            <div class="station-text">
+              <h5 class="station-title">第 {station.n} 站 · {station.name}</h5>
+              <p>{station.body}</p>
+              <p class="station-caption">小循说：「{station.caption}」</p>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+    <noscript>
+      <p>
+        跑道交互需要 JavaScript。不开启时，上方四个站点的解释就是完整的分步文字说明：按 1 收到输入 → 2 生成输出 → 3 调用工具 → 4 观察结果并决定继续或停止 的顺序阅读即可。
+      </p>
+    </noscript>
+  </div>
+
+  <div class="loop-gate" data-gate>
+    <h4>本课完成条件</h4>
+    <ul class="gate-list">
+      <li data-gate-item="predict">
+        <span class="gate-state" data-gate-state>○ 未满足</span>
+        {startGateLabels.predict}
+      </li>
+      <li data-gate-item="track">
+        <span class="gate-state" data-gate-state>○ 未满足</span>
+        {startGateLabels.track}
+      </li>
+      <li data-gate-item="quiz">
+        <span class="gate-state" data-gate-state>○ 未满足</span>
+        {startGateLabels.quiz}
+      </li>
+    </ul>
+    <p class="gate-result" role="status" aria-live="polite" data-gate-result>
+      三项条件都满足后，本课自动标记为完成（保存在你的浏览器本地）。
+    </p>
+    <noscript>
+      <p>完成进度的记录与展示需要 JavaScript。不开启时，可按上方顺序完成阅读与自测。</p>
+    </noscript>
+  </div>
+</section>
+
+<script>
+  import { markStartLessonComplete, readStartProgress } from "../lib/start-progress.mjs";
+  import {
+    countGateDone,
+    isGateSatisfied,
+    missingGateItems,
+    readStartGate,
+    START_GATE_EVENT,
+  } from "../lib/start-lesson-gate.mjs";
+
+  const section = document.querySelector<HTMLElement>("[data-agent-loop-track]");
+  type StationMeta = { n: number; name: string };
+  type PredictionMeta = { id: string; answer: number };
+
+  if (section) {
+    const stationsMeta = JSON.parse(section.dataset.stations ?? "[]") as StationMeta[];
+    const predictionsMeta = JSON.parse(section.dataset.predictions ?? "[]") as PredictionMeta[];
+    const stationName = (n: number) => stationsMeta.find((s) => s.n === n)?.name ?? "";
+
+    const predictSection = section.querySelector<HTMLElement>('[data-start-gate="predict"]');
+    const predictSubmit = section.querySelector<HTMLButtonElement>("[data-predict-submit]");
+    const predictResult = section.querySelector<HTMLElement>("[data-predict-result]");
+    const predictFeedbacks = Array.from(
+      section.querySelectorAll<HTMLElement>("[data-predict-feedback]"),
+    );
+
+    const trackSection = section.querySelector<HTMLElement>('[data-start-gate="track"]');
+    const prevButton = section.querySelector<HTMLButtonElement>("[data-track-prev]");
+    const nextButton = section.querySelector<HTMLButtonElement>("[data-track-next]");
+    const trackStatus = section.querySelector<HTMLElement>("[data-track-status]");
+    const marker = section.querySelector<HTMLElement>("[data-track-marker]");
+    const panels = section.querySelector<HTMLElement>("[data-station-panels]");
+    const stationPanels = Array.from(
+      section.querySelectorAll<HTMLElement>("[data-station-panel]"),
+    );
+    const legendStates = Array.from(section.querySelectorAll<HTMLElement>("[data-legend-state]"));
+
+    const gateItems: Record<string, HTMLElement | null> = {
+      predict: section.querySelector<HTMLElement>('[data-gate-item="predict"]'),
+      track: section.querySelector<HTMLElement>('[data-gate-item="track"]'),
+      quiz: section.querySelector<HTMLElement>('[data-gate-item="quiz"]'),
+    };
+    const gateResult = section.querySelector<HTMLElement>("[data-gate-result]");
+
+    const lessonId = section.dataset.lessonId ?? "start-1";
+    const visited = new Set<number>();
+    let step = 0;
+    let predictAnswered = false;
+    const hasStoredCompletion = () =>
+      (readStartProgress() as Record<string, boolean>)[lessonId] === true;
+    let markedThisSession = hasStoredCompletion();
+    let persisted = markedThisSession;
+
+    const broadcast = () => {
+      section.dispatchEvent(new CustomEvent(START_GATE_EVENT, { bubbles: true }));
+    };
+
+    const refreshGate = () => {
+      if (!gateResult) return;
+      const state = readStartGate(document);
+      for (const [kind, item] of Object.entries(gateItems)) {
+        const stateEl = item?.querySelector<HTMLElement>("[data-gate-state]");
+        if (stateEl) stateEl.textContent = state[kind] ? "✓ 已满足" : "○ 未满足";
+        item?.classList.toggle("is-done", state[kind]);
+      }
+      if (isGateSatisfied(state)) {
+        if (!markedThisSession) {
+          persisted = markStartLessonComplete(lessonId);
+          markedThisSession = true;
+        }
+        gateResult.textContent = persisted || hasStoredCompletion()
+          ? "三项完成条件全部满足！本课已在你的浏览器中标记为完成。"
+          : "三项完成条件全部满足！（浏览器存储不可用，完成状态未能保存，但页面反馈不受影响。）";
+      } else {
+        const lead = markedThisSession ? "本课此前已标记完成（本地记录保留）。" : "";
+        gateResult.textContent = `${lead}完成进度 ${countGateDone(state)}/3，还差：${missingGateItems(state).join("、")}。`;
+      }
+    };
+
+    const setLegendStates = () => {
+      legendStates.forEach((stateEl) => {
+        const item = stateEl.closest<HTMLElement>("[data-station-legend]");
+        const n = Number(item?.dataset.stationLegend ?? 0);
+        stateEl.textContent = n === step ? (visited.has(n) ? "当前 · 已到" : "当前") : visited.has(n) ? "已到" : "未到";
+        if (item) item.classList.toggle("is-current", n === step);
+      });
+    };
+
+    const setStep = (n: number) => {
+      step = Math.min(4, Math.max(0, n));
+      if (step > 0) visited.add(step);
+
+      if (marker) {
+        if (step === 0) {
+          marker.setAttribute("hidden", "");
+        } else {
+          marker.removeAttribute("hidden");
+          marker.dataset.station = String(step);
+        }
+      }
+      stationPanels.forEach((panel) => {
+        panel.classList.toggle("is-active", Number(panel.dataset.stationPanel) === step);
+      });
+
+      if (prevButton) {
+        prevButton.disabled = !predictAnswered || step === 0;
+        prevButton.textContent =
+          step === 1 ? "回到起点" : step > 1 ? `上一站：第 ${step - 1} 站（${stationName(step - 1)}）` : "上一站";
+      }
+      if (nextButton) {
+        nextButton.disabled = !predictAnswered;
+        nextButton.textContent =
+          step === 0
+            ? `出发：到第 1 站（${stationName(1)}）`
+            : step < 4
+              ? `下一站：第 ${step + 1} 站（${stationName(step + 1)}）`
+              : "再跑一圈：回第 1 站";
+      }
+
+      let statusText =
+        step === 0
+          ? predictAnswered
+            ? "跑道已解锁。点击「出发」到第 1 站。"
+            : "跑道等待出发：先提交上方预测题。"
+          : `第 ${step} 站，${stationName(step)}。已到过 ${visited.size}/4 站。`;
+      if (visited.size === 4) {
+        if (trackSection?.getAttribute("data-done") !== "1") {
+          trackSection?.setAttribute("data-done", "1");
+          statusText += "跑完一圈：四个站点都到过了，这一条件已满足。";
+          refreshGate();
+          broadcast();
+        } else if (step === 4) {
+          statusText += "跑完一圈：四个站点都到过了。";
+        }
+      }
+      if (trackStatus) trackStatus.textContent = statusText;
+      setLegendStates();
+    };
+
+    // 知识检查错题里的「回跑道第 N 站重看」链接：跳到对应站点（锚点滚动由浏览器完成）
+    document.addEventListener("click", (event) => {
+      const target =
+        event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[data-goto-station]") : null;
+      if (!target) return;
+      const n = Number(target.dataset.gotoStation);
+      if (Number.isInteger(n) && n >= 1 && n <= 4) setStep(n);
+    });
+
+    predictSubmit?.addEventListener("click", () => {
+      if (!predictResult || !predictSection) return;
+      const unanswered = predictionsMeta.filter(
+        (item) => !section.querySelector<HTMLInputElement>(`input[name="${item.id}"]:checked`),
+      );
+      if (unanswered.length > 0) {
+        predictResult.textContent = `还有 ${unanswered.length} 题未作答：每题先选一项（猜错不影响完成）。`;
+        return;
+      }
+      predictionsMeta.forEach((item, index) => {
+        const selected = section.querySelector<HTMLInputElement>(`input[name="${item.id}"]:checked`);
+        const correct = selected !== null && Number(selected.value) === item.answer;
+        const feedback = predictFeedbacks[index];
+        if (feedback) {
+          const verdict = feedback.querySelector<HTMLElement>("[data-predict-verdict]");
+          if (verdict) {
+            verdict.textContent = correct ? "猜对了！" : "猜错了——没关系，这正是跑道的用处。";
+          }
+          feedback.hidden = false;
+        }
+      });
+      predictAnswered = true;
+      predictSection.setAttribute("data-done", "1");
+      predictResult.textContent = "预测已提交（对错不计入完成门槛）。跑道已解锁：点击「出发」开始跑一圈。";
+      setStep(step);
+      refreshGate();
+      broadcast();
+    });
+
+    nextButton?.addEventListener("click", () => {
+      setStep(step === 4 ? 1 : step + 1);
+    });
+    prevButton?.addEventListener("click", () => {
+      setStep(step === 0 ? 0 : step - 1);
+    });
+
+    document.addEventListener(START_GATE_EVENT, refreshGate);
+
+    // 启用 JS 分帧模式：隐藏非当前站点（无 JS 时四站解释全部可见，即静态等价物）
+    panels?.classList.add("loop-active-mode");
+    setStep(0);
+    refreshGate();
+  }
+</script>
+
+<style>
+  .loop-track { border: 1px solid var(--sl-color-gray-5); border-radius: 8px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
+  .loop-track h4 { margin: 1.4rem 0 0.4rem; }
+  .loop-track p { max-width: 60ch; }
+
+  /* 预测题 */
+  .loop-predict fieldset { display: grid; gap: 0.35rem; margin: 0.75rem 0; }
+  .loop-predict label { display: block; min-height: 44px; padding: 0.5rem; cursor: pointer; }
+  .predict-feedback { border-top: 1px dashed var(--sl-color-gray-5); margin: 0.4rem 0 0; padding-top: 0.5rem; font-size: 0.95rem; }
+  .predict-feedback[hidden] { display: none; }
+
+  /* 跑道 */
+  .track-stage { display: grid; gap: 0.9rem; justify-items: start; margin: 0.75rem 0; }
+  .track-visual { position: relative; display: inline-block; max-width: 100%; }
+  .track-visual :global(svg) { max-width: 100%; height: auto; }
+  .track-marker {
+    display: block;
+    position: absolute;
+    width: 38px;
+    height: 38px;
+    border: 3px solid var(--sl-color-accent);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .track-marker[hidden] { display: none; }
+  .track-marker[data-station="1"] { left: 50%; top: 15.4%; }
+  .track-marker[data-station="2"] { left: 91.8%; top: 50%; }
+  .track-marker[data-station="3"] { left: 50%; top: 84.6%; }
+  .track-marker[data-station="4"] { left: 8.2%; top: 50%; }
+  .track-legend { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0; margin: 0; list-style: none; }
+  .track-legend li {
+    display: inline-flex; align-items: center; gap: 0.45rem;
+    border: 1px solid var(--sl-color-gray-5); border-radius: 6px;
+    padding: 0.25rem 0.55rem; font-size: 0.9rem; min-height: 34px;
+  }
+  .track-legend li.is-current { border-color: var(--sl-color-accent); }
+  .legend-state { font-size: 0.8rem; color: var(--sl-color-gray-2); }
+  .track-controls { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0.5rem 0; }
+  .loop-track button { min-height: 44px; padding: 0.5rem 1.25rem; cursor: pointer; }
+  .loop-track button[disabled] { cursor: not-allowed; opacity: 0.6; }
+  .track-status { min-height: 1.5rem; }
+
+  /* 站点分帧面板：JS 模式只显示当前站，无 JS 时四站全可见（noscript 静态等价物） */
+  .station-panels { margin-top: 0.6rem; }
+  .station-panels.loop-active-mode .station-panel { display: none; }
+  .station-panels.loop-active-mode .station-panel.is-active { display: grid; }
+  .station-panel { display: grid; grid-template-columns: minmax(96px, auto) 1fr; gap: 0.4rem 1.1rem; align-items: start; border: 1px solid var(--sl-color-gray-5); border-radius: 8px; padding: 0.9rem 1rem; margin: 0.5rem 0; }
+  .station-mascot { margin: 0; display: grid; justify-items: center; gap: 0.3rem; }
+  .station-mascot figcaption { font-size: 0.85rem; color: var(--sl-color-gray-2); }
+  .station-title { margin: 0 0 0.3rem; font-size: 1.05rem; }
+  .station-text p { margin: 0.3rem 0; }
+  .station-caption { font-size: 0.92rem; color: var(--sl-color-gray-2); }
+
+  /* 完成条件清单 */
+  .gate-list { list-style: none; padding: 0; margin: 0.5rem 0; display: grid; gap: 0.4rem; }
+  .gate-list li { display: flex; align-items: center; gap: 0.6rem; min-height: 34px; }
+  .gate-state { font-weight: 700; min-width: 5.2em; }
+  .gate-list li.is-done .gate-state { color: var(--sl-color-accent); }
+  .gate-result { min-height: 1.5rem; }
+
+  .loop-track :is(button, a):focus-visible { outline: 2px solid var(--sl-color-accent); outline-offset: 2px; }
+
+  @media (max-width: 34rem) {
+    .station-panel { grid-template-columns: 1fr; }
+    .station-mascot { justify-items: start; }
+  }
+
+  /* 动效仅在「无减少动态偏好」时存在；reduced-motion 下为纯静态分帧 */
+  @media (prefers-reduced-motion: no-preference) {
+    .station-panels .station-panel.is-active { animation: loop-panel-in 180ms ease-out; }
+    .track-marker { transition: left 260ms ease, top 260ms ease; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .track-marker { transition: none; }
+    .station-panels .station-panel.is-active { animation: none; }
+  }
+  @keyframes loop-panel-in { from { opacity: 0; } to { opacity: 1; } }
+</style>
