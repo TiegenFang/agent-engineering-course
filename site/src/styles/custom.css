@@ -473,6 +473,72 @@
   margin-block: 0.5rem 0;
 }
 
+/* 「我的进度」统一视图的起步章半区（V3-7）：复用 evidence-loop 的容器与控件，
+   只补四课状态列表、匿名摘要提示与未开始引导的样式。 */
+.start-progress-panel__lessons {
+  display: grid;
+  gap: 0.5rem;
+  margin-block: 1.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+.start-progress-panel__lessons li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  background: var(--sl-color-bg);
+}
+
+.start-progress-panel__lessons a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--sl-color-accent);
+  font-weight: 700;
+}
+
+.start-progress-panel__state {
+  flex: 0 0 auto;
+  color: var(--sl-color-gray-2);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.start-progress-panel__state[data-state='done'] {
+  color: var(--sl-color-accent);
+  font-weight: 700;
+}
+
+.start-progress-panel__summary {
+  border-inline-start: 0.2rem solid var(--sl-color-gray-4);
+  padding-inline-start: 0.75rem;
+  color: var(--sl-color-gray-2);
+  font-size: 0.9rem;
+}
+
+.start-progress-panel__guidance a {
+  color: var(--sl-color-accent);
+  font-weight: 700;
+}
+
+.start-progress-panel__lessons a:focus-visible,
+.start-progress-panel__guidance a:focus-visible {
+  outline: 0.2rem solid var(--sl-color-accent-high);
+  outline-offset: 0.15rem;
+}
+
+@media (max-width: 760px) {
+  .start-progress-panel__lessons li {
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+}
+
 .mcp-discovery-lab {
   margin-block: 2rem;
   border: 1px solid var(--sl-color-gray-5);

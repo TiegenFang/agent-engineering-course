@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { access, readFile, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -252,7 +253,7 @@ const run = async () => {
     assert.ok(await w4.locator("[data-bridge-done]").isVisible(), "完成后应显示画风衔接完成区");
     await w4.close();
 
-    // 首页：进度向导渲染且零网络
+    // 首页：进度向导渲染且零网络；第 0 步包含起步章衔接语
     const home = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     const homeRequests = [];
     home.on("request", (request) => {
@@ -262,10 +263,164 @@ const run = async () => {
     await home.goto(`${baseUrl}/`);
     await home.waitForSelector("[data-progress-wizard]");
     assert.ok(await home.locator("[data-progress-wizard]").isVisible());
+    const stepZeroText = await home.locator('[data-wizard-step="0"]').innerText();
+    assert.match(stepZeroText, /W1–W4 网页端起步章/, "向导第 0 步应包含起步章衔接语");
+    assert.match(stepZeroText, /先回首页完成起步章/);
     assert.equal(homeRequests.length, 0, "首页加载不得发出外部网络请求");
     await home.close();
 
-    console.log("Start lessons browser verification passed: W1 predictions + loop track + quiz redo gate, W3 request journey (offline sample + completion), case library, W2 rewrite, W4 fork map four-key gate, progress wizard");
+    // 首页：统一「我的进度」视图——起步章面板与 EvidenceLoop 同区呈现；
+    // 并走完导出 → 清空 → 导入 → 状态恢复的完整携带往返。
+    // storage 事件断言需要两个标签页共享同一浏览器上下文（各自 newPage 会落入独立 context）。
+    const progressContext = await browser.newContext();
+    const progress = await progressContext.newPage();
+    await progress.goto(`${baseUrl}/`);
+    await progress.waitForSelector("[data-start-progress-panel]");
+    await progress.waitForSelector("[data-evidence-loop]");
+    // 未开始：四课未完成 + 「从 W1 开始」引导可见
+    assert.equal(
+      await progress.locator("[data-start-state][data-state='todo']").count(),
+      4,
+      "空进度时四课应全部显示未完成",
+    );
+    assert.ok(await progress.locator("[data-start-guidance]").isVisible(), "空进度时应显示从 W1 开始引导");
+    // 预置四课进度与匿名摘要后刷新页面：页面加载即反映 localStorage
+    await progress.evaluate(() => {
+      localStorage.setItem(
+        "course-start-progress",
+        JSON.stringify({ "start-1": true, "start-2": true, "start-3": true, "start-4": true }),
+      );
+      localStorage.setItem(
+        "course-start-call-summary",
+        JSON.stringify({
+          provider: "openai",
+          model: "gpt-4o-mini",
+          inputTokens: 52,
+          outputTokens: 64,
+          elapsedMs: 1240,
+          at: 1786838400000,
+        }),
+      );
+    });
+    await progress.reload();
+    await progress.waitForSelector("[data-start-progress-panel]");
+    await progress.waitForFunction(() =>
+      document.querySelector("[data-start-panel-status]")?.textContent?.includes("4/4"),
+    );
+    assert.equal(
+      await progress.locator("[data-start-state][data-state='done']").count(),
+      4,
+      "四课完成后应全部显示已完成",
+    );
+    assert.ok(await progress.locator("[data-start-guidance]").isHidden(), "已有进度时引导应隐藏");
+    const summaryHint = await progress.locator("[data-start-summary-hint]").innerText();
+    assert.match(summaryHint, /最近一次真实调用：openai · gpt-4o-mini · 2026-08-16/);
+    // storage 事件：另一标签页清掉进度后，本页无需刷新即回到未完成
+    const otherTab = await progressContext.newPage();
+    await otherTab.goto(`${baseUrl}/`);
+    await otherTab.waitForSelector("[data-start-progress-panel]");
+    await otherTab.evaluate(() => localStorage.removeItem("course-start-progress"));
+    await progress.waitForFunction(
+      () => document.querySelector('[data-start-state="start-1"]')?.textContent?.includes("未完成"),
+      undefined,
+      { timeout: 5000 },
+    );
+    await otherTab.evaluate(() =>
+      localStorage.setItem(
+        "course-start-progress",
+        JSON.stringify({ "start-1": true, "start-2": true, "start-3": true, "start-4": true }),
+      ),
+    );
+    await progress.waitForFunction(
+      () => document.querySelector('[data-start-state="start-1"]')?.textContent?.includes("已完成"),
+      undefined,
+      { timeout: 5000 },
+    );
+    await otherTab.close();
+    // 导出：下载 JSON 文件并核对其形状（只有契约、版本、课节布尔值与摘要六字段）
+    const downloadPromise = progress.waitForEvent("download");
+    await progress.click("[data-export-start]");
+    const download = await downloadPromise;
+    assert.equal(download.suggestedFilename(), "agent-engineering-course-start-progress.json");
+    const exportPath = path.join(tmpdir(), download.suggestedFilename());
+    await download.saveAs(exportPath);
+    const exported = JSON.parse(await readFile(exportPath, "utf8"));
+    assert.equal(exported.contract, "agent-engineering-course/start-progress");
+    assert.equal(exported.contract_version, "1");
+    assert.ok(/^[0-9]+\.[0-9]+\.[0-9]+$/.test(exported.course_version), "导出文件应带课程版本字段");
+    assert.deepEqual(exported.lessons, {
+      "start-1": true,
+      "start-2": true,
+      "start-3": true,
+      "start-4": true,
+    });
+    assert.deepEqual(
+      Object.keys(exported.call_summary).sort(),
+      ["at", "elapsedMs", "inputTokens", "model", "outputTokens", "provider"],
+    );
+    const exportedRaw = await readFile(exportPath, "utf8");
+    assert.ok(!exportedRaw.includes("sk-"), "导出文件不得包含密钥形状内容");
+    assert.ok(!exportedRaw.includes("message"), "导出文件不得包含消息正文字段");
+    // 清空：原生 confirm 确认后两个本地键都消失、界面回到未开始
+    progress.once("dialog", (dialog) => dialog.accept());
+    await progress.click("[data-clear-start]");
+    await progress.waitForFunction(() =>
+      document.querySelector("[data-start-panel-status]")?.textContent?.includes("已清空"),
+    );
+    const clearedKeys = await progress.evaluate(() => [
+      localStorage.getItem("course-start-progress"),
+      localStorage.getItem("course-start-call-summary"),
+    ]);
+    assert.deepEqual(clearedKeys, [null, null], "清空后两个本地存储键都应为空");
+    assert.ok(await progress.locator("[data-start-guidance]").isVisible(), "清空后应回到从 W1 开始引导");
+    // 导入：导出的文件完整恢复四课状态与匿名摘要
+    await progress.setInputFiles("#start-progress-file", exportPath);
+    await progress.click("[data-import-start]");
+    await progress.waitForFunction(() =>
+      document.querySelector("[data-start-panel-status]")?.textContent?.includes("已导入起步章进度：4/4"),
+    );
+    const restored = await progress.evaluate(() => ({
+      lessons: JSON.parse(localStorage.getItem("course-start-progress") ?? "{}"),
+      summary: JSON.parse(localStorage.getItem("course-start-call-summary") ?? "null"),
+    }));
+    assert.deepEqual(restored.lessons, {
+      "start-1": true,
+      "start-2": true,
+      "start-3": true,
+      "start-4": true,
+    });
+    assert.equal(restored.summary.provider, "openai");
+    assert.equal(restored.summary.at, 1786838400000);
+    assert.equal(
+      await progress.locator("[data-start-state][data-state='done']").count(),
+      4,
+      "导入后四课状态应恢复",
+    );
+    assert.match(
+      await progress.locator("[data-start-summary-hint]").innerText(),
+      /最近一次真实调用：openai · gpt-4o-mini · 2026-08-16/,
+    );
+    // 版本不匹配：篡改 course_version 的文件被拒绝，本地状态保持不变
+    const mismatched = { ...exported, course_version: "0.0.0-mismatch" };
+    const mismatchPath = path.join(tmpdir(), "agent-engineering-course-start-progress-mismatch.json");
+    await writeFile(mismatchPath, JSON.stringify(mismatched), "utf8");
+    await progress.setInputFiles("#start-progress-file", mismatchPath);
+    await progress.click("[data-import-start]");
+    await progress.waitForFunction(() =>
+      document.querySelector("[data-start-panel-status]")?.textContent?.includes("拒绝导入"),
+    );
+    assert.match(
+      await progress.locator("[data-start-panel-status]").innerText(),
+      /不兼容的课程版本/,
+    );
+    const afterRefusal = await progress.evaluate(() =>
+      localStorage.getItem("course-start-progress"),
+    );
+    assert.match(afterRefusal ?? "", /"start-1":true/, "版本不匹配被拒后本地进度不得被改动");
+    await progress.close();
+    await progressContext.close();
+
+    console.log("Start lessons browser verification passed: W1 predictions + loop track + quiz redo gate, W3 request journey (offline sample + completion), case library, W2 rewrite, W4 fork map four-key gate, progress wizard, unified progress view with export/clear/import round trip");
   } finally {
     await browser.close();
     await stopPreview();

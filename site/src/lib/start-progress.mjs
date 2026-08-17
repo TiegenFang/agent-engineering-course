@@ -12,6 +12,12 @@
  * W3 persists `{ provider, model, inputTokens, outputTokens, elapsedMs, at }`
  * under a separate key.  The summary is strictly whitelisted to those six
  * fields so API keys and message bodies can never leak into it.
+ *
+ * V3-7 adds portability on top of the same keys: the on-ramp progress plus
+ * the summary can be exported into one versioned JSON envelope, imported in
+ * another browser (same course version only), and cleared on demand.  The
+ * export whitelist is identical to the storage whitelist, and every portability
+ * call degrades silently instead of throwing.
  */
 
 export const START_PROGRESS_STORAGE_KEY = "course-start-progress";
@@ -141,6 +147,162 @@ export function recordStartCallSummary(summary, storage = getStorage()) {
   if (!sanitized || !storage) return false;
   try {
     storage.setItem(START_CALL_SUMMARY_STORAGE_KEY, JSON.stringify(sanitized));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * V3-7 portability: export / import / clear for the on-ramp chapter.
+ *
+ * The export file is a versioned envelope that carries only (1) the lesson
+ * completion booleans and (2) the anonymous call summary.  It is the same
+ * privacy whitelist as localStorage: no keys, no message bodies, no personal
+ * data.  Imports are validated against the current course version exactly
+ * like checker evidence (`evidence-record.mjs`): a mismatched version is
+ * rejected with `incompatible-course-version` and storage stays untouched.
+ * ---------------------------------------------------------------------------
+ */
+
+/** Contract marker written into every on-ramp progress export. */
+export const START_PROGRESS_EXPORT_CONTRACT = "agent-engineering-course/start-progress";
+
+/** Version of the export envelope shape; bumped on breaking changes. */
+export const START_PROGRESS_EXPORT_CONTRACT_VERSION = "1";
+
+/** Download filename used by the homepage panel. */
+export const START_PROGRESS_EXPORT_FILENAME = "agent-engineering-course-start-progress.json";
+
+/** Guard rails so a hostile file cannot flood localStorage with entries. */
+const EXPORT_LESSON_ID_LIMIT = 64;
+const EXPORT_LESSON_COUNT_LIMIT = 64;
+
+/** Error thrown by `parseStartProgressImport`; `code` explains the failure. */
+export class StartProgressPortabilityError extends Error {
+  /**
+   * @param {string} message
+   * @param {string} code
+   */
+  constructor(message, code = "invalid-import") {
+    super(message);
+    this.name = "StartProgressPortabilityError";
+    this.code = code;
+  }
+}
+
+const portabilityFail = (message, code) => {
+  throw new StartProgressPortabilityError(message, code);
+};
+
+/**
+ * Build the portable export payload from local storage.
+ * Returns `{ contract, contract_version, course_version, lessons, call_summary }`;
+ * `lessons` is `{}` and `call_summary` is `null` when storage is unavailable,
+ * missing, or corrupt (silent degradation, same as every reader above).
+ */
+export function buildStartProgressExport(courseVersion, storage = getStorage()) {
+  const lessons = readStartProgress(storage);
+  const callSummary = readStartCallSummary(storage);
+  return {
+    contract: START_PROGRESS_EXPORT_CONTRACT,
+    contract_version: START_PROGRESS_EXPORT_CONTRACT_VERSION,
+    course_version: courseVersion,
+    lessons,
+    call_summary: callSummary,
+  };
+}
+
+/**
+ * Parse and validate an imported on-ramp progress file (string or pre-parsed
+ * object).  Returns `{ lessons, callSummary }` where `lessons` keeps only
+ * `{ lessonId: boolean }` entries and `callSummary` is either the sanitized
+ * six-field summary or `null`.  Throws {@link StartProgressPortabilityError}
+ * with codes `invalid-json`, `unsupported-contract`,
+ * `unsupported-contract-version`, `incompatible-course-version`,
+ * `invalid-import`, or `invalid-call-summary`; storage is never touched here.
+ */
+export function parseStartProgressImport(input, expectedCourseVersion) {
+  let value = input;
+  if (typeof value === "string") {
+    try {
+      value = JSON.parse(value);
+    } catch (error) {
+      portabilityFail(
+        `无法解析 JSON: ${error instanceof Error ? error.message : "格式错误"}`,
+        "invalid-json",
+      );
+    }
+  }
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    portabilityFail("导入内容必须是对象", "invalid-import");
+  }
+  if (value.contract !== START_PROGRESS_EXPORT_CONTRACT) {
+    portabilityFail("不是课程起步章进度文件", "unsupported-contract");
+  }
+  if (value.contract_version !== START_PROGRESS_EXPORT_CONTRACT_VERSION) {
+    portabilityFail("进度文件契约版本不受支持", "unsupported-contract-version");
+  }
+  if (value.course_version !== expectedCourseVersion) {
+    portabilityFail("进度文件来自不兼容的课程版本", "incompatible-course-version");
+  }
+  const rawLessons = value.lessons;
+  if (rawLessons === null || typeof rawLessons !== "object" || Array.isArray(rawLessons)) {
+    portabilityFail("lessons 必须是 { 课节ID: 布尔值 } 对象", "invalid-import");
+  }
+  const entries = Object.entries(rawLessons);
+  if (entries.length > EXPORT_LESSON_COUNT_LIMIT) {
+    portabilityFail(`进度文件包含超过 ${EXPORT_LESSON_COUNT_LIMIT} 条课节记录`, "invalid-import");
+  }
+  const lessons = {};
+  for (const [lessonId, completed] of entries) {
+    if (typeof completed !== "boolean") continue;
+    if (lessonId === "" || lessonId.length > EXPORT_LESSON_ID_LIMIT) continue;
+    lessons[lessonId] = completed;
+  }
+  let callSummary = null;
+  if (value.call_summary !== null && value.call_summary !== undefined) {
+    callSummary = sanitizeStartCallSummary(value.call_summary);
+    if (!callSummary) {
+      portabilityFail("匿名调用摘要字段不符合白名单形状", "invalid-call-summary");
+    }
+  }
+  return { lessons, callSummary };
+}
+
+/**
+ * Restore a parsed import into local storage, overwriting the on-ramp
+ * progress record and the anonymous summary so the round trip through
+ * export → clear → import is exact.  Returns whether both writes were
+ * persisted; `false` means storage was unavailable (silent degradation).
+ */
+export function restoreStartProgress(parsed, storage = getStorage()) {
+  if (!parsed || typeof parsed !== "object") return false;
+  if (!storage) return false;
+  try {
+    storage.setItem(START_PROGRESS_STORAGE_KEY, JSON.stringify(parsed.lessons));
+    if (parsed.callSummary) {
+      storage.setItem(START_CALL_SUMMARY_STORAGE_KEY, JSON.stringify(parsed.callSummary));
+    } else {
+      storage.removeItem(START_CALL_SUMMARY_STORAGE_KEY);
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Remove the on-ramp progress record and the anonymous call summary from
+ * local storage (the user-confirmed "clear my on-ramp progress" action).
+ * Returns whether the removal was persisted.
+ */
+export function clearStartProgress(storage = getStorage()) {
+  if (!storage) return false;
+  try {
+    storage.removeItem(START_PROGRESS_STORAGE_KEY);
+    storage.removeItem(START_CALL_SUMMARY_STORAGE_KEY);
     return true;
   } catch {
     return false;

@@ -1,0 +1,233 @@
+---
+// 「我的进度」统一视图的起步章半区（V3-7）：首页「本地学习记录」区域同呈两段旅程，
+// 本组件承载「网页端起步章」——W1–W4 四课完成状态、W3 匿名调用摘要的存在提示，
+// 以及起步章进度的导出 / 导入 / 清空。进阶线半区由紧随其后的 EvidenceLoop 原样承载。
+// 纯客户端、零网络：状态实时读取 localStorage（页面加载 + storage 事件），导出文件
+// 只含课程版本、课节布尔值与匿名摘要六字段，绝不含密钥、消息正文或个人信息。
+import courseVersion from "../../../course-version.json";
+
+const expectedCourseVersion = courseVersion.course_version;
+const base = import.meta.env.BASE_URL;
+
+// 与 TerminalBridge 的起步章目录保持同一组课节 ID 与链接。
+const startLessons = [
+  { id: "start-1", week: "W1", label: "什么是 Agent", href: `${base}start-1-what-is-agent/` },
+  { id: "start-2", week: "W2", label: "与模型对话的正确姿势", href: `${base}start-2-dialogue-basics/` },
+  { id: "start-3", week: "W3", label: "API key 与真实调用", href: `${base}start-3-api-key-chat/` },
+  { id: "start-4", week: "W4", label: "从网页到终端", href: `${base}start-4-web-to-terminal/` },
+] as const;
+---
+
+<section
+  class="evidence-loop start-progress-panel"
+  data-start-progress-panel
+  data-course-version={expectedCourseVersion}
+  aria-labelledby="start-progress-title"
+>
+  <div class="evidence-loop__heading">
+    <div>
+      <p class="eyebrow">网页端起步章</p>
+      <h2 id="start-progress-title">我的进度：起步章（W1–W4）</h2>
+    </div>
+    <span class="evidence-loop__version">{expectedCourseVersion}</span>
+  </div>
+
+  <p>
+    W1–W4 的完成状态与 W3 的匿名调用摘要只保存在当前浏览器，不上传任何服务器。
+    换电脑或换浏览器时，先在这里「导出起步章进度」拿到 JSON 文件，再到新环境导入；
+    导入会以文件内容<strong>覆盖</strong>本地起步章进度，版本不匹配的文件会被拒绝。
+  </p>
+
+  <noscript>
+    <section class="evidence-loop__noscript" aria-labelledby="start-progress-noscript-title">
+      <h3 id="start-progress-noscript-title">起步章进度携带需要 JavaScript</h3>
+      <p>
+        当前浏览器未启用 JavaScript，因此本区域的导出、导入与清空按钮不会执行，W1–W4 的完成状态也无法从本地记录读取。
+        起步章课文的阅读不受影响；启用 JavaScript 后回到本页，这里会自动显示浏览器保存的进度，无需手动导入。
+      </p>
+    </section>
+  </noscript>
+
+  <ul class="start-progress-panel__lessons" data-start-lessons aria-label="网页端起步章四课完成状态">
+    {
+      startLessons.map((lesson) => (
+        <li data-start-lesson={lesson.id}>
+          <a href={lesson.href}>
+            {lesson.week} · {lesson.label}
+          </a>
+          <span class="start-progress-panel__state" data-start-state={lesson.id} data-state="unknown">
+            未读取
+          </span>
+        </li>
+      ))
+    }
+  </ul>
+
+  <p class="start-progress-panel__summary" data-start-summary-hint hidden></p>
+
+  <p class="start-progress-panel__guidance" data-start-guidance hidden>
+    还没开始？<a href={`${base}start-1-what-is-agent/`}>从 W1 开始</a>——只用浏览器就能完成，无需安装任何工具。
+  </p>
+
+  <div class="evidence-loop__controls">
+    <label for="start-progress-file">选择起步章进度 JSON</label>
+    <input id="start-progress-file" type="file" accept="application/json,.json" />
+    <button type="button" data-import-start>导入选定 JSON</button>
+    <button type="button" data-export-start>导出起步章进度</button>
+    <button type="button" data-clear-start>清空本地起步章进度</button>
+  </div>
+
+  <p class="evidence-loop__status" data-start-panel-status role="status" aria-live="polite">
+    正在读取本地起步章进度。
+  </p>
+
+  <p class="evidence-loop__privacy">
+    导出文件只包含课程版本、每课是否完成的布尔值，以及匿名调用摘要的六个白名单字段（服务商、模型、输入/输出 token、耗时、时间戳）；
+    不含密钥、消息正文或任何可回溯到个人的内容。清空操作有确认步骤，但一旦执行无法恢复。
+  </p>
+</section>
+
+<script>
+  import {
+    START_CALL_SUMMARY_STORAGE_KEY,
+    START_PROGRESS_EXPORT_FILENAME,
+    START_PROGRESS_STORAGE_KEY,
+    StartProgressPortabilityError,
+    buildStartProgressExport,
+    clearStartProgress,
+    parseStartProgressImport,
+    readStartCallSummary,
+    readStartProgress,
+    restoreStartProgress,
+  } from "../lib/start-progress.mjs";
+
+  const root = document.querySelector("[data-start-progress-panel]");
+  if (root instanceof HTMLElement) {
+    const courseVersion = root.dataset.courseVersion ?? "";
+    const fileInput = root.querySelector<HTMLInputElement>("#start-progress-file");
+    const importButton = root.querySelector<HTMLButtonElement>("[data-import-start]");
+    const exportButton = root.querySelector<HTMLButtonElement>("[data-export-start]");
+    const clearButton = root.querySelector<HTMLButtonElement>("[data-clear-start]");
+    const status = root.querySelector<HTMLElement>("[data-start-panel-status]");
+    const guidance = root.querySelector<HTMLElement>("[data-start-guidance]");
+    const summaryHint = root.querySelector<HTMLElement>("[data-start-summary-hint]");
+    const lessonIds = Array.from(root.querySelectorAll<HTMLElement>("[data-start-lesson]")).map(
+      (item) => item.dataset.startLesson ?? "",
+    );
+
+    const setStatus = (message: string, kind = "") => {
+      if (!(status instanceof HTMLElement)) return;
+      status.textContent = message;
+      status.dataset.status = kind;
+    };
+
+    const formatDate = (milliseconds: number) => new Date(milliseconds).toISOString().slice(0, 10);
+
+    const render = () => {
+      const record = readStartProgress();
+      let completed = 0;
+      for (const lessonId of lessonIds) {
+        const state = root.querySelector<HTMLElement>(`[data-start-state="${lessonId}"]`);
+        if (!state) continue;
+        const done = record[lessonId] === true;
+        state.textContent = done ? "已完成" : "未完成";
+        state.dataset.state = done ? "done" : "todo";
+        if (done) completed += 1;
+      }
+      if (guidance instanceof HTMLElement) {
+        guidance.hidden = completed > 0;
+      }
+      const summary = readStartCallSummary();
+      if (summaryHint instanceof HTMLElement) {
+        if (summary) {
+          summaryHint.hidden = false;
+          summaryHint.textContent = `最近一次真实调用：${summary.provider} · ${summary.model} · ${formatDate(summary.at)}（匿名摘要，不含密钥与消息正文）。`;
+        } else {
+          summaryHint.hidden = true;
+        }
+      }
+      return completed;
+    };
+
+    const completedOnLoad = render();
+    if (completedOnLoad > 0) {
+      setStatus(`已读取本地起步章进度：${completedOnLoad}/${lessonIds.length} 节完成。`);
+    } else {
+      setStatus("本地起步章进度为空；完成 W1–W4 后会自动显示在这里。");
+    }
+
+    // 同一浏览器的其他标签页（例如刚学完 W3 的课节页）更新进度时，这里实时跟随。
+    window.addEventListener("storage", (event) => {
+      if (
+        event.key === null
+        || event.key === START_PROGRESS_STORAGE_KEY
+        || event.key === START_CALL_SUMMARY_STORAGE_KEY
+      ) {
+        const completed = render();
+        setStatus(completed > 0
+          ? `本地起步章进度已更新：${completed}/${lessonIds.length} 节完成。`
+          : "本地起步章进度已更新：当前没有已完成的课节。");
+      }
+    });
+
+    exportButton?.addEventListener("click", () => {
+      const payload = buildStartProgressExport(courseVersion);
+      const lessonCount = Object.keys(payload.lessons).length;
+      if (lessonCount === 0 && !payload.call_summary) {
+        setStatus("本地还没有起步章进度或匿名摘要可导出；先完成 W1–W4 再来。", "error");
+        return;
+      }
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = START_PROGRESS_EXPORT_FILENAME;
+      link.click();
+      URL.revokeObjectURL(url);
+      setStatus(`已导出起步章进度 JSON（${lessonCount} 条课节记录${payload.call_summary ? "，含匿名调用摘要" : ""}）。`, "success");
+    });
+
+    importButton?.addEventListener("click", async () => {
+      if (!(fileInput instanceof HTMLInputElement) || !fileInput.files?.[0]) {
+        setStatus("请先选择一个起步章进度 JSON 文件。", "error");
+        return;
+      }
+      try {
+        const text = await fileInput.files[0].text();
+        const parsed = parseStartProgressImport(text, courseVersion);
+        if (restoreStartProgress(parsed)) {
+          const completed = render();
+          setStatus(
+            `已导入起步章进度：${completed}/${lessonIds.length} 节完成${parsed.callSummary ? "，并恢复匿名调用摘要" : ""}。`,
+            "success",
+          );
+        } else {
+          setStatus("无法写入浏览器本地记录；请检查浏览器存储权限。", "error");
+        }
+      } catch (error) {
+        if (error instanceof StartProgressPortabilityError && error.code === "incompatible-course-version") {
+          setStatus("拒绝导入：进度文件属于不兼容的课程版本。请使用与当前站点同课程版本导出的文件。", "error");
+        } else if (error instanceof StartProgressPortabilityError) {
+          setStatus(`导入失败：${error.message}`, "error");
+        } else {
+          setStatus("导入失败：JSON 不符合起步章进度契约。", "error");
+        }
+      } finally {
+        fileInput.value = "";
+      }
+    });
+
+    clearButton?.addEventListener("click", () => {
+      const confirmed = window.confirm(
+        "确定清空本地起步章进度吗？W1–W4 完成状态与匿名调用摘要都会从这台浏览器删除，且无法恢复。",
+      );
+      if (!confirmed) return;
+      if (clearStartProgress()) {
+        render();
+        setStatus("已清空本地起步章进度。", "success");
+      } else {
+        setStatus("无法清除浏览器本地记录；请检查浏览器存储权限。", "error");
+      }
+    });
+  }
+</script>

@@ -68,6 +68,10 @@ const lessons = [
         把这个文件导入网页，唯一的作用是把「这一节我通过了」记在<strong>你自己的浏览器本地</strong>（localStorage）。
         记录不会上传到任何服务器；换一台电脑或换一个浏览器，记录也不会自动跟过去。
       </p>
+      <p class="progress-wizard__bridge">
+        如果你还没完成 W1–W4 网页端起步章，建议先回首页完成起步章，再来跑这里的命令——起步章全程在浏览器里、不用终端，
+        它的进度会直接显示在本页「本地学习记录」区域的起步章面板中。
+      </p>
       <details class="progress-wizard__why">
         <summary>为什么要这么麻烦？</summary>
         <p>
@@ -353,6 +357,7 @@ const lessons = [
   .progress-wizard__trouble dt { font-weight: 700; }
   .progress-wizard__trouble dd { margin: 0.25rem 0 0; color: var(--sl-color-gray-2); font-size: 0.9rem; }
   .progress-wizard__boundary { border-inline-start: 0.2rem solid var(--sl-color-accent); padding-inline-start: 0.75rem; font-size: 0.85rem; color: var(--sl-color-gray-2); }
+  .progress-wizard__bridge { border-inline-start: 0.2rem solid var(--sl-color-accent); padding-inline-start: 0.75rem; font-size: 0.9rem; color: var(--sl-color-gray-2); }
 
   .progress-wizard button:focus-visible,
   .progress-wizard select:focus-visible,

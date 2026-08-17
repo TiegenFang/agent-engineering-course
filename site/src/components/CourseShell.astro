@@ -4,6 +4,7 @@ import { t03Products } from "../data/t03-content";
 import CapabilityMap from "./CapabilityMap.astro";
 import ContractSummary from "./ContractSummary.astro";
 import EvidenceLoop from "./EvidenceLoop.astro";
+import StartProgressPanel from "./StartProgressPanel.astro";
 
 const base = import.meta.env.BASE_URL;
 
@@ -278,10 +279,11 @@ const evidencePoints = [
       <div class="section-heading">
         <div>
           <p class="shell-eyebrow">05 / 本地学习记录</p>
-          <h2 id="record-heading">把 checker 证据带回课程。</h2>
+          <h2 id="record-heading">我的进度：两段旅程，一处可见。</h2>
         </div>
-        <p>导入只在浏览器本地完成；版本不匹配时拒绝覆盖，未知字段会被忽略。</p>
+        <p>起步章进度与进阶线证据都只保存在浏览器本地，可分别导出 JSON 随身携带；导入时版本不匹配会拒绝，未知字段会被忽略。</p>
       </div>
+      <StartProgressPanel />
       <EvidenceLoop lessonId="t01-foundation" />
     </section>
   </div>
