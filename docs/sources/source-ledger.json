@@ -1195,7 +1195,7 @@
     {
       "id": "v3-illustration-cast-original",
       "title": "V3 教学插画层原创角色、配角与 W4 分岔地图场景（小循、钥匙、包裹、环跑道、脚印、终端之门、工具箱）",
-      "url": "site/src/components/mascot/",
+      "url": "./site/src/components/mascot/",
       "source_role": "course-original",
       "pinned_version": "V3-2 implementation v1; W4 fork-map scene added in V3-6; geometry-minimal; verified 2026-08-17",
       "usage": "网页端起步章 W1–W4 概念解释插画：小循 5 姿态与三拟物配角 Astro 组件（Mascot.astro、Cast.astro、poses.ts），一处定义按 props 复用；V3-6 在 TerminalBridge.astro 内嵌 W4 分岔地图场景（三枚脚印、终端之门、工具箱，几何形状、状态切换全部为静态替换）；边界见 ADR-0009，设计语言见 docs/design/v3-illustration-design-spec.md；预览页 /mascot-preview/",
@@ -1205,7 +1205,7 @@
     {
       "id": "v3-w3-request-journey-sample",
       "title": "V3-3 W3 请求之旅离线样例数据（依据官方文档形状构造，待现场采集核验）",
-      "url": "site/src/data/w3-request-journey-sample.json",
+      "url": "./site/src/data/w3-request-journey-sample.json",
       "source_role": "course-original",
       "pinned_version": "constructed 2026-08-17 from official response shapes: OpenAI chat completions (ledger v2-openai-chat-completions, verified 2026-08-17) and Anthropic Messages create (ledger anthropic-messages-api-t28, observed 2026-08-13); live-capture-pending",
       "usage": "W3 离线模式的逐帧真实感样例：请求端点、逐段注释、token 用量与耗时；数值为课程构造，页面必须标注「已记录样例（构造，非此刻发出）」，现场采集替换前不得声称真实调用记录；2026-08-17 构造当天对两文档 URL 的在线复核失败（403/超时），形状依据沿用账本既有核验记录",
