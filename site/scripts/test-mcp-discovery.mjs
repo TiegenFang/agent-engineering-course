@@ -26,7 +26,7 @@ test("offline MCP fixture is deterministic and explicitly non-formal", () => {
 });
 
 test("offline evidence keeps formal checks failed and is browser-importable", () => {
-  const evidence = offlineEvidenceDocument("2.0.0", "2026-08-13");
+  const evidence = offlineEvidenceDocument("3.0.0", "2026-08-13");
 
   assert.equal(evidence.contract, "agent-engineering-course/evidence");
   assert.equal(evidence.result, "partial");

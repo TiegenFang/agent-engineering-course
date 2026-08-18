@@ -55,7 +55,7 @@ test("session input changes preserve recorded observations and export only stabl
   }
 
   const evidence = buildContextBudgetEvidence(session, {
-    courseVersion: "2.0.0",
+    courseVersion: "3.0.0",
     checkedOn: "2026-08-13",
   });
   assert.equal(evidence.lesson_id, "t14-context-budget");

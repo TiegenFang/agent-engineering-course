@@ -148,7 +148,7 @@ export function buildEnterpriseEvidence(run = buildEnterpriseRun()) {
   return {
     contract: "agent-engineering-course/evidence",
     contract_version: "1",
-    course_version: "2.0.0",
+    course_version: "3.0.0",
     lesson_id: "t24-enterprise-capstone",
     result: summarizeEnterpriseRun(normalized).result,
     anonymous: true,

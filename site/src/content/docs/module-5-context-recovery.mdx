@@ -114,7 +114,7 @@ python -m course_check check t15-context-recovery --root .. --evidence-file ..\t
 - **权限与副作用**：页面只在浏览器内处理固定合成字符串；不读写仓库、不执行命令、不访问网络、不触碰设备。下载和导入 evidence 是学员主动操作。
 - **隐私边界**：不要把真实研究记录、个人信息、密钥、路径或聊天全文粘贴到实验。导出 JSON 只保留状态和稳定 ID，但下载文件仍由学员负责保管。
 - **失败与恢复**：压缩失真和约束遗漏必须被识别；污染任务必须完成隔离、恢复和复核；交接缺少任一必填字段时保持 `blocked`，补齐后再生成。
-- **版本与验证边界**：确定性实验合同 v1 和 `agent-engineering-course/evidence` v1 锁定课程版本 `2.0.0`，页面/Node/Python/Playwright 测试不调用真实模型。本课未验证真实 Codex、Claude Code 压缩策略、跨会话产品状态或跨平台浏览器行为。
+- **版本与验证边界**：确定性实验合同 v1 和 `agent-engineering-course/evidence` v1 锁定课程版本 `3.0.0`，页面/Node/Python/Playwright 测试不调用真实模型。本课未验证真实 Codex、Claude Code 压缩策略、跨会话产品状态或跨平台浏览器行为。
 - **官方事实核验**：OpenAI 的 `Compaction` 指南描述 API 层的上下文压缩机制，Anthropic 的 `Context window` 与 `Checkpointing` 文档描述 Claude Code 的上下文窗口和回退/检查点语境；这些是截至 **2026-08-13** 的产品事实，不是所有 Agent 的统一标准。课程方法和本地 fixture 为原创设计。
 - **来源与许可**：正文、边界表和固定实验为本课程原创（正文 CC BY 4.0；组件、模拟器、实验脚手架与 checker MIT）；官方页面仅作事实来源，不复制第三方文字或资产。
 

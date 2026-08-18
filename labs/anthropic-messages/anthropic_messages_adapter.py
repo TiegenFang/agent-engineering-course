@@ -636,7 +636,7 @@ def derive_checks(cases: Sequence[Mapping[str, Any]]) -> list[dict[str, str]]:
 def build_offline_evidence(
     *,
     case_id: str | None = None,
-    course_version: str = "2.0.0",
+    course_version: str = "3.0.0",
     checked_on: str | None = None,
     recorded_at: str | None = None,
 ) -> dict[str, Any]:
@@ -728,9 +728,9 @@ def _course_version_from_repo() -> str:
     try:
         value = json.loads((root / "course-version.json").read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
-        return "2.0.0"
+        return "3.0.0"
     version = value.get("course_version")
-    return version if isinstance(version, str) and version else "2.0.0"
+    return version if isinstance(version, str) and version else "3.0.0"
 
 
 def main(argv: Sequence[str] | None = None) -> int:

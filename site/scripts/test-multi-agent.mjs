@@ -50,7 +50,7 @@ test("recorded scenarios export a complete anonymous comparison envelope", () =>
   }
 
   const evidence = buildMultiAgentEvidence(session, {
-    courseVersion: "2.0.0",
+    courseVersion: "3.0.0",
     checkedOn: "2026-08-13",
   });
   assert.equal(evidence.lesson_id, "t22-multi-agent");

@@ -15,7 +15,7 @@ from typing import Any
 
 
 EVALUATOR_VERSION = "production-evaluator-v1"
-COURSE_VERSION = "2.0.0"
+COURSE_VERSION = "3.0.0"
 LESSON_ID = "t29-production"
 DEFAULT_BUDGET_USD = 0.01
 ALLOWED_LOG_EVENTS = ("evaluation-start", "case-result", "recovery", "budget-stop", "evaluation-end")

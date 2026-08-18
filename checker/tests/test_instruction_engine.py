@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CHECKER = ROOT / "checker"
-COURSE_VERSION = "2.0.0"
+COURSE_VERSION = "3.0.0"
 CHECK_IDS = [
     "prediction-recorded",
     "baseline-compared",

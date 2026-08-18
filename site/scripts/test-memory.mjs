@@ -26,7 +26,7 @@ test("完整 Memory journey 是确定性的且不调用模型或网络", () => {
   assert.equal(first.pollutionInjected, true);
   assert.equal(first.pollutionRecovered, true);
   const evidence = buildMemoryEvidence(first, {
-    courseVersion: "2.0.0",
+    courseVersion: "3.0.0",
     checkedOn: "2026-08-13",
   });
   assert.equal(evidence.result, "passed");

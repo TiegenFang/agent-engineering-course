@@ -1,6 +1,6 @@
 {
-  "course_version": "2.0.0",
-  "released_on": "2026-08-17",
+  "course_version": "3.0.0",
+  "released_on": "2026-08-18",
   "course": {
     "name": "Agent 工程入门",
     "subtitle": "从 Codex 与 Claude Code，到 Memory、Skills、MCP 与 API 实战",
