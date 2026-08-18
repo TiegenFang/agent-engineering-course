@@ -1207,7 +1207,7 @@
       "title": "V3-3 W3 请求之旅离线样例数据（依据官方文档形状构造，待现场采集核验）",
       "url": "./site/src/data/w3-request-journey-sample.json",
       "source_role": "course-original",
-      "pinned_version": "constructed 2026-08-17 from official response shapes: OpenAI chat completions (ledger v2-openai-chat-completions, verified 2026-08-17) and Anthropic Messages create (ledger anthropic-messages-api-t28, observed 2026-08-13); live-capture-pending",
+      "pinned_version": "constructed 2026-08-17 from official response shapes: OpenAI chat completions (ledger v2-openai-chat-completions, verified 2026-08-17) and Anthropic Messages create (ledger anthropic-messages-api-t28, observed 2026-08-13); live-capture-pending; live-call path verified by maintainer 2026-08-18 (BYO-key browser-direct, summary + playback confirmed); numeric capture still pending",
       "usage": "W3 离线模式的逐帧真实感样例：请求端点、逐段注释、token 用量与耗时；数值为课程构造，页面必须标注「已记录样例（构造，非此刻发出）」，现场采集替换前不得声称真实调用记录；2026-08-17 构造当天对两文档 URL 的在线复核失败（403/超时），形状依据沿用账本既有核验记录",
       "license_or_terms": "project-original; data and annotations CC-BY-4.0; field names follow official API reference terms, reference-only; no copied assets",
       "copied_assets": false
