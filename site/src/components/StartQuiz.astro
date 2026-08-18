@@ -199,16 +199,81 @@ const quizData: QuizItem[] = [
   }
 </script>
 
-<style>
-  .start-quiz { border: 1px solid var(--sl-color-gray-5); border-radius: 8px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
-  .start-quiz fieldset { display: grid; gap: 0.35rem; margin: 0.75rem 0; }
-  .start-quiz label { display: block; min-height: 44px; padding: 0.5rem; }
-  .quiz-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
-  .start-quiz button { min-height: 44px; padding: 0.5rem 1.25rem; cursor: pointer; }
-  .quiz-result { min-height: 1.5rem; }
+<style is:global>
+  /* 题目与选项由脚本动态创建，不带 Astro scoped 属性，
+     scoped 选择器无法命中（v2 起选项连排的根因）。选择器以 .start-quiz 唯一根类命名空间。 */
+  .start-quiz { border: 1px solid var(--sl-color-gray-5); border-radius: 8px; padding: 1.25rem 1.5rem; margin: 2rem 0; }
+  .start-quiz h3 { margin: 0 0 0.35rem; text-wrap: balance; }
+  .start-quiz > p { margin: 0.35rem 0 0.75rem; color: var(--sl-color-gray-2); text-wrap: pretty; }
+
+  .start-quiz fieldset {
+    display: grid;
+    gap: 0.45rem;
+    margin: 0;
+    padding: 1rem 0 0.25rem;
+    border: 0;
+    border-top: 1px dashed var(--sl-color-gray-5);
+  }
+  .start-quiz fieldset:first-of-type { border-top: 0; padding-top: 0.25rem; }
+  .start-quiz legend {
+    padding: 0 0 0.35rem;
+    font-weight: 700;
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
+
+  .start-quiz label {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 0.65rem;
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    line-height: 1.65;
+    transition: border-color 120ms ease, background-color 120ms ease;
+  }
+  .start-quiz label:hover { border-color: var(--sl-color-gray-5); }
+  .start-quiz label:has(input:checked) {
+    border-color: var(--sl-color-accent);
+    background: color-mix(in srgb, var(--sl-color-accent) 8%, transparent);
+    font-weight: 600;
+  }
+  .start-quiz label:has(input:focus-visible) { outline: 2px solid var(--sl-color-accent); outline-offset: 2px; }
+  .start-quiz input[type="radio"] { accent-color: var(--sl-color-accent); width: 1.05rem; height: 1.05rem; margin: 0; }
+
+  .quiz-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem; }
+  .start-quiz button {
+    min-height: 44px;
+    padding: 0.5rem 1.25rem;
+    border: 1px solid var(--sl-color-accent);
+    border-radius: 6px;
+    background: var(--sl-color-accent);
+    color: var(--sl-color-text-invert);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .start-quiz button:hover { background: var(--sl-color-accent-high); }
+  .start-quiz button[data-quiz-reset] {
+    background: transparent;
+    color: var(--sl-color-accent);
+  }
+  .start-quiz button[data-quiz-reset]:hover { background: color-mix(in srgb, var(--sl-color-accent) 12%, transparent); }
+
+  .quiz-result { min-height: 1.5rem; margin: 0.75rem 0 0; }
   .quiz-review[hidden] { display: none; }
-  .quiz-review ul { list-style: none; padding: 0; display: grid; gap: 0.75rem; }
-  .quiz-review li { border: 1px solid var(--sl-color-gray-5); border-radius: 6px; padding: 0.6rem 0.8rem; }
-  .quiz-review p { margin: 0.2rem 0; }
+  .quiz-review h4 { margin: 1rem 0 0.5rem; }
+  .quiz-review ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.75rem; }
+  .quiz-review li { border: 1px solid var(--sl-color-gray-5); border-radius: 6px; padding: 0.65rem 0.85rem; }
+  .quiz-review p { margin: 0.2rem 0; text-wrap: pretty; }
+  .quiz-review a { color: var(--sl-color-accent); font-weight: 600; }
+
   .start-quiz :is(button, a):focus-visible { outline: 2px solid var(--sl-color-accent); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .start-quiz label { transition: none; }
+  }
 </style>

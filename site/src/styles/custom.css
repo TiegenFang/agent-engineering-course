@@ -2109,3 +2109,64 @@
   }
 }
 
+
+/* —— 网页端起步章共享控件层（V3 美化 pass）——
+   六个交互组件由不同 ticket 独立实现，按钮/输入框样式漂移（部分渲染为浏览器默认 outset）。
+   这里提供零特异性（:where）基样式：任何组件自身规则自动优先；只用 Starlight 色令牌，
+   深色模式随 data-theme 自动翻转。 */
+:where(.start-quiz, .loop-track, .theater, .dialogue-rewrite, .byo-key-chat, .terminal-bridge) :where(button:not([aria-pressed])) {
+  min-height: 44px;
+  padding: 0.5rem 1.2rem;
+  border: 1px solid var(--sl-color-accent);
+  border-radius: 6px;
+  background: var(--sl-color-accent);
+  color: var(--sl-color-text-invert);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+:where(.start-quiz, .loop-track, .theater, .dialogue-rewrite, .byo-key-chat, .terminal-bridge) :where(button:not([aria-pressed]):hover) {
+  background: var(--sl-color-accent-high);
+  border-color: var(--sl-color-accent-high);
+}
+:where(.start-quiz, .loop-track, .theater, .dialogue-rewrite, .byo-key-chat, .terminal-bridge) :where(button[aria-pressed]) {
+  /* 状态切换类按钮（卡片/句子选择）走轻量外观，选中态由组件自己的 aria-pressed 规则表达 */
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+:where(.start-quiz, .loop-track, .theater, .dialogue-rewrite, .byo-key-chat, .terminal-bridge) :where(button[aria-pressed]:hover) {
+  border-color: var(--sl-color-accent);
+}
+:where(.start-quiz, .loop-track, .theater, .dialogue-rewrite, .byo-key-chat, .terminal-bridge) :where(button:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+:where(.start-quiz, .loop-track, .theater, .dialogue-rewrite, .byo-key-chat, .terminal-bridge) :where(input[type="text"], input[type="password"], textarea, select) {
+  min-height: 44px;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 6px;
+  background: var(--sl-color-bg);
+  color: inherit;
+  font: inherit;
+}
+:where(.start-quiz, .loop-track, .theater, .dialogue-rewrite, .byo-key-chat, .terminal-bridge) :where(input[type="text"], input[type="password"], textarea, select):focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 1px;
+}
+:where(.start-quiz, .loop-track, .theater, .dialogue-rewrite, .byo-key-chat, .terminal-bridge) :where(fieldset) {
+  border: 0;
+  margin: 0;
+}
+:where(.start-quiz, .loop-track, .theater, .dialogue-rewrite, .byo-key-chat, .terminal-bridge) :where(h3, h4) {
+  text-wrap: balance;
+}
+:where(.start-quiz, .loop-track, .theater, .dialogue-rewrite, .byo-key-chat, .terminal-bridge) :where(p) {
+  text-wrap: pretty;
+}
