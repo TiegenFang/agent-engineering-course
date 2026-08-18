@@ -329,9 +329,9 @@ const rounds: Round[] = [
         placedCards.set(slotKey, card);
         card.setAttribute("hidden", "");
         setCardSelected(null);
-        const placeButton = section.querySelector<HTMLButtonElement>(`[data-slot-place="${slotKey}"]`);
+        const placeButton = section?.querySelector<HTMLButtonElement>(`[data-slot-place="${slotKey}"]`);
         placeButton?.setAttribute("hidden", "");
-        const filled = section.querySelector<HTMLElement>(`[data-match-slot="${slotKey}"] [data-slot-filled]`);
+        const filled = section?.querySelector<HTMLElement>(`[data-match-slot="${slotKey}"] [data-slot-filled]`);
         filled?.removeAttribute("hidden");
         const cardText = filled?.querySelector<HTMLElement>("[data-slot-card-text]");
         if (cardText) cardText.textContent = `已配对 ✓：${card.dataset.cardText ?? ""}`;

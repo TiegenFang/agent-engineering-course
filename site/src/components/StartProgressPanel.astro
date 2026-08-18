@@ -124,7 +124,7 @@ const startLessons = [
     const formatDate = (milliseconds: number) => new Date(milliseconds).toISOString().slice(0, 10);
 
     const render = () => {
-      const record = readStartProgress();
+      const record = readStartProgress() as Record<string, boolean>;
       let completed = 0;
       for (const lessonId of lessonIds) {
         const state = root.querySelector<HTMLElement>(`[data-start-state="${lessonId}"]`);
